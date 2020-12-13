@@ -108,49 +108,43 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 		Address func_list_base=base.add(8+pointer_size);
 		log_tmp("start loop");
 		for(int i=0; i<func_num; i++) {
-			long func_addr_offset=0;
+			long func_addr_value=0;
 			long func_info_offset=0;
 			int func_name_offset=0;
 			int args=0;
 			try {
 				if(pointer_size==8) {
-					func_addr_offset=memory.getLong(func_list_base.add(i*pointer_size*2));
+					func_addr_value=memory.getLong(func_list_base.add(i*pointer_size*2));
 					func_info_offset=memory.getLong(func_list_base.add(i*pointer_size*2+pointer_size));
 				}else {
-					func_addr_offset=memory.getInt(func_list_base.add(i*pointer_size*2));
+					func_addr_value=memory.getInt(func_list_base.add(i*pointer_size*2));
 					func_info_offset=memory.getInt(func_list_base.add(i*pointer_size*2+pointer_size));
 				}
-				log_tmp(String.format("get first offset %x %x", func_addr_offset, func_info_offset));
-				long address=memory.getInt(base.add(func_info_offset));
+				long func_entry_value=memory.getInt(base.add(func_info_offset));
 
 				func_name_offset=memory.getInt(base.add(func_info_offset+pointer_size));
-				log_tmp(String.format("get second offset %x", func_name_offset));
 
 				Listing listing=program.getListing();
-				log_tmp(String.format("func_name_data %x", base.add(func_name_offset).getOffset()));
+
 				Data func_name_data=listing.getDefinedDataAt(base.add(func_name_offset));
 				if(func_name_data==null) {
 					func_name_data=listing.createData(base.add(func_name_offset), new StringDataType());
 				}else if(!func_name_data.getDataType().isEquivalent((new StringDataType()))) {
 					log_tmp("failed !func_name_data.getDataType().isEquivalent((new StringDataType()))");
-					return false;
+					continue;
 				}
 				log_tmp("get name");
 
 				args=memory.getInt(base.add(func_info_offset+pointer_size+4));
 				log_tmp(String.format("get args %d", args));
 
-				Address func_addr=program.getAddressFactory().getDefaultAddressSpace().getAddress(func_addr_offset);
-				log_tmp(String.format("func addr %x", func_addr.getOffset()));
-				log_tmp(String.format("entrypoint %x", address));
-				if(func_addr.getOffset()!=address)
+				log_tmp(String.format("entrypoint %x", func_entry_value));
+				if(func_addr_value!=func_entry_value)
 				{
-					log_tmp("wrongg");
+					log_tmp("wrong func addr");
+					continue;
 				}
-				if(func_addr_offset!=address)
-				{
-					log_tmp("wrongh");
-				}
+				Address func_addr=program.getAddressFactory().getDefaultAddressSpace().getAddress(func_addr_value);
 				Function func=program.getFunctionManager().getFunctionAt(func_addr);
 				log_tmp("get func");
 				String func_name=(String)func_name_data.getValue();
