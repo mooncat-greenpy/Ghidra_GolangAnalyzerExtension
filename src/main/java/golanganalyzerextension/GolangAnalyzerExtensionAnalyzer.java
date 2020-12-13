@@ -64,11 +64,6 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 		// TODO: Examine 'program' to determine of this analyzer should analyze it.  Return true
 		// if it can.
 
-		LanguageID lang=program.getLanguageID();
-		lang.compareTo(new LanguageID("LE:32"));
-
-		log_tmp(lang.getIdAsString());
-
 		return true;
 	}
 
@@ -95,6 +90,7 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 		Address base=get_gopclntab(program, monitor);
 		if(base==null)
 		{
+			log.appendMsg("gopclntab not found");
 			return false;
 		}
 		int func_num=0;
@@ -102,11 +98,10 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 			// magic and ...
 			func_num=memory.getInt(base.add(8));
 		}catch(MemoryAccessException e) {
-			log_tmp("failed func_num MemoryAccessException");
+			log.appendException(e);
 			return false;
 		}
 		Address func_list_base=base.add(8+pointer_size);
-		log_tmp("start loop");
 		for(int i=0; i<func_num; i++) {
 			long func_addr_value=0;
 			long func_info_offset=0;
@@ -130,35 +125,28 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 				if(func_name_data==null) {
 					func_name_data=listing.createData(base.add(func_name_offset), new StringDataType());
 				}else if(!func_name_data.getDataType().isEquivalent((new StringDataType()))) {
-					log_tmp("failed !func_name_data.getDataType().isEquivalent((new StringDataType()))");
+					log.appendMsg("The type of func name data is not String");
 					continue;
 				}
-				log_tmp("get name");
 
 				args=memory.getInt(base.add(func_info_offset+pointer_size+4));
-				log_tmp(String.format("get args %d", args));
 
-				log_tmp(String.format("entrypoint %x", func_entry_value));
 				if(func_addr_value!=func_entry_value)
 				{
-					log_tmp("wrong func addr");
+					log.appendMsg(String.format("wrong func addr %x %x", func_addr_value, func_entry_value));
 					continue;
 				}
 				Address func_addr=program.getAddressFactory().getDefaultAddressSpace().getAddress(func_addr_value);
 				Function func=program.getFunctionManager().getFunctionAt(func_addr);
-				log_tmp("get func");
 				String func_name=(String)func_name_data.getValue();
-				log_tmp(String.format("get func name %s", func_name));
 				if(func==null) {
 					CreateFunctionCmd cmd=new CreateFunctionCmd(func_name, func_addr, null, SourceType.ANALYSIS);
 					cmd.applyTo(program, monitor);
-					log_tmp("create func");
 					continue;
 				}
 				func.setName(func_name, SourceType.ANALYSIS);
-				log_tmp("set name");
 			}catch(Exception e) {
-				log_tmp("failed"+e.getMessage());
+				log.appendException(e);
 			}
 		}
 
@@ -188,30 +176,11 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 		while(true) {
 			find=program.getMemory().findBytes(find, magic, new byte[] {(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff}, true, monitor);
 			if(find==null) {
-				log_tmp("not found 0xfbffffff");
 				break;
-			}else {
-				log_tmp(String.format("0xfbffffff %x", find.getOffset()));
 			}
 			find=find.add(4);
 		}
 
 		return find;
-	}
-
-	// TODO delete
-	void log_tmp(String str) {
-		try {
-		File file = new File("test.txt");
-
-        FileWriter filewriter = new FileWriter(file, true);
-
-        filewriter.write("log: ");
-        filewriter.write(str);
-        filewriter.write("\n");
-
-        filewriter.close();
-		} catch(IOException e) {
-		}
 	}
 }
