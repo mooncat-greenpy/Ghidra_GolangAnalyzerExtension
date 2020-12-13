@@ -43,8 +43,6 @@ import ghidra.program.model.lang.LanguageID;
  * TODO: Provide class-level documentation that describes what this analyzer does.
  */
 public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
-	int pointer_size=0;
-
 	public GolangAnalyzerExtensionAnalyzer() {
 
 		// TODO: Name the analyzer and give it a description.
@@ -90,31 +88,21 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 		// TODO: Perform analysis when things get added to the 'program'.  Return true if the
 		// analysis succeeded.
 
-		if(program.getLanguageID().getIdAsString().contains("LE:64")) {
-			pointer_size=8;
-		}else {
-			pointer_size=4;
-		}
+		int pointer_size=get_pointer_size(program);
 
 		Memory memory=program.getMemory();
-		MemoryBlock gopclntab_section=null;
-		for (MemoryBlock mb : memory.getBlocks()) {
-			if(mb.getName().equals(".gopclntab")) {
-				gopclntab_section=mb;
-			}
-		}
-		if(gopclntab_section==null) {
-			log_tmp("gopclntab_memory==null");
+
+		Address base=get_gopclntab(program, monitor);
+		if(base==null)
+		{
 			return false;
 		}
-
-		Address base=gopclntab_section.getStart();
 		int func_num=0;
 		try {
 			// magic and ...
 			func_num=memory.getInt(base.add(8));
 		}catch(MemoryAccessException e) {
-			log_tmp("func_num MemoryAccessException");
+			log_tmp("failed func_num MemoryAccessException");
 			return false;
 		}
 		Address func_list_base=base.add(8+pointer_size);
@@ -133,6 +121,8 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 					func_info_offset=memory.getInt(func_list_base.add(i*pointer_size*2+pointer_size));
 				}
 				log_tmp(String.format("get first offset %x %x", func_addr_offset, func_info_offset));
+				long address=memory.getInt(base.add(func_info_offset));
+
 				func_name_offset=memory.getInt(base.add(func_info_offset+pointer_size));
 				log_tmp(String.format("get second offset %x", func_name_offset));
 
@@ -142,7 +132,7 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 				if(func_name_data==null) {
 					func_name_data=listing.createData(base.add(func_name_offset), new StringDataType());
 				}else if(!func_name_data.getDataType().isEquivalent((new StringDataType()))) {
-					log_tmp("!func_name_data.getDataType().isEquivalent((new StringDataType()))");
+					log_tmp("failed !func_name_data.getDataType().isEquivalent((new StringDataType()))");
 					return false;
 				}
 				log_tmp("get name");
@@ -151,10 +141,20 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 				log_tmp(String.format("get args %d", args));
 
 				Address func_addr=program.getAddressFactory().getDefaultAddressSpace().getAddress(func_addr_offset);
+				log_tmp(String.format("func addr %x", func_addr.getOffset()));
+				log_tmp(String.format("entrypoint %x", address));
+				if(func_addr.getOffset()!=address)
+				{
+					log_tmp("wrongg");
+				}
+				if(func_addr_offset!=address)
+				{
+					log_tmp("wrongh");
+				}
 				Function func=program.getFunctionManager().getFunctionAt(func_addr);
 				log_tmp("get func");
 				String func_name=(String)func_name_data.getValue();
-				log_tmp("get func name");
+				log_tmp(String.format("get func name %s", func_name));
 				if(func==null) {
 					CreateFunctionCmd cmd=new CreateFunctionCmd(func_name, func_addr, null, SourceType.ANALYSIS);
 					cmd.applyTo(program, monitor);
@@ -164,11 +164,45 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 				func.setName(func_name, SourceType.ANALYSIS);
 				log_tmp("set name");
 			}catch(Exception e) {
-				log_tmp(e.getMessage());
+				log_tmp("failed"+e.getMessage());
 			}
 		}
 
 		return false;
+	}
+
+	int get_pointer_size(Program program) {
+		if(program.getLanguageID().getIdAsString().contains("LE:64")) {
+			return 8;
+		}
+		return 4;
+	}
+
+	Address get_gopclntab(Program program, TaskMonitor monitor) {
+		MemoryBlock gopclntab_section=null;
+		for (MemoryBlock mb : program.getMemory().getBlocks()) {
+			if(mb.getName().equals(".gopclntab")) {
+				gopclntab_section=mb;
+			}
+		}
+		if(gopclntab_section!=null) {
+			return gopclntab_section.getStart();
+		}
+
+		byte magic[]= {(byte)0xfb,(byte)0xff,(byte)0xff,(byte)0xff};
+		Address find=null;
+		while(true) {
+			find=program.getMemory().findBytes(find, magic, new byte[] {(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff}, true, monitor);
+			if(find==null) {
+				log_tmp("not found 0xfbffffff");
+				break;
+			}else {
+				log_tmp(String.format("0xfbffffff %x", find.getOffset()));
+			}
+			find=find.add(4);
+		}
+
+		return find;
 	}
 
 	// TODO delete
