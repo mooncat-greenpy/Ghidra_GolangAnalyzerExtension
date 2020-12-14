@@ -35,7 +35,10 @@ import ghidra.program.model.mem.Memory;
 import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.program.model.mem.MemoryBlock;
 import ghidra.program.model.symbol.SourceType;
+import ghidra.program.model.util.CodeUnitInsertionException;
 import ghidra.util.exception.CancelledException;
+import ghidra.util.exception.DuplicateNameException;
+import ghidra.util.exception.InvalidInputException;
 import ghidra.util.task.TaskMonitor;
 import ghidra.program.model.lang.LanguageID;
 
@@ -116,35 +119,22 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 					func_info_offset=memory.getInt(func_list_base.add(i*pointer_size*2+pointer_size));
 				}
 				long func_entry_value=memory.getInt(base.add(func_info_offset));
-
 				func_name_offset=memory.getInt(base.add(func_info_offset+pointer_size));
-
-				Listing listing=program.getListing();
-
-				Data func_name_data=listing.getDefinedDataAt(base.add(func_name_offset));
-				if(func_name_data==null) {
-					func_name_data=listing.createData(base.add(func_name_offset), new StringDataType());
-				}else if(!func_name_data.getDataType().isEquivalent((new StringDataType()))) {
-					log.appendMsg("The type of func name data is not String");
-					continue;
-				}
-
 				args=memory.getInt(base.add(func_info_offset+pointer_size+4));
 
 				if(func_addr_value!=func_entry_value)
 				{
-					log.appendMsg(String.format("wrong func addr %x %x", func_addr_value, func_entry_value));
+					log.appendMsg(String.format("Wrong func addr %x %x", func_addr_value, func_entry_value));
 					continue;
 				}
-				Address func_addr=program.getAddressFactory().getDefaultAddressSpace().getAddress(func_addr_value);
-				Function func=program.getFunctionManager().getFunctionAt(func_addr);
-				String func_name=(String)func_name_data.getValue();
-				if(func==null) {
-					CreateFunctionCmd cmd=new CreateFunctionCmd(func_name, func_addr, null, SourceType.ANALYSIS);
-					cmd.applyTo(program, monitor);
+
+				String func_name=create_function_name_data(program, base.add(func_name_offset));
+				if(func_name==null) {
+					log.appendMsg("The type of func name data is not String");
 					continue;
 				}
-				func.setName(func_name, SourceType.ANALYSIS);
+
+				rename_function(program, monitor, func_addr_value, func_name);
 			}catch(Exception e) {
 				log.appendException(e);
 			}
@@ -182,5 +172,27 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 		}
 
 		return find;
+	}
+
+	String create_function_name_data(Program program, Address address) throws CodeUnitInsertionException {
+		Listing listing=program.getListing();
+		Data func_name_data=listing.getDefinedDataAt(address);
+		if(func_name_data==null) {
+			func_name_data=listing.createData(address, new StringDataType());
+		}else if(!func_name_data.getDataType().isEquivalent((new StringDataType()))) {
+			return null;
+		}
+		return (String)func_name_data.getValue();
+	}
+
+	void rename_function(Program program, TaskMonitor monitor, long func_addr_value, String func_name) throws DuplicateNameException, InvalidInputException {
+		Address func_addr=program.getAddressFactory().getDefaultAddressSpace().getAddress(func_addr_value);
+		Function func=program.getFunctionManager().getFunctionAt(func_addr);
+		if(func==null) {
+			CreateFunctionCmd cmd=new CreateFunctionCmd(func_name, func_addr, null, SourceType.ANALYSIS);
+			cmd.applyTo(program, monitor);
+			return;
+		}
+		func.setName(func_name, SourceType.ANALYSIS);
 	}
 }
