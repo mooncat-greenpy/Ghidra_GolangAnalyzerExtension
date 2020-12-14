@@ -111,13 +111,8 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 			int func_name_offset=0;
 			int args=0;
 			try {
-				if(pointer_size==8) {
-					func_addr_value=memory.getLong(func_list_base.add(i*pointer_size*2));
-					func_info_offset=memory.getLong(func_list_base.add(i*pointer_size*2+pointer_size));
-				}else {
-					func_addr_value=memory.getInt(func_list_base.add(i*pointer_size*2));
-					func_info_offset=memory.getInt(func_list_base.add(i*pointer_size*2+pointer_size));
-				}
+				func_addr_value=get_address_value(memory, func_list_base.add(i*pointer_size*2), pointer_size);
+				func_info_offset=get_address_value(memory, func_list_base.add(i*pointer_size*2+pointer_size), pointer_size);
 				long func_entry_value=memory.getInt(base.add(func_info_offset));
 				func_name_offset=memory.getInt(base.add(func_info_offset+pointer_size));
 				args=memory.getInt(base.add(func_info_offset+pointer_size+4));
@@ -150,6 +145,15 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 		return 4;
 	}
 
+	long get_address_value(Memory memory, Address address, int size) throws MemoryAccessException {
+		if(size==8) {
+			return memory.getLong(address);
+		}else if(size==4) {
+			return memory.getInt(address);
+		}
+		return memory.getByte(address);
+	}
+
 	Address get_gopclntab(Program program, TaskMonitor monitor) {
 		MemoryBlock gopclntab_section=null;
 		for (MemoryBlock mb : program.getMemory().getBlocks()) {
@@ -162,16 +166,30 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 		}
 
 		byte magic[]= {(byte)0xfb,(byte)0xff,(byte)0xff,(byte)0xff};
-		Address find=null;
+		Address base=null;
 		while(true) {
-			find=program.getMemory().findBytes(find, magic, new byte[] {(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff}, true, monitor);
-			if(find==null) {
+			base=program.getMemory().findBytes(base, magic, new byte[] {(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff}, true, monitor);
+			if(base==null) {
 				break;
 			}
-			find=find.add(4);
+
+			int pointer_size=get_pointer_size(program);
+			Memory memory=program.getMemory();
+			Address func_list_base=base.add(8+pointer_size);
+			try {
+				long func_addr_value=get_address_value(memory, func_list_base.add(0), pointer_size);
+				long func_info_offset=get_address_value(memory, func_list_base.add(pointer_size), pointer_size);
+				long func_entry_value=memory.getInt(base.add(func_info_offset));
+				if(func_addr_value==func_entry_value)
+				{
+					break;
+				}
+			}catch(MemoryAccessException e) {
+			}
+			base=base.add(4);
 		}
 
-		return find;
+		return base;
 	}
 
 	String create_function_name_data(Program program, Address address) throws CodeUnitInsertionException {
