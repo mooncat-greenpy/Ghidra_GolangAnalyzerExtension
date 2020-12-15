@@ -18,7 +18,6 @@ package golanganalyzerextension;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-
 import ghidra.app.cmd.function.CreateFunctionCmd;
 import ghidra.app.services.AbstractAnalyzer;
 import ghidra.app.services.AnalyzerType;
@@ -26,10 +25,11 @@ import ghidra.app.util.importer.MessageLog;
 import ghidra.framework.options.Options;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressSetView;
-import ghidra.program.model.data.StringDataType;
 import ghidra.program.model.listing.Data;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Listing;
+import ghidra.program.model.listing.Parameter;
+import ghidra.program.model.listing.ParameterImpl;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.Memory;
 import ghidra.program.model.mem.MemoryAccessException;
@@ -40,7 +40,7 @@ import ghidra.util.exception.CancelledException;
 import ghidra.util.exception.DuplicateNameException;
 import ghidra.util.exception.InvalidInputException;
 import ghidra.util.task.TaskMonitor;
-import ghidra.program.model.lang.LanguageID;
+import ghidra.program.model.data.*;
 
 /**
  * TODO: Provide class-level documentation that describes what this analyzer does.
@@ -130,6 +130,7 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 				}
 
 				rename_function(program, monitor, func_addr_value, func_name);
+				modify_function(program, func_addr_value, args);
 			}catch(Exception e) {
 				log.appendException(e);
 			}
@@ -212,5 +213,32 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 			return;
 		}
 		func.setName(func_name, SourceType.ANALYSIS);
+	}
+
+	void modify_function(Program program, long func_addr_value, int args_num) {
+		Address func_addr=program.getAddressFactory().getDefaultAddressSpace().getAddress(func_addr_value);
+		Function func=program.getFunctionManager().getFunctionAt(func_addr);
+		if(func==null) {
+			return;
+		}
+		if(func.getParameterCount()==args_num/get_pointer_size(program)) {
+			return;
+		}
+
+		try {
+			for(int i=func.getAutoParameterCount();i<args_num/get_pointer_size(program);i++) {
+				ParameterImpl param=null;
+				if(get_pointer_size(program)==8) {
+					param=new ParameterImpl(String.format("param_%d", i+1), new Undefined8DataType(), func.getProgram());
+				}else {
+					param=new ParameterImpl(String.format("param_%d", i+1), new Undefined4DataType(), func.getProgram());
+				}
+				func.addParameter(param, SourceType.USER_DEFINED);
+			}
+			for(int i=func.getAutoParameterCount();i>args_num/get_pointer_size(program);i--) {
+				func.removeParameter(i-1);
+			}
+		}catch(Exception e) {
+		}
 	}
 }
