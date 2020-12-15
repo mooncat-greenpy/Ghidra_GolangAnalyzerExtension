@@ -18,6 +18,9 @@ package golanganalyzerextension;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
 import ghidra.app.cmd.function.CreateFunctionCmd;
 import ghidra.app.services.AbstractAnalyzer;
 import ghidra.app.services.AnalyzerType;
@@ -27,6 +30,7 @@ import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressSetView;
 import ghidra.program.model.listing.Data;
 import ghidra.program.model.listing.Function;
+import ghidra.program.model.listing.Function.FunctionUpdateType;
 import ghidra.program.model.listing.Listing;
 import ghidra.program.model.listing.Parameter;
 import ghidra.program.model.listing.ParameterImpl;
@@ -226,18 +230,22 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 		}
 
 		try {
-			for(int i=func.getAutoParameterCount();i<args_num/get_pointer_size(program);i++) {
-				ParameterImpl param=null;
-				if(get_pointer_size(program)==8) {
-					param=new ParameterImpl(String.format("param_%d", i+1), new Undefined8DataType(), func.getProgram());
+			List<Parameter> new_params=new ArrayList<>();
+			for(int i=0;i<args_num/get_pointer_size(program);i++) {
+				if(i<func.getParameterCount()) {
+					new_params.add(func.getParameter(i));
 				}else {
-					param=new ParameterImpl(String.format("param_%d", i+1), new Undefined4DataType(), func.getProgram());
+					Parameter param=null;
+					if(get_pointer_size(program)==8) {
+						param=new ParameterImpl(String.format("param_%d", i+1), new Undefined8DataType(), func.getProgram());
+					}else {
+						param=new ParameterImpl(String.format("param_%d", i+1), new Undefined4DataType(), func.getProgram());
+					}
+					new_params.add(param);
 				}
-				func.addParameter(param, SourceType.USER_DEFINED);
 			}
-			for(int i=func.getAutoParameterCount();i>args_num/get_pointer_size(program);i--) {
-				func.removeParameter(i-1);
-			}
+
+			func.updateFunction(null, null, new_params, FunctionUpdateType.DYNAMIC_STORAGE_ALL_PARAMS, true, SourceType.ANALYSIS);
 		}catch(Exception e) {
 		}
 	}
