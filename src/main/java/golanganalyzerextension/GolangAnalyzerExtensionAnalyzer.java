@@ -222,30 +222,30 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 	void modify_function(Program program, long func_addr_value, int args_num) {
 		Address func_addr=program.getAddressFactory().getDefaultAddressSpace().getAddress(func_addr_value);
 		Function func=program.getFunctionManager().getFunctionAt(func_addr);
+		int pointer_size=get_pointer_size(program);
 		if(func==null) {
 			return;
 		}
-		if(func.getParameterCount()==args_num/get_pointer_size(program)) {
+		if(func.getParameterCount()==args_num/pointer_size) {
 			return;
 		}
 
 		try {
 			List<Parameter> new_params=new ArrayList<>();
-			for(int i=0;i<args_num/get_pointer_size(program);i++) {
+			for(int i=0;i<args_num/pointer_size;i++) {
+				DataType data_type=null;
 				if(i<func.getParameterCount()) {
-					new_params.add(func.getParameter(i));
+					data_type=func.getParameter(i).getDataType();
+				}else if(pointer_size==8) {
+					data_type=new Undefined8DataType();
 				}else {
-					Parameter param=null;
-					if(get_pointer_size(program)==8) {
-						param=new ParameterImpl(String.format("param_%d", i+1), new Undefined8DataType(), func.getProgram());
-					}else {
-						param=new ParameterImpl(String.format("param_%d", i+1), new Undefined4DataType(), func.getProgram());
-					}
-					new_params.add(param);
+					data_type=new Undefined4DataType();
 				}
+				Parameter param=new ParameterImpl(String.format("param_%d", i+1), data_type, (i+1)*pointer_size, func.getProgram(), SourceType.USER_DEFINED);
+				new_params.add(param);
 			}
 
-			func.updateFunction(null, null, new_params, FunctionUpdateType.DYNAMIC_STORAGE_ALL_PARAMS, true, SourceType.ANALYSIS);
+			func.updateFunction(null, null, new_params, FunctionUpdateType.CUSTOM_STORAGE, true, SourceType.USER_DEFINED);
 		}catch(Exception e) {
 		}
 	}
