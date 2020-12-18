@@ -87,8 +87,9 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 		}
 		int func_num=0;
 		try {
-			// magic and ...
-			func_num=memory.getInt(base.add(8));
+			// magic, two zero bytes, arch(x86=1, arm=4), uintptr size
+			pointer_size=(int)get_address_value(memory, base.add(7), 1);
+			func_num=(int)get_address_value(memory, base.add(8), 4);
 		}catch(MemoryAccessException e) {
 			log.appendException(e);
 			return false;
