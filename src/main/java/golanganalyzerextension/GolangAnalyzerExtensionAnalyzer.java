@@ -122,6 +122,28 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 
 				rename_function(program, monitor, func_addr_value, func_name);
 				modify_function(program, func_addr_value, args);
+
+				int pcfile_offset=(int)get_address_value(memory, base.add(func_info_offset+pointer_size+4*4), 4);
+				long file_no=-1;
+				Address comment_addr=program.getAddressFactory().getDefaultAddressSpace().getAddress(func_addr_value);
+				int j=0;
+				boolean first=true;
+				while(true) {
+					int file_no_add=read_pc_data(memory, base.add(pcfile_offset+j));
+					j+=Integer.toBinaryString(file_no_add).length()/8+1;
+					int byte_size=read_pc_data(memory, base.add(pcfile_offset+j));
+					j+=Integer.toBinaryString(byte_size).length()/8+1;
+					if(file_no_add==0 && !first) {
+						break;
+					}
+					first=false;
+					file_no_add=zig_zag_decode(file_no_add);
+					file_no+=file_no_add;
+					Listing listing=program.getListing();
+					listing.setComment(comment_addr, ghidra.program.model.listing.CodeUnit.PRE_COMMENT, String.format("%s[%d]", file_name_list.get((int)file_no-1), file_no));
+
+					comment_addr=comment_addr.add(byte_size);
+				}
 			}catch(Exception e) {
 				log.appendException(e);
 			}
@@ -239,6 +261,33 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 		}
 	}
 
+	int read_pc_data(Memory memory, Address addr) {
+		int value=0;
+		for(int i=0, shift=0;;i++, shift+=7) {
+			int tmp=0;
+			try{
+				tmp=(int)get_address_value(memory, addr.add(i), 1);
+			}catch(Exception e) {
+				return 0;
+			}
+			value|=(tmp&0x7f)<<shift;
+			if((tmp&0x80)==0) {
+				break;
+			}
+		}
+		return value;
+	}
+
+	int zig_zag_decode(int value) {
+		if((value&1)!=0) {
+			value=(value>>1)+1;
+			value*=-1;
+		}else {
+			value>>=1;
+		}
+		return value;
+	}
+
 	List<String> get_file_list(Program program, Address base, int func_num, int pointer_size) {
 		Memory memory=program.getMemory();
 		Address func_list_base=base.add(8+pointer_size);
@@ -256,5 +305,4 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 		}
 		return file_name_list;
 	}
-
 }
