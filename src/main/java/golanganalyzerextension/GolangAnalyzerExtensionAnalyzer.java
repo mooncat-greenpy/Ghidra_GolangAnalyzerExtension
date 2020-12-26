@@ -12,7 +12,6 @@ import ghidra.app.services.AnalyzerType;
 import ghidra.app.util.importer.MessageLog;
 import ghidra.framework.options.Options;
 import ghidra.program.model.address.Address;
-import ghidra.program.model.address.AddressOutOfBoundsException;
 import ghidra.program.model.address.AddressSetView;
 import ghidra.program.model.listing.Data;
 import ghidra.program.model.listing.Function;
@@ -95,12 +94,7 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 			log.appendException(e);
 			return false;
 		}
-		List<String> file_name_list=null;
-		try {
-			file_name_list=get_file_list(program, base, func_num, pointer_size);
-		}catch(Exception e) {
-			log.appendException(e);
-		}
+		List<String> file_name_list=get_file_list(program, base, func_num, pointer_size);
 		Address func_list_base=base.add(8+pointer_size);
 		for(int i=0; i<func_num; i++) {
 			long func_addr_value=0;
@@ -149,7 +143,7 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 		}else if(size==4) {
 			return memory.getInt(address);
 		}
-		return memory.getByte(address);
+		return memory.getByte(address)&0xff;
 	}
 
 	Address get_gopclntab(Program program, TaskMonitor monitor) {
@@ -245,18 +239,22 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 		}
 	}
 
-	List<String> get_file_list(Program program, Address base, int func_num, int pointer_size) throws MemoryAccessException, AddressOutOfBoundsException, CodeUnitInsertionException {
+	List<String> get_file_list(Program program, Address base, int func_num, int pointer_size) {
 		Memory memory=program.getMemory();
 		Address func_list_base=base.add(8+pointer_size);
 		List<String> file_name_list=new ArrayList<>();
-		long file_name_table_offset=get_address_value(memory, func_list_base.add(func_num*pointer_size*2+pointer_size), pointer_size);
-		Address file_name_table=base.add(file_name_table_offset);
-		long file_name_table_size=get_address_value(memory, file_name_table, 4);
-		for(int i=0;i<file_name_table_size;i++) {
-			long file_name_offset=get_address_value(memory, file_name_table.add(4*i+4),4);
-			String file_name=create_function_name_data(program, base.add(file_name_offset));
-			file_name_list.add(file_name);
+		try {
+			long file_name_table_offset=get_address_value(memory, func_list_base.add(func_num*pointer_size*2+pointer_size), pointer_size);
+			Address file_name_table=base.add(file_name_table_offset);
+			long file_name_table_size=get_address_value(memory, file_name_table, 4);
+			for(int i=1;i<file_name_table_size;i++) {
+				long file_name_offset=get_address_value(memory, file_name_table.add(4*i),4);
+				String file_name=create_function_name_data(program, base.add(file_name_offset));
+				file_name_list.add(file_name);
+			}
+		}catch(Exception e) {
 		}
 		return file_name_list;
 	}
+
 }
