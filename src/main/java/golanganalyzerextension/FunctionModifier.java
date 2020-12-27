@@ -51,10 +51,10 @@ public class FunctionModifier {
 	void init_gopclntab() {
 		this.base=get_gopclntab();
 
-		// magic, two zero bytes, arch(x86=1, arm=4), uintptr size
-		this.quantum=(int)get_address_value(base.add(6), 1);
-		this.pointer_size=(int)get_address_value(base.add(7), 1);
-		this.func_num=(int)get_address_value(base.add(8), 4);
+		// magic, two zero bytes
+		this.quantum=(int)get_address_value(base.add(6), 1);      // arch(x86=1, ?=2, arm=4)
+		this.pointer_size=(int)get_address_value(base.add(7), 1); // pointer size
+		this.func_num=(int)get_address_value(base.add(8), 4);     // number of func
 
 		this.file_name_list=get_file_list();
 	}

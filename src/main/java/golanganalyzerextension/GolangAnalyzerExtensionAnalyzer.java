@@ -23,16 +23,11 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 	@Override
 	public boolean getDefaultEnablement(Program program) {
 
-		// TODO: Return true if analyzer should be enabled by default
-
 		return true;
 	}
 
 	@Override
 	public boolean canAnalyze(Program program) {
-
-		// TODO: Examine 'program' to determine of this analyzer should analyze it.  Return true
-		// if it can.
 
 		return true;
 	}
@@ -49,9 +44,6 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 	@Override
 	public boolean added(Program program, AddressSetView set, TaskMonitor monitor, MessageLog log)
 			throws CancelledException {
-
-		// TODO: Perform analysis when things get added to the 'program'.  Return true if the
-		// analysis succeeded.
 
 		FunctionModifier func_modifier=new FunctionModifier(program, monitor, log);
 		func_modifier.modify();
