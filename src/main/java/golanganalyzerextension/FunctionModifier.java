@@ -31,12 +31,13 @@ public class FunctionModifier {
 	MessageLog log=null;
 	Listing program_listing=null;
 	Memory memory=null;
-	Address base=null;
 
-	List<String> file_name_list=null;
+	Address base=null;
+	int magic=0;
 	int quantum=0;
 	int pointer_size=0;
 	int func_num=0;
+	List<String> file_name_list=null;
 
 	public FunctionModifier(Program program, TaskMonitor monitor, MessageLog log) {
 		this.program=program;
@@ -51,7 +52,8 @@ public class FunctionModifier {
 	void init_gopclntab() {
 		this.base=get_gopclntab();
 
-		// magic, two zero bytes
+		this.magic=(int)get_address_value(base, 4);               // magic
+		                                                          // two zero bytes
 		this.quantum=(int)get_address_value(base.add(6), 1);      // arch(x86=1, ?=2, arm=4)
 		this.pointer_size=(int)get_address_value(base.add(7), 1); // pointer size
 		this.func_num=(int)get_address_value(base.add(8), 4);     // number of func
@@ -173,7 +175,7 @@ public class FunctionModifier {
 
 	List<String> get_file_list() {
 		Address func_list_base=base.add(8+pointer_size);
-		file_name_list=new ArrayList<>();
+		List<String> file_list=new ArrayList<>();
 		try {
 			long file_name_table_offset=get_address_value(func_list_base.add(func_num*pointer_size*2+pointer_size), pointer_size);
 			Address file_name_table=base.add(file_name_table_offset);
@@ -181,12 +183,12 @@ public class FunctionModifier {
 			for(int i=1;i<file_name_table_size;i++) {
 				long file_name_offset=get_address_value(file_name_table.add(4*i),4);
 				String file_name=create_string_data(base.add(file_name_offset));
-				file_name_list.add(file_name);
+				file_list.add(file_name);
 			}
 		}catch(CodeUnitInsertionException e) {
 			log.appendMsg(String.format("Failed get_file_list: %s", e.getMessage()));
 		}
-		return file_name_list;
+		return file_list;
 	}
 
 	String create_string_data(Address address) throws CodeUnitInsertionException {
@@ -210,10 +212,10 @@ public class FunctionModifier {
 			return gopclntab_section.getStart();
 		}
 
-		byte magic[]= {(byte)0xfb,(byte)0xff,(byte)0xff,(byte)0xff};
+		byte go12_magic[]= {(byte)0xfb,(byte)0xff,(byte)0xff,(byte)0xff};
 		Address gopclntab_base=null;
 		while(true) {
-			gopclntab_base=memory.findBytes(gopclntab_base, magic, new byte[] {(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff}, true, monitor);
+			gopclntab_base=memory.findBytes(gopclntab_base, go12_magic, new byte[] {(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff}, true, monitor);
 			if(gopclntab_base==null) {
 				break;
 			}
