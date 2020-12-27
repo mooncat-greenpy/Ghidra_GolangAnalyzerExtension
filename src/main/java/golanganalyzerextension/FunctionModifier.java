@@ -159,7 +159,7 @@ public class FunctionModifier {
 			first=false;
 			line_num_add=zig_zag_decode(line_num_add);
 			line_num+=line_num_add;
-			pc_offset+=byte_size;
+			pc_offset+=byte_size*quantum;
 			String file_name=pc_to_file_name(func_info_offset, pc_offset);
 			if(file_name==null) {
 				file_name="not found";
@@ -219,16 +219,12 @@ public class FunctionModifier {
 			}
 
 			Address func_list_base=gopclntab_base.add(8+pointer_size);
-			try {
-				long func_addr_value=get_address_value(func_list_base.add(0), pointer_size);
-				long func_info_offset=get_address_value(func_list_base.add(pointer_size), pointer_size);
-				long func_entry_value=memory.getInt(gopclntab_base.add(func_info_offset));
-				if(func_addr_value==func_entry_value)
-				{
-					break;
-				}
-			}catch(MemoryAccessException e) {
-				log.appendMsg(String.format("Failed get_gopclntab: %s", e.getMessage()));
+			long func_addr_value=get_address_value(func_list_base.add(0), pointer_size);
+			long func_info_offset=get_address_value(func_list_base.add(pointer_size), pointer_size);
+			long func_entry_value=get_address_value(base.add(func_info_offset), pointer_size);
+			if(func_addr_value==func_entry_value)
+			{
+				break;
 			}
 			gopclntab_base=gopclntab_base.add(4);
 		}
@@ -237,10 +233,7 @@ public class FunctionModifier {
 
 	String pc_to_file_name(long func_info_offset, int target_pc_offset) {
 		int pcfile_offset=0;
-		try {
-			pcfile_offset=(int)get_address_value(base.add(func_info_offset+pointer_size+4*4), 4);
-		} catch (Exception e) {
-		}
+		pcfile_offset=(int)get_address_value(base.add(func_info_offset+pointer_size+4*4), 4);
 
 		int pc_offset=0;
 		long file_no=-1;
@@ -257,7 +250,7 @@ public class FunctionModifier {
 			first=false;
 			file_no_add=zig_zag_decode(file_no_add);
 			file_no+=file_no_add;
-			pc_offset+=byte_size;
+			pc_offset+=byte_size*quantum;
 
 			if(target_pc_offset<=pc_offset) {
 				if((int)file_no-1<0 || file_name_list.size()<=(int)file_no-1) {
@@ -283,11 +276,7 @@ public class FunctionModifier {
 		int value=0;
 		for(int i=0, shift=0;;i++, shift+=7) {
 			int tmp=0;
-			try{
-				tmp=(int)get_address_value(addr.add(i), 1);
-			}catch(Exception e) {
-				return 0;
-			}
+			tmp=(int)get_address_value(addr.add(i), 1);
 			value|=(tmp&0x7f)<<shift;
 			if((tmp&0x80)==0) {
 				break;
