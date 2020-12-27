@@ -123,24 +123,30 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 				rename_function(program, monitor, func_addr_value, func_name);
 				modify_function(program, func_addr_value, args);
 
-				int pcfile_offset=(int)get_address_value(memory, base.add(func_info_offset+pointer_size+4*4), 4);
-				long file_no=-1;
+				int pcln_offset=(int)get_address_value(memory, base.add(func_info_offset+pointer_size+5*4), 4);
+				long line_num=-1;
 				Address comment_addr=program.getAddressFactory().getDefaultAddressSpace().getAddress(func_addr_value);
 				int j=0;
 				boolean first=true;
+				int pc_offset=0;
 				while(true) {
-					int file_no_add=read_pc_data(memory, base.add(pcfile_offset+j));
-					j+=Integer.toBinaryString(file_no_add).length()/8+1;
-					int byte_size=read_pc_data(memory, base.add(pcfile_offset+j));
+					int line_num_add=read_pc_data(memory, base.add(pcln_offset+j));
+					j+=Integer.toBinaryString(line_num_add).length()/8+1;
+					int byte_size=read_pc_data(memory, base.add(pcln_offset+j));
 					j+=Integer.toBinaryString(byte_size).length()/8+1;
-					if(file_no_add==0 && !first) {
+					if(line_num_add==0 && !first) {
 						break;
 					}
 					first=false;
-					file_no_add=zig_zag_decode(file_no_add);
-					file_no+=file_no_add;
+					line_num_add=zig_zag_decode(line_num_add);
+					line_num+=line_num_add;
+					pc_offset+=byte_size;
+					String file_name=pc_to_file_name(memory, base, func_info_offset, pc_offset, pointer_size, file_name_list);
+					if(file_name==null) {
+						file_name="not found";
+					}
 					Listing listing=program.getListing();
-					listing.setComment(comment_addr, ghidra.program.model.listing.CodeUnit.PRE_COMMENT, String.format("%s[%d]", file_name_list.get((int)file_no-1), file_no));
+					listing.setComment(comment_addr, ghidra.program.model.listing.CodeUnit.PRE_COMMENT, String.format("%s:%d", file_name, line_num));
 
 					comment_addr=comment_addr.add(byte_size);
 				}
@@ -276,6 +282,40 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 			}
 		}
 		return value;
+	}
+
+	String pc_to_file_name(Memory memory, Address base, long func_info_offset, int target_pc_offset, int pointer_size, List<String> file_name_list) {
+		int pcfile_offset=0;
+		try {
+			pcfile_offset=(int)get_address_value(memory, base.add(func_info_offset+pointer_size+4*4), 4);
+		} catch (Exception e) {
+		}
+
+		int pc_offset=0;
+		long file_no=-1;
+		int i=0;
+		boolean first=true;
+		while(true) {
+			int file_no_add=read_pc_data(memory, base.add(pcfile_offset+i));
+			i+=Integer.toBinaryString(file_no_add).length()/8+1;
+			int byte_size=read_pc_data(memory, base.add(pcfile_offset+i));
+			i+=Integer.toBinaryString(byte_size).length()/8+1;
+			if(file_no_add==0 && !first) {
+				break;
+			}
+			first=false;
+			file_no_add=zig_zag_decode(file_no_add);
+			file_no+=file_no_add;
+			pc_offset+=byte_size;
+
+			if(target_pc_offset<=pc_offset) {
+				if((int)file_no-1<0 || file_name_list.size()<=(int)file_no-1) {
+					return null;
+				}
+				return file_name_list.get((int)file_no-1);
+			}
+		}
+		return null;
 	}
 
 	int zig_zag_decode(int value) {
