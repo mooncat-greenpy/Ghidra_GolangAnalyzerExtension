@@ -1,6 +1,7 @@
 package golanganalyzerextension;
 
 import ghidra.app.services.AbstractAnalyzer;
+import ghidra.app.services.AnalysisPriority;
 import ghidra.app.services.AnalyzerType;
 import ghidra.app.util.importer.MessageLog;
 import ghidra.framework.options.Options;
@@ -18,6 +19,7 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 		// TODO: Name the analyzer and give it a description.
 
 		super("My Analyzer", "Analyzer description goes here", AnalyzerType.BYTE_ANALYZER);
+		setPriority(AnalysisPriority.HIGHEST_PRIORITY);
 	}
 
 	@Override
