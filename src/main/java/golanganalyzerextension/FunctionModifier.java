@@ -220,16 +220,19 @@ public class FunctionModifier {
 				break;
 			}
 
-			Address func_list_base=gopclntab_base.add(8+pointer_size);
-			long func_addr_value=get_address_value(func_list_base.add(0), pointer_size);
-			long func_info_offset=get_address_value(func_list_base.add(pointer_size), pointer_size);
-			long func_entry_value=get_address_value(base.add(func_info_offset), pointer_size);
+			int size=(int)get_address_value(gopclntab_base.add(7), 1); // pointer size
+
+			Address func_list_base=gopclntab_base.add(8+size);
+			long func_addr_value=get_address_value(func_list_base.add(0), size);
+			long func_info_offset=get_address_value(func_list_base.add(size), size);
+			long func_entry_value=get_address_value(gopclntab_base.add(func_info_offset), size);
 			if(func_addr_value==func_entry_value)
 			{
 				break;
 			}
 			gopclntab_base=gopclntab_base.add(4);
 		}
+
 		return gopclntab_base;
 	}
 
