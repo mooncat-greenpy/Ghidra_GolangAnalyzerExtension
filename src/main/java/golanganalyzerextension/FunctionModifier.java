@@ -51,6 +51,10 @@ public class FunctionModifier {
 
 	void init_gopclntab() {
 		this.base=get_gopclntab();
+		if(this.base==null) {
+			log.appendMsg("Failed get gopclntab");
+			return;
+		}
 
 		this.magic=(int)get_address_value(base, 4);               // magic
 		                                                          // two zero bytes
@@ -62,6 +66,11 @@ public class FunctionModifier {
 	}
 
 	void modify() {
+		if(base==null) {
+			log.appendMsg("Error base address is null");
+			return;
+		}
+
 		Address func_list_base=base.add(8+pointer_size);
 		for(int i=0; i<func_num; i++) {
 			long func_addr_value=get_address_value(func_list_base.add(i*pointer_size*2), pointer_size);
@@ -116,6 +125,7 @@ public class FunctionModifier {
 		Address func_addr=program.getAddressFactory().getDefaultAddressSpace().getAddress(func_addr_value);
 		Function func=program.getFunctionManager().getFunctionAt(func_addr);
 		if(func==null) {
+			log.appendMsg(String.format("Failed get %x function", func_addr_value));
 			return;
 		}
 		if(func.getParameterCount()==args_num/pointer_size) {
@@ -147,6 +157,10 @@ public class FunctionModifier {
 		int pcln_offset=(int)get_address_value(base.add(func_info_offset+pointer_size+5*4), 4);
 		long line_num=-1;
 		Address comment_addr=program.getAddressFactory().getDefaultAddressSpace().getAddress(func_addr_value);
+		if(comment_addr==null) {
+			log.appendMsg(String.format("Failed get %x comment address", func_addr_value));
+			return;
+		}
 		int j=0;
 		boolean first=true;
 		int pc_offset=0;
@@ -174,11 +188,17 @@ public class FunctionModifier {
 	}
 
 	List<String> get_file_list() {
-		Address func_list_base=base.add(8+pointer_size);
 		List<String> file_list=new ArrayList<>();
+		Address func_list_base=base.add(8+pointer_size);
+		if(func_list_base==null) {
+			return file_list;
+		}
 		try {
 			long file_name_table_offset=get_address_value(func_list_base.add(func_num*pointer_size*2+pointer_size), pointer_size);
 			Address file_name_table=base.add(file_name_table_offset);
+			if(file_name_table==null) {
+				return file_list;
+			}
 			long file_name_table_size=get_address_value(file_name_table, 4);
 			for(int i=1;i<file_name_table_size;i++) {
 				long file_name_offset=get_address_value(file_name_table.add(4*i),4);
@@ -196,7 +216,7 @@ public class FunctionModifier {
 		if(func_name_data==null) {
 			func_name_data=program_listing.createData(address, new StringDataType());
 		}else if(!func_name_data.getDataType().isEquivalent((new StringDataType()))) {
-			return null;
+			return "not found";
 		}
 		return (String)func_name_data.getValue();
 	}
@@ -223,6 +243,9 @@ public class FunctionModifier {
 			int size=(int)get_address_value(gopclntab_base.add(7), 1); // pointer size
 
 			Address func_list_base=gopclntab_base.add(8+size);
+			if(func_list_base==null) {
+				gopclntab_base=gopclntab_base.add(4);
+			}
 			long func_addr_value=get_address_value(func_list_base.add(0), size);
 			long func_info_offset=get_address_value(func_list_base.add(size), size);
 			long func_entry_value=get_address_value(gopclntab_base.add(func_info_offset), size);
@@ -259,6 +282,7 @@ public class FunctionModifier {
 
 			if(target_pc_offset<=pc_offset) {
 				if((int)file_no-1<0 || file_name_list.size()<=(int)file_no-1) {
+					log.appendMsg(String.format("Error file name list index out of range: %x", (int)file_no-1));
 					return null;
 				}
 				return file_name_list.get((int)file_no-1);
