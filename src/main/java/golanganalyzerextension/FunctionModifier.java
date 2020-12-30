@@ -7,31 +7,21 @@ import ghidra.app.cmd.function.CreateFunctionCmd;
 import ghidra.app.util.importer.MessageLog;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.DataType;
-import ghidra.program.model.data.StringDataType;
 import ghidra.program.model.data.Undefined4DataType;
 import ghidra.program.model.data.Undefined8DataType;
-import ghidra.program.model.listing.Data;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Function.FunctionUpdateType;
 import ghidra.program.model.listing.Listing;
 import ghidra.program.model.listing.Parameter;
 import ghidra.program.model.listing.ParameterImpl;
 import ghidra.program.model.listing.Program;
-import ghidra.program.model.mem.Memory;
-import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.program.model.mem.MemoryBlock;
 import ghidra.program.model.symbol.SourceType;
 import ghidra.program.model.util.CodeUnitInsertionException;
 import ghidra.util.task.TaskMonitor;
 
 
-public class FunctionModifier {
-	Program program=null;
-	TaskMonitor monitor=null;
-	MessageLog log=null;
-	Listing program_listing=null;
-	Memory memory=null;
-
+public class FunctionModifier extends GolangBinary {
 	Address base=null;
 	int magic=0;
 	int quantum=0;
@@ -40,6 +30,8 @@ public class FunctionModifier {
 	List<String> file_name_list=null;
 
 	public FunctionModifier(Program program, TaskMonitor monitor, MessageLog log) {
+		super(program, monitor, log);
+
 		this.program=program;
 		this.monitor=monitor;
 		this.log=log;
@@ -211,16 +203,6 @@ public class FunctionModifier {
 		return file_list;
 	}
 
-	String create_string_data(Address address) throws CodeUnitInsertionException {
-		Data func_name_data=program_listing.getDefinedDataAt(address);
-		if(func_name_data==null) {
-			func_name_data=program_listing.createData(address, new StringDataType());
-		}else if(!func_name_data.getDataType().isEquivalent((new StringDataType()))) {
-			return "not found";
-		}
-		return (String)func_name_data.getValue();
-	}
-
 	Address get_gopclntab() {
 		MemoryBlock gopclntab_section=null;
 		for (MemoryBlock mb : memory.getBlocks()) {
@@ -312,19 +294,5 @@ public class FunctionModifier {
 			}
 		}
 		return value;
-	}
-
-	long get_address_value(Address address, int size) {
-		try {
-			if(size==8) {
-				return memory.getLong(address);
-			}else if(size==4) {
-				return memory.getInt(address);
-			}
-			return memory.getByte(address)&0xff;
-		}catch(MemoryAccessException e) {
-			log.appendMsg(String.format("Failed get address value: %s", e.getMessage()));
-		}
-		return 0;
 	}
 }
