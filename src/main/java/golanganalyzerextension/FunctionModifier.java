@@ -2,18 +2,14 @@ package golanganalyzerextension;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
-import ghidra.app.cmd.function.CreateFunctionCmd;
 import ghidra.app.util.importer.MessageLog;
 import ghidra.program.model.address.Address;
-import ghidra.program.model.data.DataType;
-import ghidra.program.model.data.Undefined4DataType;
-import ghidra.program.model.data.Undefined8DataType;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Function.FunctionUpdateType;
 import ghidra.program.model.listing.Listing;
 import ghidra.program.model.listing.Parameter;
-import ghidra.program.model.listing.ParameterImpl;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.MemoryBlock;
 import ghidra.program.model.symbol.SourceType;
@@ -27,18 +23,14 @@ public class FunctionModifier extends GolangBinary {
 	int quantum=0;
 	int pointer_size=0;
 	int func_num=0;
+	List<GolangFunction> gofunc_list=null;
 	List<String> file_name_list=null;
 
 	public FunctionModifier(Program program, TaskMonitor monitor, MessageLog log) {
 		super(program, monitor, log);
 
-		this.program=program;
-		this.monitor=monitor;
-		this.log=log;
-		this.program_listing=program.getListing();
-		this.memory=program.getMemory();
-
 		init_gopclntab();
+		init_functions();
 	}
 
 	void init_gopclntab() {
@@ -57,125 +49,77 @@ public class FunctionModifier extends GolangBinary {
 		this.file_name_list=get_file_list();
 	}
 
+	void init_functions() {
+		if(base==null) {
+			log.appendMsg("Error base address is null");
+			return;
+		}
+
+		gofunc_list=new ArrayList<>();
+		Address func_list_base=base.add(8+pointer_size);
+		for(int i=0; i<func_num; i++) {
+			long func_addr_value=get_address_value(func_list_base.add(i*pointer_size*2), pointer_size);
+			long func_info_offset=get_address_value(func_list_base.add(i*pointer_size*2+pointer_size), pointer_size);
+			long func_entry_value=get_address_value(base.add(func_info_offset), pointer_size);
+			if(func_addr_value!=func_entry_value)
+			{
+				log.appendMsg(String.format("Failed wrong func addr %x %x", func_addr_value, func_entry_value));
+				continue;
+			}
+
+			GolangFunction gofunc=new GolangFunction(program, monitor, log, base, func_info_offset, file_name_list);
+			gofunc_list.add(gofunc);
+		}
+	}
+
 	void modify() {
 		if(base==null) {
 			log.appendMsg("Error base address is null");
 			return;
 		}
 
-		Address func_list_base=base.add(8+pointer_size);
-		for(int i=0; i<func_num; i++) {
-			long func_addr_value=get_address_value(func_list_base.add(i*pointer_size*2), pointer_size);
-			long func_info_offset=get_address_value(func_list_base.add(i*pointer_size*2+pointer_size), pointer_size);
-
-			analyze_func(func_addr_value, func_info_offset);
+		for(GolangFunction gofunc: gofunc_list) {
+		    rename_func(gofunc);
+		    modify_func_param(gofunc);
+		    add_func_comment(gofunc);
 		}
 	}
 
-	boolean analyze_func(long func_addr_value, long func_info_offset) {
-		long func_entry_value=get_address_value(base.add(func_info_offset), pointer_size);
-		int func_name_offset=(int)get_address_value(base.add(func_info_offset+pointer_size), 4);
-		int args=(int)get_address_value(base.add(func_info_offset+pointer_size+4), 4);
+	void rename_func(GolangFunction gofunc) {
+		Function func=gofunc.get_func();
+		String func_name=gofunc.get_func_name();
 
-		if(func_addr_value!=func_entry_value) {
-			log.appendMsg(String.format("Failed wrong func addr %x %x", func_addr_value, func_entry_value));
-			return false;
-		}
-
-		String func_name="not found";
-		try {
-			func_name=create_string_data(base.add(func_name_offset));
-		}catch(CodeUnitInsertionException e) {
-			log.appendMsg(String.format("Failed create file name: %s", e.getMessage()));
-		}
-
-		rename_func(func_addr_value, func_name);
-		modify_func_param(func_addr_value, args);
-		add_func_comment(func_addr_value, func_info_offset);
-
-		return true;
-	}
-
-	void rename_func(long func_addr_value, String func_name) {
-		Address func_addr=program.getAddressFactory().getDefaultAddressSpace().getAddress(func_addr_value);
-		Function func=program.getFunctionManager().getFunctionAt(func_addr);
-		if(func==null) {
-			CreateFunctionCmd cmd=new CreateFunctionCmd(func_name, func_addr, null, SourceType.ANALYSIS);
-			cmd.applyTo(program, monitor);
-			return;
-		}else if(func.getName().equals(func_name)) {
+		if(func.getName().equals(func_name)) {
 			return;
 		}
 		try {
 			func.setName(func_name, SourceType.ANALYSIS);
 		}catch(Exception e) {
-			log.appendMsg("Failed set function name");
+			log.appendMsg(String.format("Failed set function name: %s", e.getMessage()));
 		}
 	}
 
-	void modify_func_param(long func_addr_value, int args_num) {
-		Address func_addr=program.getAddressFactory().getDefaultAddressSpace().getAddress(func_addr_value);
-		Function func=program.getFunctionManager().getFunctionAt(func_addr);
-		if(func==null) {
-			log.appendMsg(String.format("Failed get %x function", func_addr_value));
-			return;
-		}
-		if(func.getParameterCount()==args_num/pointer_size) {
+	void modify_func_param(GolangFunction gofunc) {
+		Function func=gofunc.get_func();
+		List<Parameter> new_params=gofunc.get_params();
+		if(new_params==null) {
 			return;
 		}
 
 		try {
-			List<Parameter> new_params=new ArrayList<>();
-			for(int i=0;i<args_num/pointer_size;i++) {
-				DataType data_type=null;
-				if(i<func.getParameterCount()) {
-					data_type=func.getParameter(i).getDataType();
-				}else if(pointer_size==8) {
-					data_type=new Undefined8DataType();
-				}else {
-					data_type=new Undefined4DataType();
-				}
-				Parameter param=new ParameterImpl(String.format("param_%d", i+1), data_type, (i+1)*pointer_size, func.getProgram(), SourceType.USER_DEFINED);
-				new_params.add(param);
-			}
-
 			func.updateFunction(null, null, new_params, FunctionUpdateType.CUSTOM_STORAGE, true, SourceType.USER_DEFINED);
 		}catch(Exception e) {
-			log.appendMsg(String.format("Failed set function parameter"));
+			log.appendMsg(String.format("Failed set function parameter: %s", e.getMessage()));
 		}
 	}
 
-	void add_func_comment(long func_addr_value, long func_info_offset) {
-		int pcln_offset=(int)get_address_value(base.add(func_info_offset+pointer_size+5*4), 4);
-		long line_num=-1;
-		Address comment_addr=program.getAddressFactory().getDefaultAddressSpace().getAddress(func_addr_value);
-		if(comment_addr==null) {
-			log.appendMsg(String.format("Failed get %x comment address", func_addr_value));
-			return;
-		}
-		int j=0;
-		boolean first=true;
-		int pc_offset=0;
-		while(true) {
-			int line_num_add=read_pc_data(base.add(pcln_offset+j));
-			j+=Integer.toBinaryString(line_num_add).length()/8+1;
-			int byte_size=read_pc_data(base.add(pcln_offset+j));
-			j+=Integer.toBinaryString(byte_size).length()/8+1;
-			if(line_num_add==0 && !first) {
-				break;
-			}
-			first=false;
-			line_num_add=zig_zag_decode(line_num_add);
-			line_num+=line_num_add;
-			pc_offset+=byte_size*quantum;
-			String file_name=pc_to_file_name(func_info_offset, pc_offset);
-			if(file_name==null) {
-				file_name="not found";
-			}
-			Listing listing=program.getListing();
-			listing.setComment(comment_addr, ghidra.program.model.listing.CodeUnit.PRE_COMMENT, String.format("%s:%d", file_name, line_num));
+	void add_func_comment(GolangFunction gofunc) {
+		Address addr=gofunc.get_func_addr();
+		Map<Integer, String> comment_map=gofunc.get_file_line_comment_map();
+		Listing listing=program.getListing();
 
-			comment_addr=comment_addr.add(byte_size);
+		for(Integer key: comment_map.keySet()) {
+			listing.setComment(addr.add(key), ghidra.program.model.listing.CodeUnit.PRE_COMMENT, comment_map.get(key));
 		}
 	}
 
@@ -239,60 +183,5 @@ public class FunctionModifier extends GolangBinary {
 		}
 
 		return gopclntab_base;
-	}
-
-	String pc_to_file_name(long func_info_offset, int target_pc_offset) {
-		int pcfile_offset=0;
-		pcfile_offset=(int)get_address_value(base.add(func_info_offset+pointer_size+4*4), 4);
-
-		int pc_offset=0;
-		long file_no=-1;
-		int i=0;
-		boolean first=true;
-		while(true) {
-			int file_no_add=read_pc_data(base.add(pcfile_offset+i));
-			i+=Integer.toBinaryString(file_no_add).length()/8+1;
-			int byte_size=read_pc_data(base.add(pcfile_offset+i));
-			i+=Integer.toBinaryString(byte_size).length()/8+1;
-			if(file_no_add==0 && !first) {
-				break;
-			}
-			first=false;
-			file_no_add=zig_zag_decode(file_no_add);
-			file_no+=file_no_add;
-			pc_offset+=byte_size*quantum;
-
-			if(target_pc_offset<=pc_offset) {
-				if((int)file_no-1<0 || file_name_list.size()<=(int)file_no-1) {
-					log.appendMsg(String.format("Error file name list index out of range: %x", (int)file_no-1));
-					return null;
-				}
-				return file_name_list.get((int)file_no-1);
-			}
-		}
-		return null;
-	}
-
-	int zig_zag_decode(int value) {
-		if((value&1)!=0) {
-			value=(value>>1)+1;
-			value*=-1;
-		}else {
-			value>>=1;
-		}
-		return value;
-	}
-
-	int read_pc_data(Address addr) {
-		int value=0;
-		for(int i=0, shift=0;;i++, shift+=7) {
-			int tmp=0;
-			tmp=(int)get_address_value(addr.add(i), 1);
-			value|=(tmp&0x7f)<<shift;
-			if((tmp&0x80)==0) {
-				break;
-			}
-		}
-		return value;
 	}
 }
