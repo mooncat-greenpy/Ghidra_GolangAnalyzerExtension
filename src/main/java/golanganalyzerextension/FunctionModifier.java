@@ -13,7 +13,6 @@ import ghidra.program.model.listing.Parameter;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.MemoryBlock;
 import ghidra.program.model.symbol.SourceType;
-import ghidra.program.model.util.CodeUnitInsertionException;
 import ghidra.util.task.TaskMonitor;
 
 
@@ -55,20 +54,17 @@ public class FunctionModifier extends GolangBinary {
 		if(func_list_base==null) {
 			return;
 		}
-		try {
-			long file_name_table_offset=get_address_value(func_list_base.add(func_num*pointer_size*2+pointer_size), pointer_size);
-			Address file_name_table=base.add(file_name_table_offset);
-			if(file_name_table==null) {
-				return;
-			}
-			long file_name_table_size=get_address_value(file_name_table, 4);
-			for(int i=1;i<file_name_table_size;i++) {
-				long file_name_offset=get_address_value(file_name_table.add(4*i),4);
-				String file_name=create_string_data(base.add(file_name_offset));
-				file_name_list.add(file_name);
-			}
-		}catch(CodeUnitInsertionException e) {
-			log.appendMsg(String.format("Failed get_file_list: %s", e.getMessage()));
+
+		long file_name_table_offset=get_address_value(func_list_base.add(func_num*pointer_size*2+pointer_size), pointer_size);
+		Address file_name_table=base.add(file_name_table_offset);
+		if(file_name_table==null) {
+			return;
+		}
+		long file_name_table_size=get_address_value(file_name_table, 4);
+		for(int i=1;i<file_name_table_size;i++) {
+			long file_name_offset=get_address_value(file_name_table.add(4*i),4);
+			String file_name=create_string_data(base.add(file_name_offset));
+			file_name_list.add(file_name);
 		}
 	}
 
@@ -112,7 +108,7 @@ public class FunctionModifier extends GolangBinary {
 		Function func=gofunc.get_func();
 		String func_name=gofunc.get_func_name();
 
-		if(func.getName().equals(func_name)) {
+		if(func_name.equals("not found") || func.getName().equals(func_name)) {
 			return;
 		}
 		try {

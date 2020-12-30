@@ -1,7 +1,9 @@
 package golanganalyzerextension;
 
+
 import ghidra.app.util.importer.MessageLog;
 import ghidra.program.model.address.Address;
+import ghidra.program.model.data.DataTypeConflictException;
 import ghidra.program.model.data.StringDataType;
 import ghidra.program.model.listing.Data;
 import ghidra.program.model.listing.Listing;
@@ -40,10 +42,15 @@ public class GolangBinary {
 		return 0;
 	}
 
-	String create_string_data(Address address) throws CodeUnitInsertionException {
+	String create_string_data(Address address){
 		Data func_name_data=program_listing.getDefinedDataAt(address);
 		if(func_name_data==null) {
-			func_name_data=program_listing.createData(address, new StringDataType());
+			try {
+				func_name_data=program_listing.createData(address, new StringDataType());
+			} catch (CodeUnitInsertionException | DataTypeConflictException e) {
+				log.appendMsg(String.format("Failed create_string_data: %s %x", e.getMessage(), address.getOffset()));
+				return "not found";
+			}
 		}else if(!func_name_data.getDataType().isEquivalent((new StringDataType()))) {
 			return "not found";
 		}

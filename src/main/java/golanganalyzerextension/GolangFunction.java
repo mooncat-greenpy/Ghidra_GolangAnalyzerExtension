@@ -16,7 +16,6 @@ import ghidra.program.model.listing.Parameter;
 import ghidra.program.model.listing.ParameterImpl;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.symbol.SourceType;
-import ghidra.program.model.util.CodeUnitInsertionException;
 import ghidra.util.task.TaskMonitor;
 
 public class GolangFunction extends GolangBinary {
@@ -65,12 +64,7 @@ public class GolangFunction extends GolangBinary {
 
 	void init_func_name() {
 		int func_name_offset=(int)get_address_value(base.add(info_offset+pointer_size), 4);
-		func_name="not found";
-		try {
-			func_name=create_string_data(base.add(func_name_offset));
-		}catch(CodeUnitInsertionException e) {
-			log.appendMsg(String.format("Failed create file name: %s", e.getMessage()));
-		}		
+		func_name=create_string_data(base.add(func_name_offset));
 	}
 
 	void init_params() {
