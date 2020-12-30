@@ -43,17 +43,17 @@ public class GolangBinary {
 	}
 
 	String create_string_data(Address address){
-		Data func_name_data=program_listing.getDefinedDataAt(address);
-		if(func_name_data==null) {
+		Data string_data=program_listing.getDefinedDataAt(address);
+		if(string_data==null) {
 			try {
-				func_name_data=program_listing.createData(address, new StringDataType());
+				string_data=program_listing.createData(address, new StringDataType());
 			} catch (CodeUnitInsertionException | DataTypeConflictException e) {
 				log.appendMsg(String.format("Failed create_string_data: %s %x", e.getMessage(), address.getOffset()));
 				return "not found";
 			}
-		}else if(!func_name_data.getDataType().isEquivalent((new StringDataType()))) {
+		}else if(!string_data.getDataType().isEquivalent((new StringDataType()))) {
 			return "not found";
 		}
-		return (String)func_name_data.getValue();
+		return (String)string_data.getValue();
 	}
 }
