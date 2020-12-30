@@ -46,7 +46,30 @@ public class FunctionModifier extends GolangBinary {
 		this.pointer_size=(int)get_address_value(base.add(7), 1); // pointer size
 		this.func_num=(int)get_address_value(base.add(8), 4);     // number of func
 
-		this.file_name_list=get_file_list();
+		init_file_name_list();
+	}
+
+	void init_file_name_list() {
+		file_name_list=new ArrayList<>();
+		Address func_list_base=base.add(8+pointer_size);
+		if(func_list_base==null) {
+			return;
+		}
+		try {
+			long file_name_table_offset=get_address_value(func_list_base.add(func_num*pointer_size*2+pointer_size), pointer_size);
+			Address file_name_table=base.add(file_name_table_offset);
+			if(file_name_table==null) {
+				return;
+			}
+			long file_name_table_size=get_address_value(file_name_table, 4);
+			for(int i=1;i<file_name_table_size;i++) {
+				long file_name_offset=get_address_value(file_name_table.add(4*i),4);
+				String file_name=create_string_data(base.add(file_name_offset));
+				file_name_list.add(file_name);
+			}
+		}catch(CodeUnitInsertionException e) {
+			log.appendMsg(String.format("Failed get_file_list: %s", e.getMessage()));
+		}
 	}
 
 	void init_functions() {
@@ -121,30 +144,6 @@ public class FunctionModifier extends GolangBinary {
 		for(Integer key: comment_map.keySet()) {
 			listing.setComment(addr.add(key), ghidra.program.model.listing.CodeUnit.PRE_COMMENT, comment_map.get(key));
 		}
-	}
-
-	List<String> get_file_list() {
-		List<String> file_list=new ArrayList<>();
-		Address func_list_base=base.add(8+pointer_size);
-		if(func_list_base==null) {
-			return file_list;
-		}
-		try {
-			long file_name_table_offset=get_address_value(func_list_base.add(func_num*pointer_size*2+pointer_size), pointer_size);
-			Address file_name_table=base.add(file_name_table_offset);
-			if(file_name_table==null) {
-				return file_list;
-			}
-			long file_name_table_size=get_address_value(file_name_table, 4);
-			for(int i=1;i<file_name_table_size;i++) {
-				long file_name_offset=get_address_value(file_name_table.add(4*i),4);
-				String file_name=create_string_data(base.add(file_name_offset));
-				file_list.add(file_name);
-			}
-		}catch(CodeUnitInsertionException e) {
-			log.appendMsg(String.format("Failed get_file_list: %s", e.getMessage()));
-		}
-		return file_list;
 	}
 
 	Address get_gopclntab() {
