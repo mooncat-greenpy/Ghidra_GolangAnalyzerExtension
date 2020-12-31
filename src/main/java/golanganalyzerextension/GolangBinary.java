@@ -49,9 +49,23 @@ public class GolangBinary {
 				string_data=program_listing.createData(address, new StringDataType());
 			} catch (CodeUnitInsertionException | DataTypeConflictException e) {
 				log.appendMsg(String.format("Failed create_string_data: %s %x", e.getMessage(), address.getOffset()));
-				return "not found";
 			}
 		}else if(!string_data.getDataType().isEquivalent((new StringDataType()))) {
+			return "not found";
+		}
+		if(string_data==null) {
+			try {
+				Address zero_addr=memory.findBytes(address, new byte[] {(byte)0x0}, new byte[] {(byte)0xff}, true, monitor);
+				if(zero_addr==null) {
+					return "not found";
+				}
+				int size=(int)(zero_addr.getOffset()-address.getOffset());
+				byte[] bytes=new byte[size];
+				memory.getBytes(address, bytes, 0, size);
+				return new String(bytes);
+			} catch (MemoryAccessException e) {
+				log.appendMsg(String.format("Failed read bytes string: %s %x", e.getMessage(), address.getOffset()));
+			}
 			return "not found";
 		}
 		return (String)string_data.getValue();
