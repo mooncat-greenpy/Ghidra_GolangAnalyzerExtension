@@ -19,6 +19,7 @@ public class GolangBinary {
 	MessageLog log=null;
 	Listing program_listing=null;
 	Memory memory=null;
+	boolean ok=false;
 
 	public GolangBinary(Program program, TaskMonitor monitor, MessageLog log) {
 		this.program=program;
@@ -26,6 +27,7 @@ public class GolangBinary {
 		this.log=log;
 		this.program_listing=program.getListing();
 		this.memory=program.getMemory();
+		this.ok=false;
 	}
 
 	long get_address_value(Address address, int size) {

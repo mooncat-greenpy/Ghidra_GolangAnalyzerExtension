@@ -28,15 +28,23 @@ public class FunctionModifier extends GolangBinary {
 	public FunctionModifier(Program program, TaskMonitor monitor, MessageLog log) {
 		super(program, monitor, log);
 
-		init_gopclntab();
-		init_functions();
+		if(!init_gopclntab()) {
+			return;
+		}
+		if(!init_file_name_list()) {
+			return;
+		}
+		if(!init_functions()) {
+			return;
+		}
+		ok=true;
 	}
 
-	void init_gopclntab() {
+	boolean init_gopclntab() {
 		this.base=get_gopclntab();
 		if(this.base==null) {
 			log.appendMsg("Failed get gopclntab");
-			return;
+			return false;
 		}
 
 		this.magic=(int)get_address_value(base, 4);               // magic
@@ -44,21 +52,20 @@ public class FunctionModifier extends GolangBinary {
 		this.quantum=(int)get_address_value(base.add(6), 1);      // arch(x86=1, ?=2, arm=4)
 		this.pointer_size=(int)get_address_value(base.add(7), 1); // pointer size
 		this.func_num=(int)get_address_value(base.add(8), 4);     // number of func
-
-		init_file_name_list();
+		return true;
 	}
 
-	void init_file_name_list() {
+	boolean init_file_name_list() {
 		file_name_list=new ArrayList<>();
 		Address func_list_base=base.add(8+pointer_size);
 		if(func_list_base==null) {
-			return;
+			return false;
 		}
 
 		long file_name_table_offset=get_address_value(func_list_base.add(func_num*pointer_size*2+pointer_size), pointer_size);
 		Address file_name_table=base.add(file_name_table_offset);
 		if(file_name_table==null) {
-			return;
+			return false;
 		}
 		long file_name_table_size=get_address_value(file_name_table, 4);
 		for(int i=1;i<file_name_table_size;i++) {
@@ -66,16 +73,15 @@ public class FunctionModifier extends GolangBinary {
 			String file_name=create_string_data(base.add(file_name_offset));
 			file_name_list.add(file_name);
 		}
+		return true;
 	}
 
-	void init_functions() {
-		if(base==null) {
-			log.appendMsg("Error base address is null");
-			return;
-		}
-
+	boolean init_functions() {
 		gofunc_list=new ArrayList<>();
 		Address func_list_base=base.add(8+pointer_size);
+		if(func_list_base==null) {
+			return false;
+		}
 		for(int i=0; i<func_num; i++) {
 			long func_addr_value=get_address_value(func_list_base.add(i*pointer_size*2), pointer_size);
 			long func_info_offset=get_address_value(func_list_base.add(i*pointer_size*2+pointer_size), pointer_size);
@@ -89,11 +95,12 @@ public class FunctionModifier extends GolangBinary {
 			GolangFunction gofunc=new GolangFunction(program, monitor, log, base, func_info_offset, file_name_list);
 			gofunc_list.add(gofunc);
 		}
+		return true;
 	}
 
 	void modify() {
-		if(base==null) {
-			log.appendMsg("Error base address is null");
+		if(!ok) {
+			log.appendMsg("Failed ok is false");
 			return;
 		}
 
