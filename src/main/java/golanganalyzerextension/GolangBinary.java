@@ -72,4 +72,8 @@ public class GolangBinary {
 		}
 		return (String)string_data.getValue();
 	}
+
+	boolean is_ok() {
+		return ok;
+	}
 }

@@ -40,10 +40,14 @@ public class GolangFunction extends GolangBinary {
 		this.info_offset=func_info_offset;
 		this.file_name_list=file_name_list;
 
-		init_func();
+		if(!init_func()) {
+			return;
+		}
+
+		this.ok=true;
 	}
 
-	void init_func() {
+	boolean init_func() {
 		long entry_addr_value=get_address_value(base.add(info_offset), pointer_size);
 		func_addr=program.getAddressFactory().getDefaultAddressSpace().getAddress(entry_addr_value);
 		func=program.getFunctionManager().getFunctionAt(func_addr);
@@ -54,24 +58,33 @@ public class GolangFunction extends GolangBinary {
 		func=program.getFunctionManager().getFunctionAt(func_addr);
 		if(func==null) {
 			log.appendMsg(String.format("Failed get %x function", entry_addr_value));
-			return;
+			return false;
 		}
 
-		init_func_name();
-		init_params();
-		init_file_line_map();
+		if(!init_func_name()) {
+			return false;
+		}
+		if(!init_params()) {
+			return false;
+		}
+		if(!init_file_line_map()) {
+			return false;
+		}
+
+		return true;
 	}
 
-	void init_func_name() {
+	boolean init_func_name() {
 		int func_name_offset=(int)get_address_value(base.add(info_offset+pointer_size), 4);
 		func_name=create_string_data(base.add(func_name_offset));
+		return true;
 	}
 
-	void init_params() {
+	boolean init_params() {
 		int args_num=(int)get_address_value(base.add(info_offset+pointer_size+4), 4);
 
 		if(func.getParameterCount()==args_num/pointer_size) {
-			return;
+			return true;
 		}
 
 		try {
@@ -90,10 +103,12 @@ public class GolangFunction extends GolangBinary {
 			}
 		}catch(Exception e) {
 			log.appendMsg(String.format("Failed set function parameter: %s", e.getMessage()));
+			return false;
 		}
+		return true;
 	}
 
-	void init_file_line_map() {
+	boolean init_file_line_map() {
 		file_line_comment_map = new HashMap<>();
 
 		int pcln_offset=(int)get_address_value(base.add(info_offset+pointer_size+5*4), 4);
@@ -122,6 +137,7 @@ public class GolangFunction extends GolangBinary {
 
 			file_line_comment_map.put(key, String.format("%s:%d", file_name, line_num));
 		}
+		return true;
 	}
 
 	String pc_to_file_name(int target_pc_offset) {

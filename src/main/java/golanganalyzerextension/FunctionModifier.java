@@ -105,6 +105,9 @@ public class FunctionModifier extends GolangBinary {
 		}
 
 		for(GolangFunction gofunc: gofunc_list) {
+			if(!gofunc.is_ok()) {
+				continue;
+			}
 		    rename_func(gofunc);
 		    modify_func_param(gofunc);
 		    add_func_comment(gofunc);
