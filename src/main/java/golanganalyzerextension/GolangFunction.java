@@ -83,10 +83,6 @@ public class GolangFunction extends GolangBinary {
 	boolean init_params() {
 		int args_num=(int)get_address_value(base.add(info_offset+pointer_size+4), 4);
 
-		if(func.getParameterCount()==args_num/pointer_size) {
-			return true;
-		}
-
 		try {
 			params=new ArrayList<>();
 			for(int i=0;i<args_num/pointer_size;i++) {
