@@ -22,7 +22,7 @@ public class FunctionModifier extends GolangBinary {
 	int magic=0;
 	int quantum=0;
 	int pointer_size=0;
-	int func_num=0;
+	long func_num=0;
 	List<GolangFunction> gofunc_list=null;
 	List<String> file_name_list=null;
 
@@ -52,7 +52,7 @@ public class FunctionModifier extends GolangBinary {
 		                                                                           // two zero bytes
 		this.quantum=(int)get_address_value(get_address(base, 6), 1);              // arch(x86=1, ?=2, arm=4)
 		this.pointer_size=(int)get_address_value(get_address(base, 7), 1);         // pointer size
-		this.func_num=(int)get_address_value(get_address(base, 8), pointer_size);  // number of func
+		this.func_num=get_address_value(get_address(base, 8), pointer_size);  // number of func
 		return true;
 	}
 
