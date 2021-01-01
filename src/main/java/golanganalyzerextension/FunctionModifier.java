@@ -6,6 +6,7 @@ import java.util.Map;
 
 import ghidra.app.util.importer.MessageLog;
 import ghidra.program.model.address.Address;
+import ghidra.program.model.data.DataType;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Function.FunctionUpdateType;
 import ghidra.program.model.listing.Listing;
@@ -138,6 +139,7 @@ public class FunctionModifier extends GolangBinary {
 
 		try {
 			func.updateFunction(null, null, new_params, FunctionUpdateType.CUSTOM_STORAGE, true, SourceType.USER_DEFINED);
+			func.setReturnType(DataType.VOID, SourceType.USER_DEFINED);
 		}catch(Exception e) {
 			log.appendMsg(String.format("Failed set function parameter: %s", e.getMessage()));
 		}
