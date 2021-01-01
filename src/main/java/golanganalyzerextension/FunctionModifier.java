@@ -72,6 +72,9 @@ public class FunctionModifier extends GolangBinary {
 		long file_name_table_size=get_address_value(file_name_table, 4);
 		for(int i=1;i<file_name_table_size;i++) {
 			long file_name_offset=get_address_value(get_address(file_name_table, 4*i),4);
+			if(file_name_offset==0) {
+				return false;
+			}
 			String file_name=create_string_data(get_address(base, file_name_offset));
 			file_name_list.add(file_name);
 		}
@@ -88,6 +91,9 @@ public class FunctionModifier extends GolangBinary {
 			long func_addr_value=get_address_value(get_address(func_list_base, i*pointer_size*2), pointer_size);
 			long func_info_offset=get_address_value(get_address(func_list_base, i*pointer_size*2+pointer_size), pointer_size);
 			long func_entry_value=get_address_value(get_address(base, func_info_offset), pointer_size);
+			if(func_addr_value==0 || func_info_offset==0 || func_entry_value==0) {
+				return false;
+			}
 			if(func_addr_value!=func_entry_value)
 			{
 				log.appendMsg(String.format("Failed wrong func addr %x %x", func_addr_value, func_entry_value));

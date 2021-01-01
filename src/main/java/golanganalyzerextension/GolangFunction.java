@@ -85,7 +85,7 @@ public class GolangFunction extends GolangBinary {
 
 		try {
 			params=new ArrayList<>();
-			for(int i=0;i<args_num/pointer_size;i++) {
+			for(int i=0;i<args_num/pointer_size && i<50;i++) {
 				DataType data_type=null;
 				if(i<func.getParameterCount()) {
 					data_type=func.getParameter(i).getDataType();
