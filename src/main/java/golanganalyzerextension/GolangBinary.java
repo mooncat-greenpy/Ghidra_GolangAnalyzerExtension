@@ -3,6 +3,7 @@ package golanganalyzerextension;
 
 import ghidra.app.util.importer.MessageLog;
 import ghidra.program.model.address.Address;
+import ghidra.program.model.address.AddressOutOfBoundsException;
 import ghidra.program.model.data.DataTypeConflictException;
 import ghidra.program.model.data.StringDataType;
 import ghidra.program.model.listing.Data;
@@ -30,7 +31,22 @@ public class GolangBinary {
 		this.ok=false;
 	}
 
+	Address get_address(Address base, long offset) {
+		if(base==null) {
+			return null;
+		}
+		try {
+			return base.add(offset);
+		}catch(AddressOutOfBoundsException e) {
+			log.appendMsg(String.format("Failed get address: %s %x+%x", e.getMessage(), base.getOffset(), offset));
+		}
+		return null;
+	}
+
 	long get_address_value(Address address, int size) {
+		if(address==null) {
+			return 0;
+		}
 		try {
 			if(size==8) {
 				return memory.getLong(address);
@@ -45,6 +61,9 @@ public class GolangBinary {
 	}
 
 	String create_string_data(Address address){
+		if(address==null) {
+			return "not found";
+		}
 		Data string_data=program_listing.getDefinedDataAt(address);
 		if(string_data==null) {
 			try {

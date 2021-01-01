@@ -47,30 +47,31 @@ public class FunctionModifier extends GolangBinary {
 			return false;
 		}
 
-		this.magic=(int)get_address_value(base, 4);               // magic
-		                                                          // two zero bytes
-		this.quantum=(int)get_address_value(base.add(6), 1);      // arch(x86=1, ?=2, arm=4)
-		this.pointer_size=(int)get_address_value(base.add(7), 1); // pointer size
-		this.func_num=(int)get_address_value(base.add(8), 4);     // number of func
+		this.magic=(int)get_address_value(base, 4);                                // magic
+		                                                                           // two zero bytes
+		this.quantum=(int)get_address_value(get_address(base, 6), 1);              // arch(x86=1, ?=2, arm=4)
+		this.pointer_size=(int)get_address_value(get_address(base, 7), 1);         // pointer size
+		this.func_num=(int)get_address_value(get_address(base, 8), pointer_size);  // number of func
 		return true;
 	}
 
 	boolean init_file_name_list() {
 		file_name_list=new ArrayList<>();
-		Address func_list_base=base.add(8+pointer_size);
+		Address func_list_base=get_address(base, 8+pointer_size);
 		if(func_list_base==null) {
 			return false;
 		}
 
-		long file_name_table_offset=get_address_value(func_list_base.add(func_num*pointer_size*2+pointer_size), pointer_size);
-		Address file_name_table=base.add(file_name_table_offset);
+		long file_name_table_offset=get_address_value(get_address(func_list_base, func_num*pointer_size*2+pointer_size), pointer_size);
+		Address file_name_table=get_address(base, file_name_table_offset);
 		if(file_name_table==null) {
 			return false;
 		}
+
 		long file_name_table_size=get_address_value(file_name_table, 4);
 		for(int i=1;i<file_name_table_size;i++) {
-			long file_name_offset=get_address_value(file_name_table.add(4*i),4);
-			String file_name=create_string_data(base.add(file_name_offset));
+			long file_name_offset=get_address_value(get_address(file_name_table, 4*i),4);
+			String file_name=create_string_data(get_address(base, file_name_offset));
 			file_name_list.add(file_name);
 		}
 		return true;
@@ -78,14 +79,14 @@ public class FunctionModifier extends GolangBinary {
 
 	boolean init_functions() {
 		gofunc_list=new ArrayList<>();
-		Address func_list_base=base.add(8+pointer_size);
+		Address func_list_base=get_address(base, 8+pointer_size);
 		if(func_list_base==null) {
 			return false;
 		}
 		for(int i=0; i<func_num; i++) {
-			long func_addr_value=get_address_value(func_list_base.add(i*pointer_size*2), pointer_size);
-			long func_info_offset=get_address_value(func_list_base.add(i*pointer_size*2+pointer_size), pointer_size);
-			long func_entry_value=get_address_value(base.add(func_info_offset), pointer_size);
+			long func_addr_value=get_address_value(get_address(func_list_base, i*pointer_size*2), pointer_size);
+			long func_info_offset=get_address_value(get_address(func_list_base, i*pointer_size*2+pointer_size), pointer_size);
+			long func_entry_value=get_address_value(get_address(base, func_info_offset), pointer_size);
 			if(func_addr_value!=func_entry_value)
 			{
 				log.appendMsg(String.format("Failed wrong func addr %x %x", func_addr_value, func_entry_value));
@@ -148,7 +149,7 @@ public class FunctionModifier extends GolangBinary {
 		Listing listing=program.getListing();
 
 		for(Integer key: comment_map.keySet()) {
-			listing.setComment(addr.add(key), ghidra.program.model.listing.CodeUnit.PRE_COMMENT, comment_map.get(key));
+			listing.setComment(get_address(addr, key), ghidra.program.model.listing.CodeUnit.PRE_COMMENT, comment_map.get(key));
 		}
 	}
 
@@ -171,20 +172,19 @@ public class FunctionModifier extends GolangBinary {
 				break;
 			}
 
-			int size=(int)get_address_value(gopclntab_base.add(7), 1); // pointer size
+			int size=(int)get_address_value(get_address(gopclntab_base, 7), 1); // pointer size
 
-			Address func_list_base=gopclntab_base.add(8+size);
-			if(func_list_base==null) {
-				gopclntab_base=gopclntab_base.add(4);
-			}
-			long func_addr_value=get_address_value(func_list_base.add(0), size);
-			long func_info_offset=get_address_value(func_list_base.add(size), size);
-			long func_entry_value=get_address_value(gopclntab_base.add(func_info_offset), size);
-			if(func_addr_value==func_entry_value)
-			{
+			Address func_list_base=get_address(gopclntab_base, 8+size);
+			long func_addr_value=get_address_value(get_address(func_list_base, 0), size);
+			long func_info_offset=get_address_value(get_address(func_list_base, size), size);
+			long func_entry_value=get_address_value(get_address(gopclntab_base, func_info_offset), size);
+			if(func_addr_value==func_entry_value && func_addr_value!=0) {
 				break;
 			}
-			gopclntab_base=gopclntab_base.add(4);
+			gopclntab_base=get_address(gopclntab_base, 4);
+			if(gopclntab_base==null) {
+				break;
+			}
 		}
 
 		return gopclntab_base;
