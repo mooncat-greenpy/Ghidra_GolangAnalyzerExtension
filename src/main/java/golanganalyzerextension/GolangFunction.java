@@ -37,6 +37,10 @@ public class GolangFunction extends GolangBinary {
 		this.base=base;
 		this.quantum=(int)get_address_value(get_address(base, 6), 1);      // arch(x86=1, ?=2, arm=4)
 		this.pointer_size=(int)get_address_value(get_address(base, 7), 1); // pointer size
+		if((quantum!=1 && quantum!=2 && quantum!=4) ||
+				(pointer_size!=4 && pointer_size!=8)) {
+			return;
+		}
 		this.info_offset=func_info_offset;
 		this.file_name_list=file_name_list;
 
