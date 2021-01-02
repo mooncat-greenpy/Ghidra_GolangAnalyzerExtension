@@ -10,15 +10,11 @@ import ghidra.program.model.listing.Program;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.task.TaskMonitor;
 
-/**
- * TODO: Provide class-level documentation that describes what this analyzer does.
- */
+
 public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 	public GolangAnalyzerExtensionAnalyzer() {
 
-		// TODO: Name the analyzer and give it a description.
-
-		super("My Analyzer", "Analyzer description goes here", AnalyzerType.BYTE_ANALYZER);
+		super("Golang Analyzer", "Assist in analyzing Golang binaries", AnalyzerType.BYTE_ANALYZER);
 		setPriority(AnalysisPriority.HIGHEST_PRIORITY);
 	}
 
