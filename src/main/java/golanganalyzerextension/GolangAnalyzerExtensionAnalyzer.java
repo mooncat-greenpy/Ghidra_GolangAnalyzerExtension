@@ -12,6 +12,10 @@ import ghidra.util.task.TaskMonitor;
 
 
 public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
+	boolean rename_option=true;
+	boolean param_option=true;
+	boolean comment_option=true;
+
 	public GolangAnalyzerExtensionAnalyzer() {
 
 		super("Golang Analyzer", "Assist in analyzing Golang binaries", AnalyzerType.BYTE_ANALYZER);
@@ -33,10 +37,17 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 	@Override
 	public void registerOptions(Options options, Program program) {
 
-		// TODO: If this analyzer has custom options, register them here
+		options.registerOption("Rename functions", rename_option, null, "Rename functions");
+		options.registerOption("Modify arguments", param_option, null, "Modify function arguments");
+		options.registerOption("Add comment", comment_option, null, "Add source file and line information to comments");
+	}
 
-		options.registerOption("Option name goes here", false, null,
-			"Option description goes here");
+	@Override
+	public void optionsChanged(Options options, Program program) {
+
+		rename_option=options.getBoolean("Rename functions", rename_option);
+		param_option=options.getBoolean("Modify arguments", param_option);
+		comment_option=options.getBoolean("Add comment", comment_option);
 	}
 
 	@Override
@@ -44,7 +55,7 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 			throws CancelledException {
 
 		FunctionModifier func_modifier=new FunctionModifier(program, monitor, log);
-		func_modifier.modify();
+		func_modifier.modify(rename_option, param_option, comment_option);
 
 		return false;
 	}

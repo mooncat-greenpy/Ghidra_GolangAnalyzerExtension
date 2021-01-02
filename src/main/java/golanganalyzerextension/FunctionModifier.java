@@ -110,7 +110,7 @@ public class FunctionModifier extends GolangBinary {
 		return true;
 	}
 
-	void modify() {
+	void modify(boolean rename_option, boolean param_option, boolean comment_option) {
 		if(!ok) {
 			log.appendMsg("Failed ok is false");
 			return;
@@ -120,9 +120,15 @@ public class FunctionModifier extends GolangBinary {
 			if(!gofunc.is_ok()) {
 				continue;
 			}
-		    rename_func(gofunc);
-		    modify_func_param(gofunc);
-		    add_func_comment(gofunc);
+			if(rename_option) {
+				rename_func(gofunc);
+			}
+			if(param_option) {
+				modify_func_param(gofunc);
+			}
+			if(comment_option) {
+				add_func_comment(gofunc);
+			}
 		}
 	}
 
