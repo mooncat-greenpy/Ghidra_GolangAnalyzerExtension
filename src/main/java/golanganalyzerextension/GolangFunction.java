@@ -58,8 +58,8 @@ public class GolangFunction extends GolangBinary {
 		if(func==null) {
 			CreateFunctionCmd cmd=new CreateFunctionCmd(func_name, func_addr, null, SourceType.ANALYSIS);
 			cmd.applyTo(program, monitor);
+			func=program.getFunctionManager().getFunctionAt(func_addr);
 		}
-		func=program.getFunctionManager().getFunctionAt(func_addr);
 		if(func==null) {
 			log.appendMsg(String.format("Failed get %x function", entry_addr_value));
 			return false;
