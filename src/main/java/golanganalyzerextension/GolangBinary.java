@@ -52,12 +52,25 @@ public class GolangBinary {
 				return memory.getLong(address);
 			}else if(size==4) {
 				return memory.getInt(address);
+			}else if(size==2) {
+				return memory.getShort(address);
 			}
 			return memory.getByte(address)&0xff;
 		}catch(MemoryAccessException e) {
 			log.appendMsg(String.format("Failed get address value: %s", e.getMessage()));
 		}
 		return 0;
+	}
+
+	String read_string(Address address, int size) {
+		try {
+			byte[] bytes=new byte[size];
+			memory.getBytes(address, bytes, 0, size);
+			return new String(bytes);
+		} catch (MemoryAccessException e) {
+			log.appendMsg(String.format("Failed read bytes string: %s %x", e.getMessage(), address.getOffset()));
+		}
+		return "not found";
 	}
 
 	String create_string_data(Address address){
@@ -75,19 +88,12 @@ public class GolangBinary {
 			return "not found";
 		}
 		if(string_data==null) {
-			try {
-				Address zero_addr=memory.findBytes(address, new byte[] {(byte)0x0}, new byte[] {(byte)0xff}, true, monitor);
-				if(zero_addr==null) {
-					return "not found";
-				}
-				int size=(int)(zero_addr.getOffset()-address.getOffset());
-				byte[] bytes=new byte[size];
-				memory.getBytes(address, bytes, 0, size);
-				return new String(bytes);
-			} catch (MemoryAccessException e) {
-				log.appendMsg(String.format("Failed read bytes string: %s %x", e.getMessage(), address.getOffset()));
+			Address zero_addr=memory.findBytes(address, new byte[] {(byte)0x0}, new byte[] {(byte)0xff}, true, monitor);
+			if(zero_addr==null) {
+				return "not found";
 			}
-			return "not found";
+			int size=(int)(zero_addr.getOffset()-address.getOffset());
+			return read_string(address, size);
 		}
 		return (String)string_data.getValue();
 	}
