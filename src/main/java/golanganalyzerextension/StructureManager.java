@@ -428,6 +428,7 @@ public class StructureManager extends GolangBinary {
                 long equal=get_address_value(get_address(type_base_addr, offset+pointer_size*2+4+1*4), pointer_size);
                 long gcdata=get_address_value(get_address(type_base_addr, offset+pointer_size*3+4+1*4), pointer_size);
                 int name_off=(int)get_address_value(get_address(type_base_addr, offset+pointer_size*4+4+1*4), 4);
+                long ptr_to_this_off=(long)get_address_value(get_address(type_base_addr, offset+pointer_size*4+4*2+1*4), 4);
                 String name=get_type_string(get_address(type_base_addr, name_off), tflag);
                 if(kind>=Kind.MaxKind.ordinal()) {
                         kind=0;
@@ -605,6 +606,9 @@ public class StructureManager extends GolangBinary {
                         basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, new PointerDataType()));
                 }else {
                         name_to_type_map.remove(name);
+                }
+                if(ptr_to_this_off!=0) {
+                    analyze_type(type_base_addr, ptr_to_this_off);
                 }
                 return true;
         }
