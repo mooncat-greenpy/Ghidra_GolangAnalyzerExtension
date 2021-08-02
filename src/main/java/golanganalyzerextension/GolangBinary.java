@@ -12,6 +12,7 @@ import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.Memory;
 import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.program.model.util.CodeUnitInsertionException;
+import ghidra.util.exception.InvalidInputException;
 import ghidra.util.task.TaskMonitor;
 
 public class GolangBinary {
@@ -96,6 +97,15 @@ public class GolangBinary {
 			return read_string(address, size);
 		}
 		return (String)string_data.getValue();
+	}
+
+	void create_label(Address address, String str) {
+		try {
+			str=str.replace(" ", "_");
+			program.getSymbolTable().createLabel(address, str, ghidra.program.model.symbol.SourceType.USER_DEFINED);
+		} catch (InvalidInputException e) {
+			log.appendMsg(String.format("Failed to create label: %x %s", address.getOffset(), str));
+		}
 	}
 
 	boolean is_ok() {

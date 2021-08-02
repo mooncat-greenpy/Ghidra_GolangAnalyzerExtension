@@ -11,6 +11,7 @@ import ghidra.app.util.importer.MessageLog;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.*;
 import ghidra.program.model.listing.Program;
+import ghidra.program.model.util.CodeUnitInsertionException;
 import ghidra.util.task.TaskMonitor;
 
 
@@ -34,6 +35,7 @@ public class StructureManager extends GolangBinary {
         }
 
         class BasicTypeInfo {
+                Address addr=null;
                 long key=0;
                 long size=0;
                 long ptrdata=0;
@@ -45,7 +47,8 @@ public class StructureManager extends GolangBinary {
                 long equal=0;
                 long gcdata=0;
                 String name="";
-                BasicTypeInfo(long key, long size, long ptrdata, int hash, int tflag, int align, int field_align, Kind kind, long equal, long gcdata, String name) {
+                BasicTypeInfo(Address addr, long key, long size, long ptrdata, int hash, int tflag, int align, int field_align, Kind kind, long equal, long gcdata, String name) {
+                        this.addr=addr;
                         this.key=key;
                         this.size=size;
                         this.ptrdata=ptrdata;
@@ -62,6 +65,7 @@ public class StructureManager extends GolangBinary {
                         }
                 }
                 BasicTypeInfo(BasicTypeInfo basic_info) {
+                        this.addr=basic_info.addr;
                         this.key=basic_info.key;
                         this.size=basic_info.size;
                         this.ptrdata=basic_info.ptrdata;
@@ -282,7 +286,23 @@ public class StructureManager extends GolangBinary {
                 init_basig_golang_hardcode_datatype();
                 init_basig_golang_datatype(gopclntab_base);
 
+                DataType type_datatype=null;
                 for(Map.Entry<Long, BasicTypeInfo> entry : basic_type_info_map.entrySet()) {
+                    if(!entry.getValue().name.equals("runtime._type")) {
+                        continue;
+                    }
+                    type_datatype=entry.getValue().get_datatype();
+                    break;
+                }
+                for(Map.Entry<Long, BasicTypeInfo> entry : basic_type_info_map.entrySet()) {
+                        create_label(entry.getValue().addr, String.format("datatype.%s.%s", entry.getValue().kind.name(), entry.getValue().name));
+                        if(type_datatype!=null) {
+                            try {
+                                program.getListing().createData(entry.getValue().addr, type_datatype);
+                            } catch (CodeUnitInsertionException | DataTypeConflictException e) {
+                                log.appendMsg(String.format("Failed to create data: %x %s", entry.getValue().addr.getOffset(), entry.getValue().name));
+                            }
+                        }
                         Category category=datatype_manager.createCategory(new CategoryPath(String.format("/Golang_%s", entry.getValue().kind.name())));
                         DataType datatype=null;
                         if(entry.getValue().kind==Kind.Ptr) {
@@ -369,7 +389,7 @@ public class StructureManager extends GolangBinary {
                         long type_addr_value=get_address_value(get_address(base_addr, 25*pointer_size), pointer_size);
                         long typelink_addr_value=get_address_value(get_address(base_addr, 30*pointer_size), pointer_size);
                         long typelink_len=get_address_value(get_address(base_addr, 31*pointer_size), pointer_size);
-                        
+
                         Address type_addr=program.getAddressFactory().getAddress(String.format("%x", type_addr_value));
                         Address typelink_addr=program.getAddressFactory().getAddress(String.format("%x", typelink_addr_value));
 
@@ -433,7 +453,7 @@ public class StructureManager extends GolangBinary {
                 if(kind>=Kind.MaxKind.ordinal()) {
                         kind=0;
                 }
-                BasicTypeInfo basic_info=new BasicTypeInfo(offset, size, ptrdata, hash, tflag, align, field_align, Kind.values()[kind], equal, gcdata, name);
+                BasicTypeInfo basic_info=new BasicTypeInfo(get_address(type_base_addr, offset), offset, size, ptrdata, hash, tflag, align, field_align, Kind.values()[kind], equal, gcdata, name);
                 basic_type_info_map.put(offset, basic_info);
                 name_to_type_map.put(name, offset);
 

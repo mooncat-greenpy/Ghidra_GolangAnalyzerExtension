@@ -9,7 +9,6 @@ import ghidra.program.model.address.Address;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Function.FunctionUpdateType;
-import ghidra.program.model.listing.Listing;
 import ghidra.program.model.listing.Parameter;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.MemoryBlock;
@@ -164,10 +163,9 @@ public class FunctionModifier extends GolangBinary {
 	void add_func_comment(GolangFunction gofunc) {
 		Address addr=gofunc.get_func_addr();
 		Map<Integer, String> comment_map=gofunc.get_file_line_comment_map();
-		Listing listing=program.getListing();
 
 		for(Integer key: comment_map.keySet()) {
-			listing.setComment(get_address(addr, key), ghidra.program.model.listing.CodeUnit.PRE_COMMENT, comment_map.get(key));
+			program_listing.setComment(get_address(addr, key), ghidra.program.model.listing.CodeUnit.PRE_COMMENT, comment_map.get(key));
 		}
 	}
 
