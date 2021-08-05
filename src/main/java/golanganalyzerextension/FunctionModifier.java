@@ -53,6 +53,7 @@ public class FunctionModifier extends GolangBinary {
 		this.pointer_size=(int)get_address_value(get_address(base, 7), 1);         // pointer size
 		if((quantum!=1 && quantum!=2 && quantum!=4) ||
 				(pointer_size!=4 && pointer_size!=8)) {
+			this.base=null;
 			return false;
 		}
 		this.func_num=get_address_value(get_address(base, 8), pointer_size);  // number of func
