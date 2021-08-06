@@ -25,8 +25,8 @@ public class FunctionModifier extends GolangBinary {
 	List<GolangFunction> gofunc_list=null;
 	List<String> file_name_list=null;
 
-	public FunctionModifier(Program program, TaskMonitor monitor, MessageLog log) {
-		super(program, monitor, log);
+	public FunctionModifier(Program program, TaskMonitor monitor, MessageLog log, boolean debugmode) {
+		super(program, monitor, log, debugmode);
 
 		if(!init_gopclntab()) {
 			return;
@@ -43,7 +43,7 @@ public class FunctionModifier extends GolangBinary {
 	boolean init_gopclntab() {
 		this.base=get_gopclntab();
 		if(this.base==null) {
-			log.appendMsg("Failed get gopclntab");
+			append_message("Failed to get gopclntab");
 			return false;
 		}
 
@@ -100,11 +100,11 @@ public class FunctionModifier extends GolangBinary {
 			}
 			if(func_addr_value!=func_entry_value)
 			{
-				log.appendMsg(String.format("Failed wrong func addr %x %x", func_addr_value, func_entry_value));
+				append_message(String.format("Function addr mismatch: %x != %x", func_addr_value, func_entry_value));
 				continue;
 			}
 
-			GolangFunction gofunc=new GolangFunction(program, monitor, log, base, func_info_offset, file_name_list);
+			GolangFunction gofunc=new GolangFunction(program, monitor, log, base, func_info_offset, file_name_list, debugmode);
 			gofunc_list.add(gofunc);
 		}
 		return true;
@@ -112,7 +112,7 @@ public class FunctionModifier extends GolangBinary {
 
 	void modify(boolean rename_option, boolean param_option, boolean comment_option) {
 		if(!ok) {
-			log.appendMsg("Failed ok is false");
+			append_message("Failed to setup");
 			return;
 		}
 
@@ -142,7 +142,7 @@ public class FunctionModifier extends GolangBinary {
 		try {
 			func.setName(func_name, SourceType.ANALYSIS);
 		}catch(Exception e) {
-			log.appendMsg(String.format("Failed set function name: %s", e.getMessage()));
+			append_message(String.format("Failed to set function name: %s", e.getMessage()));
 		}
 	}
 
@@ -157,7 +157,7 @@ public class FunctionModifier extends GolangBinary {
 			func.updateFunction(null, null, new_params, FunctionUpdateType.CUSTOM_STORAGE, true, SourceType.USER_DEFINED);
 			func.setReturnType(DataType.VOID, SourceType.USER_DEFINED);
 		}catch(Exception e) {
-			log.appendMsg(String.format("Failed set function parameter: %s", e.getMessage()));
+			append_message(String.format("Failed to set function parameters: %s", e.getMessage()));
 		}
 	}
 

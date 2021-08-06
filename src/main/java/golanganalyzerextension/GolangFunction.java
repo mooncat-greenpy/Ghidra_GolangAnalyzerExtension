@@ -31,8 +31,8 @@ public class GolangFunction extends GolangBinary {
 	List<Parameter> params=null;
 	Map<Integer, String> file_line_comment_map=null;
 
-	public GolangFunction(Program program, TaskMonitor monitor, MessageLog log, Address base, long func_info_offset, List<String> file_name_list) {
-		super(program, monitor, log);
+	public GolangFunction(Program program, TaskMonitor monitor, MessageLog log, Address base, long func_info_offset, List<String> file_name_list, boolean debugmode) {
+		super(program, monitor, log, debugmode);
 
 		this.base=base;
 		this.quantum=(int)get_address_value(get_address(base, 6), 1);      // arch(x86=1, ?=2, arm=4)
@@ -61,7 +61,7 @@ public class GolangFunction extends GolangBinary {
 			func=program.getFunctionManager().getFunctionAt(func_addr);
 		}
 		if(func==null) {
-			log.appendMsg(String.format("Failed get %x function", entry_addr_value));
+			append_message(String.format("Failed to get function: %x", entry_addr_value));
 			return false;
 		}
 
@@ -102,7 +102,7 @@ public class GolangFunction extends GolangBinary {
 				params.add(add_param);
 			}
 		}catch(Exception e) {
-			log.appendMsg(String.format("Failed set function parameter: %s", e.getMessage()));
+			append_message(String.format("Failed to set function parameters: %s", e.getMessage()));
 			return false;
 		}
 		return true;
@@ -161,7 +161,7 @@ public class GolangFunction extends GolangBinary {
 
 			if(target_pc_offset<=pc_offset) {
 				if((int)file_no-1<0 || file_name_list.size()<=(int)file_no-1) {
-					log.appendMsg(String.format("Error file name list index out of range: %x", (int)file_no-1));
+					append_message(String.format("File name list index out of range: %x", (int)file_no-1));
 					return null;
 				}
 				return file_name_list.get((int)file_no-1);

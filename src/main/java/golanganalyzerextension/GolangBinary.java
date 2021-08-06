@@ -22,14 +22,16 @@ public class GolangBinary {
 	Listing program_listing=null;
 	Memory memory=null;
 	boolean ok=false;
+	boolean debugmode=false;
 
-	public GolangBinary(Program program, TaskMonitor monitor, MessageLog log) {
+	public GolangBinary(Program program, TaskMonitor monitor, MessageLog log, boolean debugmode) {
 		this.program=program;
 		this.monitor=monitor;
 		this.log=log;
 		this.program_listing=program.getListing();
 		this.memory=program.getMemory();
 		this.ok=false;
+		this.debugmode=debugmode;
 	}
 
 	Address get_address(Address base, long offset) {
@@ -39,7 +41,7 @@ public class GolangBinary {
 		try {
 			return base.add(offset);
 		}catch(AddressOutOfBoundsException e) {
-			log.appendMsg(String.format("Failed get address: %s %x+%x", e.getMessage(), base.getOffset(), offset));
+			append_message(String.format("Failed to get address: %s %x+%x", e.getMessage(), base.getOffset(), offset));
 		}
 		return null;
 	}
@@ -58,7 +60,7 @@ public class GolangBinary {
 			}
 			return memory.getByte(address)&0xff;
 		}catch(MemoryAccessException e) {
-			log.appendMsg(String.format("Failed get address value: %s", e.getMessage()));
+			append_message(String.format("Failed to get value: %s %x", e.getMessage(), address.getOffset()));
 		}
 		return 0;
 	}
@@ -69,7 +71,7 @@ public class GolangBinary {
 			memory.getBytes(address, bytes, 0, size);
 			return new String(bytes);
 		} catch (MemoryAccessException e) {
-			log.appendMsg(String.format("Failed read bytes string: %s %x", e.getMessage(), address.getOffset()));
+			append_message(String.format("Failed to read string: %s %x", e.getMessage(), address.getOffset()));
 		}
 		return "not found";
 	}
@@ -83,7 +85,7 @@ public class GolangBinary {
 			try {
 				string_data=program_listing.createData(address, new StringDataType());
 			} catch (CodeUnitInsertionException | DataTypeConflictException e) {
-				log.appendMsg(String.format("Failed create_string_data: %s %x", e.getMessage(), address.getOffset()));
+				append_message(String.format("Failed to create string data: %s %x", e.getMessage(), address.getOffset()));
 			}
 		}else if(!string_data.getDataType().isEquivalent((new StringDataType()))) {
 			return "not found";
@@ -104,7 +106,13 @@ public class GolangBinary {
 			str=str.replace(" ", "_");
 			program.getSymbolTable().createLabel(address, str, ghidra.program.model.symbol.SourceType.USER_DEFINED);
 		} catch (InvalidInputException e) {
-			log.appendMsg(String.format("Failed to create label: %x %s", address.getOffset(), str));
+			append_message(String.format("Failed to create label: %x %s", address.getOffset(), str));
+		}
+	}
+
+	void append_message(String str) {
+		if(debugmode) {
+			log.appendMsg(str);
 		}
 	}
 

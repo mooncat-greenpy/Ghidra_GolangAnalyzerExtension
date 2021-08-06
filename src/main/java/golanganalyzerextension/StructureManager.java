@@ -275,8 +275,8 @@ public class StructureManager extends GolangBinary {
 		}
 	}
 
-	public StructureManager(Program program, TaskMonitor monitor, MessageLog log, Address gopclntab_base, int pointer_size) {
-		super(program, monitor, log);
+	public StructureManager(Program program, TaskMonitor monitor, MessageLog log, Address gopclntab_base, int pointer_size, boolean debugmode) {
+		super(program, monitor, log, debugmode);
 
 		this.datatype_manager=program.getDataTypeManager();
 		this.pointer_size=pointer_size;
@@ -300,7 +300,7 @@ public class StructureManager extends GolangBinary {
 				try {
 					program.getListing().createData(entry.getValue().addr, type_datatype);
 				} catch (CodeUnitInsertionException | DataTypeConflictException e) {
-					log.appendMsg(String.format("Failed to create data: %x %s", entry.getValue().addr.getOffset(), entry.getValue().name));
+					append_message(String.format("Failed to create data: %x %s", entry.getValue().addr.getOffset(), entry.getValue().name));
 				}
 			}
 			Category category=datatype_manager.createCategory(new CategoryPath(String.format("/Golang_%s", entry.getValue().kind.name())));
