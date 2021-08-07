@@ -20,7 +20,6 @@ public class StructureManager extends GolangBinary {
 	Map<String, DataType> hardcode_datatype_map=null;
 	Map<String, Long> name_to_type_map=null;
 	Map<Long, BasicTypeInfo> basic_type_info_map=null;
-	int pointer_size=0;
 
 	enum Kind {
 		Invalid,
@@ -275,16 +274,20 @@ public class StructureManager extends GolangBinary {
 		}
 	}
 
-	public StructureManager(Program program, TaskMonitor monitor, MessageLog log, Address gopclntab_base, int pointer_size, boolean debugmode) {
+	public StructureManager(Program program, TaskMonitor monitor, MessageLog log, boolean debugmode) {
 		super(program, monitor, log, debugmode);
 
 		this.datatype_manager=program.getDataTypeManager();
-		this.pointer_size=pointer_size;
 		hardcode_datatype_map=new HashMap<String, DataType>();
 		name_to_type_map=new HashMap<String, Long>();
 		basic_type_info_map=new HashMap<Long, BasicTypeInfo>();
+
+		if(!init_gopclntab()) {
+			return;
+		}
+
 		init_basig_golang_hardcode_datatype();
-		init_basig_golang_datatype(gopclntab_base);
+		init_basig_golang_datatype();
 
 		DataType type_datatype=null;
 		for(Map.Entry<Long, BasicTypeInfo> entry : basic_type_info_map.entrySet()) {
@@ -317,6 +320,7 @@ public class StructureManager extends GolangBinary {
 			}
 			category.addDataType(datatype, null);
 		}
+		ok=true;
 		return;
 	}
 
@@ -364,7 +368,7 @@ public class StructureManager extends GolangBinary {
 		return true;
 	}
 
-	boolean init_basig_golang_datatype(Address gopclntab_base) {
+	boolean init_basig_golang_datatype() {
 		ByteBuffer buffer=ByteBuffer.allocate(Long.BYTES);
 		buffer.putLong(gopclntab_base.getOffset());
 		buffer.flip();

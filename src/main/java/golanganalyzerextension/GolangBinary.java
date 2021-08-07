@@ -11,6 +11,7 @@ import ghidra.program.model.listing.Listing;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.Memory;
 import ghidra.program.model.mem.MemoryAccessException;
+import ghidra.program.model.mem.MemoryBlock;
 import ghidra.program.model.util.CodeUnitInsertionException;
 import ghidra.util.exception.InvalidInputException;
 import ghidra.util.task.TaskMonitor;
@@ -23,6 +24,10 @@ public class GolangBinary {
 	Memory memory=null;
 	boolean ok=false;
 	boolean debugmode=false;
+	Address gopclntab_base=null;
+	int magic=0;
+	int quantum=0;
+	int pointer_size=0;
 
 	public GolangBinary(Program program, TaskMonitor monitor, MessageLog log, boolean debugmode) {
 		this.program=program;
@@ -118,5 +123,68 @@ public class GolangBinary {
 
 	boolean is_ok() {
 		return ok;
+	}
+
+	Address get_gopclntab() {
+		MemoryBlock gopclntab_section=null;
+		for (MemoryBlock mb : memory.getBlocks()) {
+			if(mb.getName().equals(".gopclntab")) {
+				gopclntab_section=mb;
+			}
+		}
+		if(gopclntab_section!=null) {
+			return gopclntab_section.getStart();
+		}
+
+		byte go12_magic[]= {(byte)0xfb,(byte)0xff,(byte)0xff,(byte)0xff};
+		Address tmp_gopclntab_base=null;
+		while(true) {
+			tmp_gopclntab_base=memory.findBytes(tmp_gopclntab_base, go12_magic, new byte[] {(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff}, true, monitor);
+			if(tmp_gopclntab_base==null) {
+				break;
+			}
+
+			int size=(int)get_address_value(get_address(tmp_gopclntab_base, 7), 1); // pointer size
+
+			Address func_list_base=get_address(tmp_gopclntab_base, 8+size);
+			long func_addr_value=get_address_value(get_address(func_list_base, 0), size);
+			long func_info_offset=get_address_value(get_address(func_list_base, size), size);
+			long func_entry_value=get_address_value(get_address(tmp_gopclntab_base, func_info_offset), size);
+			if(func_addr_value==func_entry_value && func_addr_value!=0) {
+				break;
+			}
+			tmp_gopclntab_base=get_address(tmp_gopclntab_base, 4);
+			if(tmp_gopclntab_base==null) {
+				break;
+			}
+		}
+
+		return tmp_gopclntab_base;
+	}
+
+	boolean init_gopclntab(Address addr) {
+		if(addr==null) {
+			addr=get_gopclntab();
+		}
+		this.gopclntab_base=addr;
+		if(this.gopclntab_base==null) {
+			append_message("Failed to get gopclntab");
+			return false;
+		}
+
+		this.magic=(int)get_address_value(gopclntab_base, 4);                                // magic
+		                                                                                     // two zero bytes
+		this.quantum=(int)get_address_value(get_address(gopclntab_base, 6), 1);              // arch(x86=1, ?=2, arm=4)
+		this.pointer_size=(int)get_address_value(get_address(gopclntab_base, 7), 1);         // pointer size
+		if((quantum!=1 && quantum!=2 && quantum!=4) ||
+				(pointer_size!=4 && pointer_size!=8)) {
+			this.gopclntab_base=null;
+			return false;
+		}
+		return true;
+	}
+
+	boolean init_gopclntab() {
+		return init_gopclntab(get_gopclntab());
 	}
 }

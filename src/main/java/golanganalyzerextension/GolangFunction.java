@@ -19,9 +19,6 @@ import ghidra.program.model.symbol.SourceType;
 import ghidra.util.task.TaskMonitor;
 
 public class GolangFunction extends GolangBinary {
-	Address base=null;
-	int quantum=0;
-	int pointer_size=0;
 	List<String> file_name_list=null;
 
 	long info_offset=0;
@@ -34,11 +31,7 @@ public class GolangFunction extends GolangBinary {
 	public GolangFunction(Program program, TaskMonitor monitor, MessageLog log, Address base, long func_info_offset, List<String> file_name_list, boolean debugmode) {
 		super(program, monitor, log, debugmode);
 
-		this.base=base;
-		this.quantum=(int)get_address_value(get_address(base, 6), 1);      // arch(x86=1, ?=2, arm=4)
-		this.pointer_size=(int)get_address_value(get_address(base, 7), 1); // pointer size
-		if((quantum!=1 && quantum!=2 && quantum!=4) ||
-				(pointer_size!=4 && pointer_size!=8)) {
+		if(!init_gopclntab(base)) {
 			return;
 		}
 		this.info_offset=func_info_offset;
@@ -52,7 +45,7 @@ public class GolangFunction extends GolangBinary {
 	}
 
 	boolean init_func() {
-		long entry_addr_value=get_address_value(get_address(base, info_offset), pointer_size);
+		long entry_addr_value=get_address_value(get_address(gopclntab_base, info_offset), pointer_size);
 		func_addr=program.getAddressFactory().getDefaultAddressSpace().getAddress(entry_addr_value);
 		func=program.getFunctionManager().getFunctionAt(func_addr);
 		if(func==null) {
@@ -79,13 +72,13 @@ public class GolangFunction extends GolangBinary {
 	}
 
 	boolean init_func_name() {
-		int func_name_offset=(int)get_address_value(get_address(base, info_offset+pointer_size), 4);
-		func_name=create_string_data(get_address(base, func_name_offset));
+		int func_name_offset=(int)get_address_value(get_address(gopclntab_base, info_offset+pointer_size), 4);
+		func_name=create_string_data(get_address(gopclntab_base, func_name_offset));
 		return true;
 	}
 
 	boolean init_params() {
-		int args_num=(int)get_address_value(get_address(base, info_offset+pointer_size+4), 4);
+		int args_num=(int)get_address_value(get_address(gopclntab_base, info_offset+pointer_size+4), 4);
 
 		try {
 			params=new ArrayList<>();
@@ -111,15 +104,15 @@ public class GolangFunction extends GolangBinary {
 	boolean init_file_line_map() {
 		file_line_comment_map = new HashMap<>();
 
-		int pcln_offset=(int)get_address_value(get_address(base, info_offset+pointer_size+5*4), 4);
+		int pcln_offset=(int)get_address_value(get_address(gopclntab_base, info_offset+pointer_size+5*4), 4);
 		long line_num=-1;
 		int i=0;
 		boolean first=true;
 		int pc_offset=0;
 		while(true) {
-			int line_num_add=read_pc_data(get_address(base, pcln_offset+i));
+			int line_num_add=read_pc_data(get_address(gopclntab_base, pcln_offset+i));
 			i+=Integer.toBinaryString(line_num_add).length()/8+1;
-			int byte_size=read_pc_data(get_address(base, pcln_offset+i));
+			int byte_size=read_pc_data(get_address(gopclntab_base, pcln_offset+i));
 			i+=Integer.toBinaryString(byte_size).length()/8+1;
 			if(line_num_add==0 && !first) {
 				break;
@@ -141,15 +134,15 @@ public class GolangFunction extends GolangBinary {
 	}
 
 	String pc_to_file_name(int target_pc_offset) {
-		int pcfile_offset=(int)get_address_value(get_address(base, info_offset+pointer_size+4*4), 4);
+		int pcfile_offset=(int)get_address_value(get_address(gopclntab_base, info_offset+pointer_size+4*4), 4);
 		long file_no=-1;
 		int i=0;
 		boolean first=true;
 		int pc_offset=0;
 		while(true) {
-			int file_no_add=read_pc_data(get_address(base, pcfile_offset+i));
+			int file_no_add=read_pc_data(get_address(gopclntab_base, pcfile_offset+i));
 			i+=Integer.toBinaryString(file_no_add).length()/8+1;
-			int byte_size=read_pc_data(get_address(base, pcfile_offset+i));
+			int byte_size=read_pc_data(get_address(gopclntab_base, pcfile_offset+i));
 			i+=Integer.toBinaryString(byte_size).length()/8+1;
 			if(file_no_add==0 && !first) {
 				break;
