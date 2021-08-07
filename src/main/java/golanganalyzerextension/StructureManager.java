@@ -286,8 +286,23 @@ public class StructureManager extends GolangBinary {
 			return;
 		}
 
-		init_basig_golang_hardcode_datatype();
-		init_basig_golang_datatype();
+		if(!init_basig_golang_hardcode_datatype()) {
+			return;
+		}
+
+		if(!init_basig_golang_datatype()) {
+			return;
+		}
+
+		ok=true;
+		return;
+	}
+
+	void modify() {
+		if(!ok) {
+			append_message("Failed to setup StructureManager");
+			return;
+		}
 
 		for(Map.Entry<Long, BasicTypeInfo> entry : basic_type_info_map.entrySet()) {
 			Category category=datatype_manager.createCategory(new CategoryPath(String.format("/Golang_%s", entry.getValue().kind.name())));
@@ -304,8 +319,6 @@ public class StructureManager extends GolangBinary {
 			}
 			category.addDataType(datatype, null);
 		}
-		ok=true;
-		return;
 	}
 
 	DataType get_datatype_by_name(String name) {

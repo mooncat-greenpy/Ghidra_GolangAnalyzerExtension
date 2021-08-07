@@ -88,7 +88,7 @@ public class FunctionModifier extends GolangBinary {
 
 	void modify(boolean rename_option, boolean param_option, boolean comment_option) {
 		if(!ok) {
-			append_message("Failed to setup");
+			append_message("Failed to setup FunctionModifier");
 			return;
 		}
 

@@ -66,6 +66,7 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 
 			if(datatype_option) {
 				StructureManager struct_manager=new StructureManager(program, monitor, log, debugmode_option);
+				struct_manager.modify();
 			}
 		}catch(Exception e) {
 			log.appendMsg(String.format("Error: %s", e.getMessage()));
