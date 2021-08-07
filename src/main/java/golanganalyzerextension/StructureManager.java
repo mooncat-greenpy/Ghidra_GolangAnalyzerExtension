@@ -289,23 +289,7 @@ public class StructureManager extends GolangBinary {
 		init_basig_golang_hardcode_datatype();
 		init_basig_golang_datatype();
 
-		DataType type_datatype=null;
 		for(Map.Entry<Long, BasicTypeInfo> entry : basic_type_info_map.entrySet()) {
-			if(!entry.getValue().name.equals("runtime._type")) {
-				continue;
-			}
-			type_datatype=entry.getValue().get_datatype();
-			break;
-		}
-		for(Map.Entry<Long, BasicTypeInfo> entry : basic_type_info_map.entrySet()) {
-			create_label(entry.getValue().addr, String.format("datatype.%s.%s", entry.getValue().kind.name(), entry.getValue().name));
-			if(type_datatype!=null) {
-				try {
-					program.getListing().createData(entry.getValue().addr, type_datatype);
-				} catch (CodeUnitInsertionException | DataTypeConflictException e) {
-					append_message(String.format("Failed to create data: %x %s", entry.getValue().addr.getOffset(), entry.getValue().name));
-				}
-			}
 			Category category=datatype_manager.createCategory(new CategoryPath(String.format("/Golang_%s", entry.getValue().kind.name())));
 			DataType datatype=null;
 			if(entry.getValue().kind==Kind.Ptr) {
@@ -452,7 +436,7 @@ public class StructureManager extends GolangBinary {
 		long equal=get_address_value(get_address(type_base_addr, offset+pointer_size*2+4+1*4), pointer_size);
 		long gcdata=get_address_value(get_address(type_base_addr, offset+pointer_size*3+4+1*4), pointer_size);
 		int name_off=(int)get_address_value(get_address(type_base_addr, offset+pointer_size*4+4+1*4), 4);
-		long ptr_to_this_off=(long)get_address_value(get_address(type_base_addr, offset+pointer_size*4+4*2+1*4), 4);
+		long ptr_to_this_off=get_address_value(get_address(type_base_addr, offset+pointer_size*4+4*2+1*4), 4);
 		String name=get_type_string(get_address(type_base_addr, name_off), tflag);
 		if(kind>=Kind.MaxKind.ordinal()) {
 			kind=0;
@@ -460,6 +444,19 @@ public class StructureManager extends GolangBinary {
 		BasicTypeInfo basic_info=new BasicTypeInfo(get_address(type_base_addr, offset), offset, size, ptrdata, hash, tflag, align, field_align, Kind.values()[kind], equal, gcdata, name);
 		basic_type_info_map.put(offset, basic_info);
 		name_to_type_map.put(name, offset);
+
+		create_label(get_address(type_base_addr, offset), String.format("datatype.%s.%s", Kind.values()[kind].name(), name));
+		try {
+			program.getListing().createData(get_address(type_base_addr, offset), get_datatype_by_name("_type"));
+			program.getListing().setComment(get_address(type_base_addr, offset+pointer_size*2+4+1*3), ghidra.program.model.listing.CodeUnit.EOL_COMMENT, Kind.values()[kind].name());
+			program.getListing().setComment(get_address(type_base_addr, offset+pointer_size*4+4+1*4), ghidra.program.model.listing.CodeUnit.EOL_COMMENT, name);
+			if(ptr_to_this_off!=0) {
+				program.getListing().setComment(get_address(type_base_addr, offset+pointer_size*4+4*2+1*4), ghidra.program.model.listing.CodeUnit.EOL_COMMENT,
+						String.format("%x", type_base_addr.getOffset()+ptr_to_this_off));
+			}
+		} catch (CodeUnitInsertionException | DataTypeConflictException e) {
+			append_message(String.format("Failed to create data: %x %s", get_address(type_base_addr, offset).getOffset(), name));
+		}
 
 		Address ext_base_addr=get_address(type_base_addr, offset+pointer_size*4+16);
 		if(kind==Kind.Bool.ordinal()) {
