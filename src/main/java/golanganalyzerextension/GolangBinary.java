@@ -39,6 +39,21 @@ public class GolangBinary {
 		this.debugmode=debugmode;
 	}
 
+	boolean is_valid_address(Address addr) {
+		boolean ret=false;
+		try {
+			memory.getByte(addr);
+			ret=true;
+		} catch (MemoryAccessException e) {
+			ret=false;
+		}
+		return ret;
+	}
+
+	boolean is_valid_address(long addr_value) {
+		return is_valid_address(program.getAddressFactory().getAddress(String.format("%x", addr_value)));
+	}
+
 	Address get_address(Address base, long offset) {
 		if(base==null) {
 			return null;

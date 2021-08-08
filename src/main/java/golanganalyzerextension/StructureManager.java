@@ -378,12 +378,12 @@ public class StructureManager extends GolangBinary {
 		Address base_addr=null;
 		while(true) {
 			if(pointer_size==4) {
-				base_addr=memory.findBytes(base_addr, gopclntab_base_bytes, new byte[] {(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff}, true, monitor);
+				base_addr=memory.findBytes(base_addr, gopclntab_base_bytes, new byte[] {(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x00}, true, monitor);
 			}else {
 				base_addr=memory.findBytes(base_addr, gopclntab_base_bytes, new byte[] {(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff}, true, monitor);
 			}
 			if(base_addr==null) {
-				return false;
+				break;
 			}
 
 			// runtime/symtab.go
@@ -394,6 +394,15 @@ public class StructureManager extends GolangBinary {
 			Address type_addr=program.getAddressFactory().getAddress(String.format("%x", type_addr_value));
 			Address typelink_addr=program.getAddressFactory().getAddress(String.format("%x", typelink_addr_value));
 
+			if(!is_valid_address(type_addr) || !is_valid_address(typelink_addr))
+			{
+				base_addr=get_address(base_addr, 4);
+				if(base_addr==null) {
+					break;
+				}
+				continue;
+			}
+
 			for(long i=0;i<typelink_len;i++)
 			{
 				long offset=get_address_value(get_address(typelink_addr, i*4), 4);
@@ -402,9 +411,13 @@ public class StructureManager extends GolangBinary {
 
 			base_addr=get_address(base_addr, 4);
 			if(base_addr==null) {
-				return false;
+				break;
 			}
-			break;
+		}
+
+		if(basic_type_info_map.size()==0)
+		{
+			return false;
 		}
 		return true;
 	}
@@ -450,10 +463,16 @@ public class StructureManager extends GolangBinary {
 		long gcdata=get_address_value(get_address(type_base_addr, offset+pointer_size*3+4+1*4), pointer_size);
 		int name_off=(int)get_address_value(get_address(type_base_addr, offset+pointer_size*4+4+1*4), 4);
 		long ptr_to_this_off=get_address_value(get_address(type_base_addr, offset+pointer_size*4+4*2+1*4), 4);
-		String name=get_type_string(get_address(type_base_addr, name_off), tflag);
-		if(kind>=Kind.MaxKind.ordinal()) {
-			kind=0;
+
+		if(kind>=Kind.MaxKind.ordinal() ||
+				(equal!=0 && !is_valid_address(equal)) ||
+				(gcdata!=0 && !is_valid_address(gcdata)) ||
+				name_off==0 || !is_valid_address(get_address(type_base_addr, name_off)) ||
+				(ptr_to_this_off!=0 && !is_valid_address(get_address(type_base_addr, ptr_to_this_off)))) {
+			return false;
 		}
+
+		String name=get_type_string(get_address(type_base_addr, name_off), tflag);
 		BasicTypeInfo basic_info=new BasicTypeInfo(get_address(type_base_addr, offset), offset, size, ptrdata, hash, tflag, align, field_align, Kind.values()[kind], equal, gcdata, name);
 		basic_type_info_map.put(offset, basic_info);
 		name_to_type_map.put(name, offset);
