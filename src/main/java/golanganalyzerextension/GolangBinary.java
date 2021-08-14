@@ -28,6 +28,8 @@ public class GolangBinary {
 	int magic=0;
 	int quantum=0;
 	int pointer_size=0;
+	String go_version="";
+	String go_version_mod="";
 
 	public GolangBinary(Program program, TaskMonitor monitor, MessageLog log, boolean debugmode) {
 		this.program=program;
@@ -201,5 +203,63 @@ public class GolangBinary {
 
 	boolean init_gopclntab() {
 		return init_gopclntab(get_gopclntab());
+	}
+
+	boolean init_go_version()
+	{
+		// cmd/go/internal/version/version.go
+		// "\xff Go buildinf:"
+		byte build_info_magic[]= {(byte)0xff,(byte)0x20,(byte)0x47,(byte)0x6f,(byte)0x20,(byte)0x62,(byte)0x75,(byte)0x69,(byte)0x6c,(byte)0x64,(byte)0x69,(byte)0x6e,(byte)0x66,(byte)0x3a};
+		Address base_addr=null;
+		base_addr=memory.findBytes(base_addr, build_info_magic, new byte[] {(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff}, true, monitor);
+		if(base_addr==null) {
+			append_message("Failed to find \"\\xff Go buildinf:\"");
+			return false;
+		}
+
+		byte size=(byte)get_address_value(get_address(base_addr, 14), 1);
+		boolean is_big_endian=get_address_value(get_address(base_addr, 15), 1)!=0;
+		if(is_big_endian) {
+			append_message("Go version is big endian");
+			return false;
+		}
+
+		Address string_struct_addr=program.getAddressFactory().getAddress(
+				String.format("%x", get_address_value(get_address(base_addr, 16), size)));
+		if(!is_valid_address(string_struct_addr)) {
+			return false;
+		}
+		Address string_addr=program.getAddressFactory().getAddress(
+				String.format("%x", get_address_value(string_struct_addr, size)));
+		if(!is_valid_address(string_addr)) {
+			return false;
+		}
+		long string_size=get_address_value(get_address(string_struct_addr, size), size);
+		go_version=read_string(string_addr, (int)string_size);
+		if(go_version=="")
+		{
+			return false;
+		}
+
+		string_struct_addr=program.getAddressFactory().getAddress(
+				String.format("%x", get_address_value(get_address(base_addr, 16+size), size)));
+		if(!is_valid_address(string_struct_addr)) {
+			return false;
+		}
+		string_addr=program.getAddressFactory().getAddress(
+				String.format("%x", get_address_value(string_struct_addr, size)));
+		if(!is_valid_address(string_addr)) {
+			return false;
+		}
+		string_size=get_address_value(get_address(string_struct_addr, size), size);
+		go_version_mod=read_string(string_addr, (int)string_size);
+		if(go_version_mod.length()>=33 && go_version_mod.charAt(go_version_mod.length()-17)=='\n')
+		{
+			go_version_mod=go_version_mod.substring(16, go_version_mod.length()-16);
+		}
+		else {
+			go_version_mod="";
+		}
+		return true;
 	}
 }
