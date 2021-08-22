@@ -18,23 +18,24 @@ import ghidra.program.model.listing.Program;
 import ghidra.program.model.symbol.SourceType;
 import ghidra.util.task.TaskMonitor;
 
+// debug/gosym/pclntab.go
 public class GolangFunction extends GolangBinary {
 	List<String> file_name_list=null;
 
-	long info_offset=0;
+	Address info_addr=null;
 	Address func_addr=null;
 	Function func=null;
 	String func_name="";
 	List<Parameter> params=null;
 	Map<Integer, String> file_line_comment_map=null;
 
-	public GolangFunction(Program program, TaskMonitor monitor, MessageLog log, Address base, long func_info_offset, List<String> file_name_list, boolean debugmode) {
+	public GolangFunction(Program program, TaskMonitor monitor, MessageLog log, Address base, Address func_info_addr, List<String> file_name_list, boolean debugmode) {
 		super(program, monitor, log, debugmode);
 
 		if(!init_gopclntab(base)) {
 			return;
 		}
-		this.info_offset=func_info_offset;
+		this.info_addr=func_info_addr;
 		this.file_name_list=file_name_list;
 
 		if(!init_func()) {
@@ -45,7 +46,7 @@ public class GolangFunction extends GolangBinary {
 	}
 
 	boolean init_func() {
-		long entry_addr_value=get_address_value(get_address(gopclntab_base, info_offset), pointer_size);
+		long entry_addr_value=get_address_value(info_addr, pointer_size);
 		func_addr=program.getAddressFactory().getDefaultAddressSpace().getAddress(entry_addr_value);
 		func=program.getFunctionManager().getFunctionAt(func_addr);
 		if(func==null) {
@@ -72,13 +73,28 @@ public class GolangFunction extends GolangBinary {
 	}
 
 	boolean init_func_name() {
-		int func_name_offset=(int)get_address_value(get_address(gopclntab_base, info_offset+pointer_size), 4);
-		func_name=create_string_data(get_address(gopclntab_base, func_name_offset));
+		boolean is_go116=false;
+		if(compare_go_version("go1.16beta1")<=0) {
+			is_go116=true;
+		}
+
+		int func_name_offset=(int)get_address_value(get_address(info_addr, pointer_size), 4);
+		Address func_name_addr=null;
+		if(is_go116) {
+			Address func_name_base=get_address(gopclntab_base, get_address_value(get_address(gopclntab_base, 8+pointer_size*2), pointer_size));
+			func_name_addr=get_address(func_name_base, func_name_offset);
+		}else {
+			func_name_addr=get_address(gopclntab_base, func_name_offset);
+		}
+		if(func_name_addr==null) {
+			return false;
+		}
+		func_name=create_string_data(func_name_addr);
 		return true;
 	}
 
 	boolean init_params() {
-		int args_num=(int)get_address_value(get_address(gopclntab_base, info_offset+pointer_size+4), 4);
+		int args_num=(int)get_address_value(get_address(info_addr, pointer_size+4), 4);
 
 		try {
 			params=new ArrayList<>();
@@ -102,17 +118,30 @@ public class GolangFunction extends GolangBinary {
 	}
 
 	boolean init_file_line_map() {
+		boolean is_go116=false;
+		if(compare_go_version("go1.16beta1")<=0) {
+			is_go116=true;
+		}
+
 		file_line_comment_map = new HashMap<>();
 
-		int pcln_offset=(int)get_address_value(get_address(gopclntab_base, info_offset+pointer_size+5*4), 4);
+		Address pcln_base=null;
+		int pcln_offset=(int)get_address_value(get_address(info_addr, pointer_size+5*4), 4);
+		if(is_go116) {
+			pcln_base=get_address(gopclntab_base, get_address_value(get_address(gopclntab_base, 8+pointer_size*5), pointer_size));
+			pcln_base=get_address(pcln_base, pcln_offset);
+		}else {
+			pcln_base=get_address(gopclntab_base, pcln_offset);
+		}
+
 		long line_num=-1;
 		int i=0;
 		boolean first=true;
 		int pc_offset=0;
 		while(true) {
-			int line_num_add=read_pc_data(get_address(gopclntab_base, pcln_offset+i));
+			int line_num_add=read_pc_data(get_address(pcln_base, i));
 			i+=Integer.toBinaryString(line_num_add).length()/8+1;
-			int byte_size=read_pc_data(get_address(gopclntab_base, pcln_offset+i));
+			int byte_size=read_pc_data(get_address(pcln_base, i));
 			i+=Integer.toBinaryString(byte_size).length()/8+1;
 			if(line_num_add==0 && !first) {
 				break;
@@ -134,15 +163,28 @@ public class GolangFunction extends GolangBinary {
 	}
 
 	String pc_to_file_name(int target_pc_offset) {
-		int pcfile_offset=(int)get_address_value(get_address(gopclntab_base, info_offset+pointer_size+4*4), 4);
+		boolean is_go116=false;
+		if(compare_go_version("go1.16beta1")<=0) {
+			is_go116=true;
+		}
+
+		Address pcfile_base=null;
+		int pcfile_offset=(int)get_address_value(get_address(info_addr, pointer_size+4*4), 4);
+		if(is_go116) {
+			pcfile_base=get_address(gopclntab_base, get_address_value(get_address(gopclntab_base, 8+pointer_size*5), pointer_size));
+			pcfile_base=get_address(pcfile_base, pcfile_offset);
+		}else {
+			pcfile_base=get_address(gopclntab_base, pcfile_offset);
+		}
+
 		long file_no=-1;
 		int i=0;
 		boolean first=true;
 		int pc_offset=0;
 		while(true) {
-			int file_no_add=read_pc_data(get_address(gopclntab_base, pcfile_offset+i));
+			int file_no_add=read_pc_data(get_address(pcfile_base, i));
 			i+=Integer.toBinaryString(file_no_add).length()/8+1;
-			int byte_size=read_pc_data(get_address(gopclntab_base, pcfile_offset+i));
+			int byte_size=read_pc_data(get_address(pcfile_base, i));
 			i+=Integer.toBinaryString(byte_size).length()/8+1;
 			if(file_no_add==0 && !first) {
 				break;
@@ -153,6 +195,20 @@ public class GolangFunction extends GolangBinary {
 			pc_offset+=byte_size*quantum;
 
 			if(target_pc_offset<=pc_offset) {
+				if(is_go116) {
+					int cu_offset=(int)get_address_value(get_address(info_addr, pointer_size+4*7), 4);
+					Address cutab_base=get_address(gopclntab_base, get_address_value(get_address(gopclntab_base, 8+pointer_size*3), pointer_size));
+					if(cutab_base==null) {
+						return null;
+					}
+					long file_no_offset=get_address_value(get_address(cutab_base, (cu_offset+file_no)*4), 4);
+					Address file_base=get_address(gopclntab_base, get_address_value(get_address(gopclntab_base, 8+pointer_size*4), pointer_size));
+					Address file_name_addr=get_address(file_base, file_no_offset);
+					if(file_name_addr==null) {
+						return null;
+					}
+					return create_string_data(file_name_addr);
+				}
 				if((int)file_no-1<0 || file_name_list.size()<=(int)file_no-1) {
 					append_message(String.format("File name list index out of range: %x", (int)file_no-1));
 					return null;

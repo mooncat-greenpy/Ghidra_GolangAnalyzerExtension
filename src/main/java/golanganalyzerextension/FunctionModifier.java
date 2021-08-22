@@ -15,6 +15,7 @@ import ghidra.program.model.symbol.SourceType;
 import ghidra.util.task.TaskMonitor;
 
 
+// debug/gosym/pclntab.go
 public class FunctionModifier extends GolangBinary {
 	long func_num=0;
 	List<GolangFunction> gofunc_list=null;
@@ -36,8 +37,16 @@ public class FunctionModifier extends GolangBinary {
 	}
 
 	boolean init_file_name_list() {
+		boolean is_go116=false;
+		if(compare_go_version("go1.16beta1")<=0) {
+			is_go116=true;
+		}
+
 		func_num=get_address_value(get_address(gopclntab_base, 8), pointer_size);
 		file_name_list=new ArrayList<>();
+		if(is_go116) {
+			return true;
+		}
 		Address func_list_base=get_address(gopclntab_base, 8+pointer_size);
 		if(func_list_base==null) {
 			return false;
@@ -45,32 +54,52 @@ public class FunctionModifier extends GolangBinary {
 
 		long file_name_table_offset=get_address_value(get_address(func_list_base, func_num*pointer_size*2+pointer_size), pointer_size);
 		Address file_name_table=get_address(gopclntab_base, file_name_table_offset);
-		if(file_name_table==null) {
+		long file_name_table_size=get_address_value(file_name_table, 4);
+		if(file_name_table==null || file_name_table_size==0) {
 			return false;
 		}
 
-		long file_name_table_size=get_address_value(file_name_table, 4);
 		for(int i=1;i<file_name_table_size;i++) {
 			long file_name_offset=get_address_value(get_address(file_name_table, 4*i),4);
 			if(file_name_offset==0) {
 				return false;
 			}
-			String file_name=create_string_data(get_address(gopclntab_base, file_name_offset));
-			file_name_list.add(file_name);
+			Address file_name_addr=get_address(gopclntab_base, file_name_offset);
+			if(file_name_addr==null) {
+				return false;
+			}
+			file_name_list.add(create_string_data(file_name_addr));
 		}
 		return true;
 	}
 
 	boolean init_functions() {
+		boolean is_go116=false;
+		if(compare_go_version("go1.16beta1")<=0) {
+			is_go116=true;
+		}
+
 		gofunc_list=new ArrayList<>();
-		Address func_list_base=get_address(gopclntab_base, 8+pointer_size);
+		Address func_list_base=null;
+		if(is_go116) {
+			func_list_base=get_address(gopclntab_base, get_address_value(get_address(gopclntab_base, 8+pointer_size*6), pointer_size));
+		}else {
+			func_list_base=get_address(gopclntab_base, 8+pointer_size);
+		}
 		if(func_list_base==null) {
 			return false;
 		}
 		for(int i=0; i<func_num; i++) {
 			long func_addr_value=get_address_value(get_address(func_list_base, i*pointer_size*2), pointer_size);
 			long func_info_offset=get_address_value(get_address(func_list_base, i*pointer_size*2+pointer_size), pointer_size);
-			long func_entry_value=get_address_value(get_address(gopclntab_base, func_info_offset), pointer_size);
+			Address func_info_addr=null;
+			if(is_go116) {
+				func_info_addr=get_address(func_list_base, func_info_offset);
+			}else {
+				func_info_addr=get_address(gopclntab_base, func_info_offset);
+			}
+			long func_entry_value=get_address_value(func_info_addr, pointer_size);
+
 			if(func_addr_value==0 || func_info_offset==0 || func_entry_value==0) {
 				return false;
 			}
@@ -80,7 +109,7 @@ public class FunctionModifier extends GolangBinary {
 				continue;
 			}
 
-			GolangFunction gofunc=new GolangFunction(program, monitor, log, gopclntab_base, func_info_offset, file_name_list, debugmode);
+			GolangFunction gofunc=new GolangFunction(program, monitor, log, gopclntab_base, func_info_addr, file_name_list, debugmode);
 			gofunc_list.add(gofunc);
 		}
 		return true;

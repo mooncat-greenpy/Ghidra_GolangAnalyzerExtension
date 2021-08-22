@@ -153,7 +153,14 @@ public class GolangBinary {
 			return gopclntab_section.getStart();
 		}
 
+		// debug/gosym/pclntab.go
 		byte go12_magic[]= {(byte)0xfb,(byte)0xff,(byte)0xff,(byte)0xff};
+		boolean is_go116=false;
+		if(compare_go_version("go1.16beta1")<=0) {
+			is_go116=true;
+			go12_magic[0]=(byte)0xfa;
+		}
+
 		Address tmp_gopclntab_base=null;
 		while(true) {
 			tmp_gopclntab_base=memory.findBytes(tmp_gopclntab_base, go12_magic, new byte[] {(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff}, true, monitor);
@@ -163,10 +170,21 @@ public class GolangBinary {
 
 			int size=(int)get_address_value(get_address(tmp_gopclntab_base, 7), 1); // pointer size
 
-			Address func_list_base=get_address(tmp_gopclntab_base, 8+size);
+			Address func_list_base=null;
+			if(is_go116) {
+				func_list_base=get_address(tmp_gopclntab_base, get_address_value(get_address(tmp_gopclntab_base, 8+size*6), size));
+			}else {
+				func_list_base=get_address(tmp_gopclntab_base, 8+size);
+			}
 			long func_addr_value=get_address_value(get_address(func_list_base, 0), size);
 			long func_info_offset=get_address_value(get_address(func_list_base, size), size);
-			long func_entry_value=get_address_value(get_address(tmp_gopclntab_base, func_info_offset), size);
+			long func_entry_value=0;
+			if(is_go116) {
+				func_entry_value=get_address_value(get_address(func_list_base, func_info_offset), size);
+			}else {
+				func_entry_value=get_address_value(get_address(tmp_gopclntab_base, func_info_offset), size);
+			}
+
 			if(func_addr_value==func_entry_value && func_addr_value!=0) {
 				break;
 			}
@@ -267,6 +285,7 @@ public class GolangBinary {
 	}
 
 	int compare_go_version(String cmp_go_version) {
+		init_go_version();
 		String cmp1=cmp_go_version.substring(2);
 		String cmp2=go_version.length()>2?go_version.substring(2):"0.0.0";
 		String[] sp_cmp1=cmp1.split("\\.");
@@ -304,9 +323,11 @@ public class GolangBinary {
 				cmp1_minor=Integer.valueOf(tmp[0]);
 				cmp1_patch=Integer.valueOf(tmp[1]);
 			}
-		}else if(sp_cmp1.length>2) {
+		}else if(sp_cmp1.length>1) {
 			cmp1_minor=Integer.valueOf(sp_cmp1[1]);
-			cmp1_patch=Integer.valueOf(sp_cmp1[2]);
+			if(sp_cmp1.length>2) {
+				cmp1_patch=Integer.valueOf(sp_cmp1[2]);
+			}
 		}
 		int cmp2_minor=0;
 		int cmp2_patch=0;
@@ -326,23 +347,25 @@ public class GolangBinary {
 				cmp2_minor=Integer.valueOf(tmp[0]);
 				cmp2_patch=Integer.valueOf(tmp[1]);
 			}
-		}else if(sp_cmp2.length>2) {
+		}else if(sp_cmp2.length>1) {
 			cmp2_minor=Integer.valueOf(sp_cmp2[1]);
-			cmp2_patch=Integer.valueOf(sp_cmp2[2]);
+			if(sp_cmp2.length>2) {
+				cmp2_patch=Integer.valueOf(sp_cmp2[2]);
+			}
 		}
 		if(cmp1_minor>cmp2_minor) {
 			return 1;
 		}else if(cmp1_minor<cmp2_minor) {
 			return -1;
 		}
-		if(!cmp1_rc && cmp2_rc) {
-			return 1;
-		}else if(cmp1_rc && !cmp2_rc) {
-			return -1;
-		}
 		if(!cmp1_beta && cmp2_beta) {
 			return 1;
 		}else if(cmp1_beta && !cmp2_beta) {
+			return -1;
+		}
+		if(!cmp1_rc && cmp2_rc) {
+			return 1;
+		}else if(cmp1_rc && !cmp2_rc) {
 			return -1;
 		}
 		if(cmp1_patch>cmp2_patch) {
