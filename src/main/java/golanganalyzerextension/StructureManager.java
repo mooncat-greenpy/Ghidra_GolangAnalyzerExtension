@@ -104,9 +104,12 @@ public class StructureManager extends GolangBinary {
 			if(len==0) {
 				return new VoidDataType();
 			}
-			DataType inner_datatype=new UnsignedCharDataType();
+			DataType inner_datatype=null;
 			if(basic_type_info_map.containsKey(elem_type_key)) {
 				inner_datatype=basic_type_info_map.get(elem_type_key).get_datatype();
+			}
+			if(inner_datatype==null || inner_datatype.getLength()<=0) {
+				inner_datatype=new UnsignedCharDataType();
 			}
 			ArrayDataType array_datatype=new ArrayDataType(inner_datatype, (int)len, inner_datatype.getLength());
 			return array_datatype;
@@ -209,9 +212,12 @@ public class StructureManager extends GolangBinary {
 			if(!once) {
 				return new PointerDataType();
 			}
-			DataType inner_datatype=new VoidDataType();
+			DataType inner_datatype=null;
 			if(basic_type_info_map.containsKey(elem_type_key)) {
 				inner_datatype=basic_type_info_map.get(elem_type_key).get_datatype();
+			}
+			if(inner_datatype==null || inner_datatype.getLength()<=0) {
+				inner_datatype=new VoidDataType();
 			}
 			DataType ptr_datatype=new PointerDataType(inner_datatype, pointer_size);
 			return ptr_datatype;
@@ -224,9 +230,12 @@ public class StructureManager extends GolangBinary {
 			this.elem_type_key=elem_type_key;
 		}
 		public DataType get_datatype() {
-			DataType inner_datatype=new PointerDataType(new VoidDataType(), pointer_size);
+			DataType inner_datatype=null;
 			if(basic_type_info_map.containsKey(elem_type_key)) {
 				inner_datatype=basic_type_info_map.get(elem_type_key).get_datatype();
+			}
+			if(inner_datatype==null || inner_datatype.getLength()<=0) {
+				inner_datatype=new VoidDataType();
 			}
 			// cmd/cgo/out.go
 			StructureDataType slice_datatype=new StructureDataType(name, 0);
@@ -258,7 +267,9 @@ public class StructureManager extends GolangBinary {
 				if(basic_type_info_map.containsKey(field_key)) {
 					field_datatype=basic_type_info_map.get(field_key).get_datatype();
 				}
-				structure_datatype.add(field_datatype, field_name_list.get(i), null);
+				if(field_datatype.getLength()>0){
+					structure_datatype.add(field_datatype, field_name_list.get(i), null);
+				}
 			}
 			return structure_datatype;
 		}
@@ -283,6 +294,7 @@ public class StructureManager extends GolangBinary {
 		basic_type_info_map=new HashMap<Long, BasicTypeInfo>();
 
 		if(!init_gopclntab()) {
+			append_message("Failed to init gopclntab");
 			return;
 		}
 
@@ -291,6 +303,7 @@ public class StructureManager extends GolangBinary {
 		}
 
 		if(!init_basig_golang_datatype()) {
+			append_message("Failed to init datatype");
 			return;
 		}
 
@@ -323,7 +336,10 @@ public class StructureManager extends GolangBinary {
 
 	DataType get_datatype_by_name(String name) {
 		if(name_to_type_map.containsKey(name) && basic_type_info_map.containsKey(name_to_type_map.get(name))) {
-			return basic_type_info_map.get(name_to_type_map.get(name)).get_datatype();
+			DataType tmp=basic_type_info_map.get(name_to_type_map.get(name)).get_datatype();
+			if(tmp.getLength()>0) {
+				return tmp;
+			}
 		}
 		if(hardcode_datatype_map.containsKey(name)) {
 			return hardcode_datatype_map.get(name);
@@ -366,6 +382,11 @@ public class StructureManager extends GolangBinary {
 	}
 
 	boolean init_basig_golang_datatype() {
+		boolean is_go116=false;
+		if(compare_go_version("go1.16beta1")<=0) {
+			is_go116=true;
+		}
+
 		ByteBuffer buffer=ByteBuffer.allocate(Long.BYTES);
 		buffer.putLong(gopclntab_base.getOffset());
 		buffer.flip();
@@ -387,9 +408,18 @@ public class StructureManager extends GolangBinary {
 			}
 
 			// runtime/symtab.go
-			long type_addr_value=get_address_value(get_address(base_addr, 25*pointer_size), pointer_size);
-			long typelink_addr_value=get_address_value(get_address(base_addr, 30*pointer_size), pointer_size);
-			long typelink_len=get_address_value(get_address(base_addr, 31*pointer_size), pointer_size);
+			long type_addr_value=0;
+			long typelink_addr_value=0;
+			long typelink_len=0;
+			if(is_go116) {
+				type_addr_value=get_address_value(get_address(base_addr, 35*pointer_size), pointer_size);
+				typelink_addr_value=get_address_value(get_address(base_addr, 40*pointer_size), pointer_size);
+				typelink_len=get_address_value(get_address(base_addr, 41*pointer_size), pointer_size);
+			}else {
+				type_addr_value=get_address_value(get_address(base_addr, 25*pointer_size), pointer_size);
+				typelink_addr_value=get_address_value(get_address(base_addr, 30*pointer_size), pointer_size);
+				typelink_len=get_address_value(get_address(base_addr, 31*pointer_size), pointer_size);
+			}
 
 			Address type_addr=program.getAddressFactory().getAddress(String.format("%x", type_addr_value));
 			Address typelink_addr=program.getAddressFactory().getAddress(String.format("%x", typelink_addr_value));
@@ -423,8 +453,19 @@ public class StructureManager extends GolangBinary {
 	}
 
 	String get_type_string(Address address, int tflag) {
-		int size=(int)(get_address_value(get_address(address, 1), 1)<<8)+(int)(get_address_value(get_address(address, 2), 1));
-		String str=read_string(get_address(address, 3), size);
+		boolean is_go117=false;
+		if(compare_go_version("go1.17beta1")<=0) {
+			is_go117=true;
+		}
+
+		String str=null;
+		if(is_go117) {
+			int size=(int)(get_address_value(get_address(address, 1), 1));
+			str=read_string(get_address(address, 2), size);
+		}else {
+			int size=(int)(get_address_value(get_address(address, 1), 1)<<8)+(int)(get_address_value(get_address(address, 2), 1));
+			str=read_string(get_address(address, 3), size);
+		}
 		if(str.length()>0 && check_tflag(tflag, Tflag.ExtraStar)) {
 			str=str.substring(1);
 		}
@@ -451,6 +492,7 @@ public class StructureManager extends GolangBinary {
 		if(basic_type_info_map.containsKey(offset)) {
 			return true;
 		}
+
 		// reflect/type.go
 		long size=get_address_value(get_address(type_base_addr, offset), pointer_size);
 		long ptrdata=get_address_value(get_address(type_base_addr, offset+pointer_size), pointer_size);
