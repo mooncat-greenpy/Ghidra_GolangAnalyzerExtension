@@ -168,26 +168,29 @@ public class GolangBinary {
 				break;
 			}
 
-			int size=(int)get_address_value(get_address(tmp_gopclntab_base, 7), 1); // pointer size
+			int tmp_quantum=(int)get_address_value(get_address(tmp_gopclntab_base, 6), 1);
+			int tmp_pointer_size=(int)get_address_value(get_address(tmp_gopclntab_base, 7), 1);
 
 			Address func_list_base=null;
 			if(is_go116) {
-				func_list_base=get_address(tmp_gopclntab_base, get_address_value(get_address(tmp_gopclntab_base, 8+size*6), size));
+				func_list_base=get_address(tmp_gopclntab_base, get_address_value(get_address(tmp_gopclntab_base, 8+tmp_pointer_size*6), tmp_pointer_size));
 			}else {
-				func_list_base=get_address(tmp_gopclntab_base, 8+size);
+				func_list_base=get_address(tmp_gopclntab_base, 8+tmp_pointer_size);
 			}
-			long func_addr_value=get_address_value(get_address(func_list_base, 0), size);
-			long func_info_offset=get_address_value(get_address(func_list_base, size), size);
+			long func_addr_value=get_address_value(get_address(func_list_base, 0), tmp_pointer_size);
+			long func_info_offset=get_address_value(get_address(func_list_base, tmp_pointer_size), tmp_pointer_size);
 			long func_entry_value=0;
 			if(is_go116) {
-				func_entry_value=get_address_value(get_address(func_list_base, func_info_offset), size);
+				func_entry_value=get_address_value(get_address(func_list_base, func_info_offset), tmp_pointer_size);
 			}else {
-				func_entry_value=get_address_value(get_address(tmp_gopclntab_base, func_info_offset), size);
+				func_entry_value=get_address_value(get_address(tmp_gopclntab_base, func_info_offset), tmp_pointer_size);
 			}
 
-			if(func_addr_value==func_entry_value && func_addr_value!=0) {
+			if((tmp_quantum==1 || tmp_quantum==2 || tmp_quantum==4) && (tmp_pointer_size==4 || tmp_pointer_size==8) &&
+					func_addr_value==func_entry_value && func_addr_value!=0) {
 				break;
 			}
+
 			tmp_gopclntab_base=get_address(tmp_gopclntab_base, 4);
 			if(tmp_gopclntab_base==null) {
 				break;
@@ -213,6 +216,7 @@ public class GolangBinary {
 		this.pointer_size=(int)get_address_value(get_address(gopclntab_base, 7), 1);         // pointer size
 		if((quantum!=1 && quantum!=2 && quantum!=4) ||
 				(pointer_size!=4 && pointer_size!=8)) {
+			append_message(String.format("Invalid gopclntab addr: %x", gopclntab_base.getOffset()));
 			this.gopclntab_base=null;
 			return false;
 		}
@@ -235,6 +239,7 @@ public class GolangBinary {
 		base_addr=memory.findBytes(base_addr, build_info_magic, new byte[] {(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff}, true, monitor);
 		if(base_addr==null) {
 			append_message("Failed to find \"\\xff Go buildinf:\"");
+			go_version="go0.0.0";
 			return false;
 		}
 
