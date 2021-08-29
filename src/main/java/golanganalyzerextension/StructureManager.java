@@ -552,18 +552,10 @@ public class StructureManager extends GolangBinary {
 		String name="";
 		long ptr_to_this_off=0;
 		if(is_go16) {
-			Address string_struct_addr=program.getAddressFactory().getAddress(
-					String.format("%x", get_address_value(get_address(type_base_addr, offset+pointer_size*4+4+1*4), pointer_size)));
-			if(!is_valid_address(string_struct_addr)) {
+			name=read_string_struct(get_address_value(get_address(type_base_addr, offset+pointer_size*4+4+1*4), pointer_size), pointer_size);
+			if(name==null) {
 				return null;
 			}
-			Address string_addr=program.getAddressFactory().getAddress(
-					String.format("%x", get_address_value(string_struct_addr, pointer_size)));
-			if(!is_valid_address(string_addr)) {
-				return null;
-			}
-			long string_size=get_address_value(get_address(string_struct_addr, pointer_size), pointer_size);
-			name=read_string(string_addr, (int)string_size);
 			long x=get_address_value(get_address(type_base_addr, offset+pointer_size*5+4+1*4), pointer_size);
 			ptr_to_this_off=get_address_value(get_address(type_base_addr, offset+pointer_size*6+4+1*4), pointer_size);
 			if(ptr_to_this_off!=0) {

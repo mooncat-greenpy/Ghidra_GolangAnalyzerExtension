@@ -98,6 +98,23 @@ public class GolangBinary {
 		return "not found";
 	}
 
+	String read_string_struct(Address string_struct_addr, int value_size) {
+		if(!is_valid_address(string_struct_addr)) {
+			return null;
+		}
+		Address string_addr=program.getAddressFactory().getAddress(
+				String.format("%x", get_address_value(string_struct_addr, value_size)));
+		if(!is_valid_address(string_addr)) {
+			return null;
+		}
+		long string_size=get_address_value(get_address(string_struct_addr, value_size), value_size);
+		return read_string(string_addr, (int)string_size);
+	}
+
+	String read_string_struct(long string_struct_addr_value, int value_size) {
+		return read_string_struct(program.getAddressFactory().getAddress(String.format("%x", string_struct_addr_value)), value_size);
+	}
+
 	String create_string_data(Address address){
 		if(address==null) {
 			return "not found";
@@ -250,35 +267,13 @@ public class GolangBinary {
 			return false;
 		}
 
-		Address string_struct_addr=program.getAddressFactory().getAddress(
-				String.format("%x", get_address_value(get_address(base_addr, 16), size)));
-		if(!is_valid_address(string_struct_addr)) {
-			return false;
-		}
-		Address string_addr=program.getAddressFactory().getAddress(
-				String.format("%x", get_address_value(string_struct_addr, size)));
-		if(!is_valid_address(string_addr)) {
-			return false;
-		}
-		long string_size=get_address_value(get_address(string_struct_addr, size), size);
-		go_version=read_string(string_addr, (int)string_size);
+		go_version=read_string_struct(get_address_value(get_address(base_addr, 16), size), size);
 		if(go_version=="")
 		{
 			return false;
 		}
 
-		string_struct_addr=program.getAddressFactory().getAddress(
-				String.format("%x", get_address_value(get_address(base_addr, 16+size), size)));
-		if(!is_valid_address(string_struct_addr)) {
-			return false;
-		}
-		string_addr=program.getAddressFactory().getAddress(
-				String.format("%x", get_address_value(string_struct_addr, size)));
-		if(!is_valid_address(string_addr)) {
-			return false;
-		}
-		string_size=get_address_value(get_address(string_struct_addr, size), size);
-		go_version_mod=read_string(string_addr, (int)string_size);
+		go_version_mod=read_string_struct(get_address_value(get_address(base_addr, 16+size), size), size);
 		if(go_version_mod.length()>=33 && go_version_mod.charAt(go_version_mod.length()-17)=='\n')
 		{
 			go_version_mod=go_version_mod.substring(16, go_version_mod.length()-16);
