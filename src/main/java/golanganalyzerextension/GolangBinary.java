@@ -31,6 +31,15 @@ public class GolangBinary {
 	String go_version="";
 	String go_version_mod="";
 
+	private static class Global {
+		static Address gopclntab_base=null;
+		static int magic=0;
+		static int quantum=0;
+		static int pointer_size=0;
+		static String go_version="";
+		static String go_version_mod="";
+	}
+
 	public GolangBinary(Program program, TaskMonitor monitor, MessageLog log, boolean debugmode) {
 		this.program=program;
 		this.monitor=monitor;
@@ -39,6 +48,13 @@ public class GolangBinary {
 		this.memory=program.getMemory();
 		this.ok=false;
 		this.debugmode=debugmode;
+
+		this.gopclntab_base=Global.gopclntab_base;
+		this.magic=Global.magic;
+		this.quantum=Global.quantum;
+		this.pointer_size=Global.pointer_size;
+		this.go_version=Global.go_version;
+		this.go_version_mod=Global.go_version_mod;
 	}
 
 	boolean is_valid_address(Address addr) {
@@ -218,6 +234,9 @@ public class GolangBinary {
 	}
 
 	boolean init_gopclntab(Address addr) {
+		if(gopclntab_base!=null) {
+			return true;
+		}
 		if(addr==null) {
 			addr=get_gopclntab();
 		}
@@ -237,6 +256,12 @@ public class GolangBinary {
 			this.gopclntab_base=null;
 			return false;
 		}
+
+		Global.gopclntab_base=gopclntab_base;
+		Global.magic=magic;
+		Global.quantum=quantum;
+		Global.pointer_size=pointer_size;
+
 		return true;
 	}
 
@@ -257,6 +282,7 @@ public class GolangBinary {
 		if(base_addr==null) {
 			append_message("Failed to find \"\\xff Go buildinf:\"");
 			go_version="go0.0.0";
+			Global.go_version=go_version;
 			return false;
 		}
 
@@ -268,6 +294,7 @@ public class GolangBinary {
 		}
 
 		go_version=read_string_struct(get_address_value(get_address(base_addr, 16), size), size);
+		Global.go_version=go_version;
 		if(go_version=="")
 		{
 			return false;
