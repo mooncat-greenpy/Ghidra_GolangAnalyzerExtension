@@ -109,7 +109,7 @@ public class FunctionModifier extends GolangBinary {
 				continue;
 			}
 
-			GolangFunction gofunc=new GolangFunction(program, monitor, log, gopclntab_base, func_info_addr, file_name_list, debugmode);
+			GolangFunction gofunc=new GolangFunction(this, func_info_addr);
 			gofunc_list.add(gofunc);
 		}
 		return true;

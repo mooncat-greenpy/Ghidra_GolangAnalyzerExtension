@@ -45,6 +45,19 @@ public class GolangFunction extends GolangBinary {
 		this.ok=true;
 	}
 
+	public GolangFunction(FunctionModifier obj, Address func_info_addr) {
+		super(obj);
+
+		this.file_name_list=obj.file_name_list;
+		this.info_addr=func_info_addr;
+
+		if(!init_func()) {
+			return;
+		}
+
+		this.ok=true;
+	}
+
 	boolean init_func() {
 		long entry_addr_value=get_address_value(info_addr, pointer_size);
 		func_addr=program.getAddressFactory().getDefaultAddressSpace().getAddress(entry_addr_value);
