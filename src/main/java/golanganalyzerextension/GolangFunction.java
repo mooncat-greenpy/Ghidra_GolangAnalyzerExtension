@@ -162,12 +162,12 @@ public class GolangFunction extends GolangBinary {
 			params=new ArrayList<>();
 			for(int i=0;i<args_num && i<50;i++) {
 				DataType data_type=null;
-				if(i<func.getParameterCount()) {
-					data_type=func.getParameter(i).getDataType();
-				}else if(pointer_size==8) {
+				if(pointer_size==8) {
 					data_type=new Undefined8DataType();
-				}else {
+				}else if(pointer_size==4) {
 					data_type=new Undefined4DataType();
+				}else {
+					data_type=func.getParameter(i).getDataType();
 				}
 				String reg_name=null;
 				if(is_reg_arg) {
