@@ -595,6 +595,7 @@ public class StructureManager extends GolangBinary {
 
 		create_label(get_address(type_base_addr, offset), String.format("datatype.%s.%s", basic_info.kind.name(), basic_info.name));
 		try {
+			program_listing.clearCodeUnits(get_address(type_base_addr, offset), get_address(type_base_addr, offset+get_datatype_by_name("_type").getLength()), false);
 			program.getListing().createData(get_address(type_base_addr, offset), get_datatype_by_name("_type"));
 			program.getListing().setComment(get_address(type_base_addr, offset+pointer_size*2+4+1*3), ghidra.program.model.listing.CodeUnit.EOL_COMMENT, basic_info.kind.name());
 			program.getListing().setComment(get_address(type_base_addr, offset+pointer_size*4+4+1*4), ghidra.program.model.listing.CodeUnit.EOL_COMMENT, basic_info.name);
@@ -603,7 +604,7 @@ public class StructureManager extends GolangBinary {
 						String.format("%x", type_base_addr.getOffset()+basic_info.ptr_to_this_off));
 			}
 		} catch (CodeUnitInsertionException | DataTypeConflictException e) {
-			append_message(String.format("Failed to create data: %x %s", get_address(type_base_addr, offset).getOffset(), basic_info.name));
+			append_message(String.format("Failed to create data: %s %x %s", e.getMessage(), get_address(type_base_addr, offset).getOffset(), basic_info.name));
 		}
 
 		Address ext_base_addr=get_address(type_base_addr, offset+pointer_size*4+16);

@@ -4,19 +4,19 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import ghidra.app.cmd.function.CreateFunctionCmd;
-import ghidra.app.util.importer.MessageLog;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.Undefined4DataType;
 import ghidra.program.model.data.Undefined8DataType;
 import ghidra.program.model.listing.Function;
+import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.listing.Parameter;
 import ghidra.program.model.listing.ParameterImpl;
-import ghidra.program.model.listing.Program;
+import ghidra.program.model.scalar.Scalar;
 import ghidra.program.model.symbol.SourceType;
-import ghidra.util.task.TaskMonitor;
 
 // debug/gosym/pclntab.go
 public class GolangFunction extends GolangBinary {
@@ -24,32 +24,20 @@ public class GolangFunction extends GolangBinary {
 
 	Address info_addr=null;
 	Address func_addr=null;
+	long func_size=0;
 	Function func=null;
 	String func_name="";
 	List<Parameter> params=null;
 	Map<Integer, String> file_line_comment_map=null;
+	Map<Integer, Long> frame_map=null;
+	boolean is_reg_arg=false;
 
-	public GolangFunction(Program program, TaskMonitor monitor, MessageLog log, Address base, Address func_info_addr, List<String> file_name_list, boolean debugmode) {
-		super(program, monitor, log, debugmode);
-
-		if(!init_gopclntab(base)) {
-			return;
-		}
-		this.info_addr=func_info_addr;
-		this.file_name_list=file_name_list;
-
-		if(!init_func()) {
-			return;
-		}
-
-		this.ok=true;
-	}
-
-	public GolangFunction(FunctionModifier obj, Address func_info_addr) {
+	public GolangFunction(FunctionModifier obj, Address func_info_addr, long func_size) {
 		super(obj);
 
 		this.file_name_list=obj.file_name_list;
 		this.info_addr=func_info_addr;
+		this.func_size=func_size;
 
 		if(!init_func()) {
 			return;
@@ -106,12 +94,73 @@ public class GolangFunction extends GolangBinary {
 		return true;
 	}
 
+	Map<Integer, String> reg_arg_map= new HashMap<Integer, String>(){
+		{
+			put(1, "RAX");
+			put(2, "RBX");
+			put(3, "RCX");
+			put(4, "RDI");
+			put(5, "RSI");
+			put(6, "R8");
+			put(7, "R9");
+			put(8, "R10");
+			put(9, "R11");
+		}
+	};
+	String get_reg_arg_name(int arg_count, int arg_num) {
+		if(arg_num>=reg_arg_map.size()) {
+			arg_count-=arg_num-reg_arg_map.size();
+		}
+		return reg_arg_map.get(arg_count);
+	}
+
+	void check_inst_reg_arg(Instruction inst, int arg_num) {
+		if(compare_go_version("go1.17beta1")>0) {
+			return;
+		}
+		String mnemonic=inst.getMnemonicString();
+		if(!mnemonic.equals("MOV") || inst.getNumOperands()<2) {
+			return;
+		}
+
+		Object op1[]=inst.getOpObjects(0);
+		Object op2[]=inst.getOpObjects(1);
+		if(op1.length<2 || op2.length<1) {
+			return;
+		}
+
+		if(!op1[0].toString().equals("RSP") ||
+				!(op1[1] instanceof Scalar)) {
+			return;
+		}
+		long frame_size=get_frame((int)(inst.getAddress().getOffset()-func_addr.getOffset()));
+		int arg_count=(Integer.decode(op1[1].toString())-(int)frame_size-pointer_size)/pointer_size+1;
+		String reg_arg_name=get_reg_arg_name(arg_count, arg_num);
+		if(reg_arg_name==null) {
+			return;
+		}
+		if(reg_arg_name.equals(op2[0].toString())) {
+			is_reg_arg=true;
+		}
+	}
+
 	boolean init_params() {
-		int args_num=(int)get_address_value(get_address(info_addr, pointer_size+4), 4);
+		int args_num=(int)get_address_value(get_address(info_addr, pointer_size+4), 4)/pointer_size;
+
+		init_frame_map();
+
+		Instruction inst=program_listing.getInstructionAt(func_addr);
+		while(inst!=null && inst.getAddress().getOffset()<func_addr.getOffset()+func_size) {
+			check_inst_reg_arg(inst, args_num);
+			if(is_reg_arg) {
+				break;
+			}
+			inst=inst.getNext();
+		}
 
 		try {
 			params=new ArrayList<>();
-			for(int i=0;i<args_num/pointer_size && i<50;i++) {
+			for(int i=0;i<args_num && i<50;i++) {
 				DataType data_type=null;
 				if(i<func.getParameterCount()) {
 					data_type=func.getParameter(i).getDataType();
@@ -120,7 +169,16 @@ public class GolangFunction extends GolangBinary {
 				}else {
 					data_type=new Undefined4DataType();
 				}
-				Parameter add_param=new ParameterImpl(String.format("param_%d", i+1), data_type, (i+1)*pointer_size, func.getProgram(), SourceType.USER_DEFINED);
+				String reg_name=null;
+				if(is_reg_arg) {
+					reg_name=get_reg_arg_name(i+1, args_num);
+				}
+				Parameter add_param=null;
+				if(reg_name==null) {
+					add_param=new ParameterImpl(String.format("param_%d", i+1), data_type, (i+1)*pointer_size, func.getProgram(), SourceType.USER_DEFINED);
+				}else {
+					add_param=new ParameterImpl(String.format("param_%d", i+1), data_type, program.getRegister(reg_name), func.getProgram(), SourceType.USER_DEFINED);
+				}
 				params.add(add_param);
 			}
 		}catch(Exception e) {
@@ -173,6 +231,57 @@ public class GolangFunction extends GolangBinary {
 			file_line_comment_map.put(key, String.format("%s:%d", file_name, line_num));
 		}
 		return true;
+	}
+
+	boolean init_frame_map() {
+		boolean is_go116=false;
+		if(compare_go_version("go1.16beta1")<=0) {
+			is_go116=true;
+		}
+
+		frame_map = new TreeMap<>();
+
+		Address pcln_base=null;
+		int pcln_offset=(int)get_address_value(get_address(info_addr, pointer_size+3*4), 4);
+		if(is_go116) {
+			pcln_base=get_address(gopclntab_base, get_address_value(get_address(gopclntab_base, 8+pointer_size*5), pointer_size));
+			pcln_base=get_address(pcln_base, pcln_offset);
+		}else {
+			pcln_base=get_address(gopclntab_base, pcln_offset);
+		}
+
+		long frame_size=-1;
+		int i=0;
+		boolean first=true;
+		int pc_offset=0;
+		while(true) {
+			int frame_size_add=read_pc_data(get_address(pcln_base, i));
+			i+=Integer.toBinaryString(frame_size_add).length()/8+1;
+			int byte_size=read_pc_data(get_address(pcln_base, i));
+			i+=Integer.toBinaryString(byte_size).length()/8+1;
+			if(frame_size_add==0 && !first) {
+				break;
+			}
+
+			first=false;
+			frame_size_add=zig_zag_decode(frame_size_add);
+			frame_size+=frame_size_add;
+			pc_offset+=byte_size*quantum;
+
+			frame_map.put(pc_offset, frame_size);
+		}
+		return true;
+	}
+
+	long get_frame(int pc_offset) {
+		long frame_size=0;
+		for(int i : frame_map.keySet()) {
+			frame_size=frame_map.get(i);
+			if(pc_offset<i) {
+				break;
+			}
+		}
+		return frame_size;
 	}
 
 	String pc_to_file_name(int target_pc_offset) {

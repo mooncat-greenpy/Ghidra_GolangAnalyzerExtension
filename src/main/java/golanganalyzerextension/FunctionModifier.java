@@ -99,6 +99,7 @@ public class FunctionModifier extends GolangBinary {
 				func_info_addr=get_address(gopclntab_base, func_info_offset);
 			}
 			long func_entry_value=get_address_value(func_info_addr, pointer_size);
+			long func_end_value=get_address_value(get_address(func_list_base, i*pointer_size*2+pointer_size*2), pointer_size);
 
 			if(func_addr_value==0 || func_info_offset==0 || func_entry_value==0) {
 				return false;
@@ -109,7 +110,7 @@ public class FunctionModifier extends GolangBinary {
 				continue;
 			}
 
-			GolangFunction gofunc=new GolangFunction(this, func_info_addr);
+			GolangFunction gofunc=new GolangFunction(this, func_info_addr, func_end_value-func_entry_value);
 			gofunc_list.add(gofunc);
 		}
 		return true;
@@ -145,7 +146,7 @@ public class FunctionModifier extends GolangBinary {
 			return;
 		}
 		try {
-			func.setName(func_name, SourceType.ANALYSIS);
+			func.setName(func_name, SourceType.USER_DEFINED);
 		}catch(Exception e) {
 			append_message(String.format("Failed to set function name: %s", e.getMessage()));
 		}

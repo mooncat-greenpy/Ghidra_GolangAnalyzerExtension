@@ -136,15 +136,17 @@ public class GolangBinary {
 		if(address==null) {
 			return "not found";
 		}
+		program_listing.clearCodeUnits(address, address.add(1), false);
 		Data string_data=program_listing.getDefinedDataAt(address);
 		if(string_data==null) {
 			try {
 				string_data=program_listing.createData(address, new StringDataType());
+				if(!string_data.getDataType().isEquivalent((new StringDataType()))) {
+					return "not found";
+				}
 			} catch (CodeUnitInsertionException | DataTypeConflictException e) {
 				append_message(String.format("Failed to create string data: %s %x", e.getMessage(), address.getOffset()));
 			}
-		}else if(!string_data.getDataType().isEquivalent((new StringDataType()))) {
-			return "not found";
 		}
 		if(string_data==null) {
 			Address zero_addr=memory.findBytes(address, new byte[] {(byte)0x0}, new byte[] {(byte)0xff}, true, monitor);
@@ -289,13 +291,17 @@ public class GolangBinary {
 		}
 
 		go_version=read_string_struct(get_address_value(get_address(base_addr, 16), size), size);
-		if(go_version=="")
+		if(go_version==null)
 		{
+			go_version="";
 			return false;
 		}
 
 		go_version_mod=read_string_struct(get_address_value(get_address(base_addr, 16+size), size), size);
-		if(go_version_mod.length()>=33 && go_version_mod.charAt(go_version_mod.length()-17)=='\n')
+		if(go_version_mod==null) {
+			go_version_mod="";
+		}
+		else if(go_version_mod.length()>=33 && go_version_mod.charAt(go_version_mod.length()-17)=='\n')
 		{
 			go_version_mod=go_version_mod.substring(16, go_version_mod.length()-16);
 		}
