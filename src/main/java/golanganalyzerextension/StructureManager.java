@@ -232,9 +232,9 @@ public class StructureManager extends GolangBinary {
 			super(basic_info);
 			this.elem_type_key=elem_type_key;
 		}
-		public DataType get_datatype() {
+		public DataType get_datatype(boolean once) {
 			DataType inner_datatype=null;
-			if(basic_type_info_map.containsKey(elem_type_key)) {
+			if(once && basic_type_info_map.containsKey(elem_type_key)) {
 				inner_datatype=basic_type_info_map.get(elem_type_key).get_datatype();
 			}
 			if(inner_datatype==null || inner_datatype.getLength()<=0) {
@@ -323,11 +323,7 @@ public class StructureManager extends GolangBinary {
 		for(Map.Entry<Long, BasicTypeInfo> entry : basic_type_info_map.entrySet()) {
 			Category category=datatype_manager.createCategory(new CategoryPath(String.format("/Golang_%s", entry.getValue().kind.name())));
 			DataType datatype=null;
-			if(entry.getValue().kind==Kind.Ptr) {
-				datatype=entry.getValue().get_datatype(true);
-			}else {
-				datatype=entry.getValue().get_datatype();
-			}
+			datatype=entry.getValue().get_datatype(true);
 			if(datatype.getClass().getName()!="ghidra.program.model.data.StructureDataType" && datatype.getClass().getName()!="ghidra.program.model.data.VoidDataType") {
 				StructureDataType structure_datatype=new StructureDataType(entry.getValue().get_name(), 0);
 				structure_datatype.add(datatype);
