@@ -20,9 +20,20 @@ public class FunctionModifier extends GolangBinary {
 	long func_num=0;
 	List<GolangFunction> gofunc_list=null;
 	List<String> file_name_list=null;
+	boolean rename_option=false;
+	boolean param_option=false;
+	boolean comment_option=false;
 
-	public FunctionModifier(Program program, TaskMonitor monitor, MessageLog log, boolean debugmode) {
+	public FunctionModifier(Program program, TaskMonitor monitor, MessageLog log, boolean rename_option, boolean param_option, boolean comment_option, boolean debugmode) {
 		super(program, monitor, log, debugmode);
+
+		this.rename_option=rename_option;
+		this.param_option=param_option;
+		this.comment_option=comment_option;
+
+		if(!rename_option && !param_option && !comment_option) {
+			return;
+		}
 
 		if(!init_gopclntab()) {
 			return;
@@ -116,7 +127,7 @@ public class FunctionModifier extends GolangBinary {
 		return true;
 	}
 
-	void modify(boolean rename_option, boolean param_option, boolean comment_option) {
+	void modify() {
 		if(!ok) {
 			append_message("Failed to setup FunctionModifier");
 			return;

@@ -61,13 +61,11 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 	public boolean added(Program program, AddressSetView set, TaskMonitor monitor, MessageLog log)
 			throws CancelledException {
 		try {
-			FunctionModifier func_modifier=new FunctionModifier(program, monitor, log, debugmode_option);
-			func_modifier.modify(rename_option, param_option, comment_option);
+			FunctionModifier func_modifier=new FunctionModifier(program, monitor, log, rename_option, param_option, comment_option, debugmode_option);
+			func_modifier.modify();
 
-			if(datatype_option) {
-				StructureManager struct_manager=new StructureManager(program, monitor, log, debugmode_option);
-				struct_manager.modify();
-			}
+			StructureManager struct_manager=new StructureManager(program, monitor, log, datatype_option, debugmode_option);
+			struct_manager.modify();
 		}catch(Exception e) {
 			log.appendMsg(String.format("Error: %s", e.getMessage()));
 		}

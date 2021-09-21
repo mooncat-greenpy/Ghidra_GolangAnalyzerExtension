@@ -288,8 +288,12 @@ public class StructureManager extends GolangBinary {
 		}
 	}
 
-	public StructureManager(Program program, TaskMonitor monitor, MessageLog log, boolean debugmode) {
+	public StructureManager(Program program, TaskMonitor monitor, MessageLog log, boolean datatype_option, boolean debugmode) {
 		super(program, monitor, log, debugmode);
+
+		if(!datatype_option) {
+			return;
+		}
 
 		this.datatype_manager=program.getDataTypeManager();
 		hardcode_datatype_map=new HashMap<String, DataType>();
