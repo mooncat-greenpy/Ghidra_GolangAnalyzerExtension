@@ -23,14 +23,15 @@ public class GolangFunction extends GolangBinary {
 	List<String> file_name_list=null;
 
 	Address info_addr=null;
-	Address func_addr=null;
 	long func_size=0;
+	Map<Integer, Long> frame_map=null;
+	boolean is_reg_arg=false;
+
+	Address func_addr=null;
 	Function func=null;
 	String func_name="";
 	List<Parameter> params=null;
 	Map<Integer, String> file_line_comment_map=null;
-	Map<Integer, Long> frame_map=null;
-	boolean is_reg_arg=false;
 
 	public GolangFunction(FunctionModifier obj, Address func_info_addr, long func_size) {
 		super(obj);
@@ -38,10 +39,24 @@ public class GolangFunction extends GolangBinary {
 		this.file_name_list=obj.file_name_list;
 		this.info_addr=func_info_addr;
 		this.func_size=func_size;
+		this.frame_map = new TreeMap<>();
 
 		if(!init_func()) {
 			return;
 		}
+
+		this.ok=true;
+	}
+
+	public GolangFunction(FunctionModifier obj, Function func, String func_name, List<Parameter> params) {
+		super(obj);
+
+		this.func_addr=func.getEntryPoint();
+		this.func=func;
+		this.func_name=func_name;
+		this.params=params;
+		this.file_line_comment_map=new HashMap<>();
+		this.frame_map = new TreeMap<>();
 
 		this.ok=true;
 	}
@@ -94,7 +109,7 @@ public class GolangFunction extends GolangBinary {
 		return true;
 	}
 
-	Map<Integer, String> reg_arg_map= new HashMap<Integer, String>(){
+	Map<Integer, String> reg_arg_map= new HashMap<>(){
 		{
 			put(1, "RAX");
 			put(2, "RBX");
@@ -238,8 +253,6 @@ public class GolangFunction extends GolangBinary {
 		if(compare_go_version("go1.16beta1")<=0) {
 			is_go116=true;
 		}
-
-		frame_map = new TreeMap<>();
 
 		Address pcln_base=null;
 		int pcln_offset=(int)get_address_value(get_address(info_addr, pointer_size+3*4), 4);

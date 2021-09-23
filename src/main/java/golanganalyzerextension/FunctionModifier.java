@@ -6,12 +6,19 @@ import java.util.Map;
 
 import ghidra.app.util.importer.MessageLog;
 import ghidra.program.model.address.Address;
+import ghidra.program.model.data.ArrayDataType;
+import ghidra.program.model.data.ByteDataType;
 import ghidra.program.model.data.DataType;
+import ghidra.program.model.data.PointerDataType;
 import ghidra.program.model.listing.Function;
+import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.listing.Function.FunctionUpdateType;
+import ghidra.program.model.scalar.Scalar;
 import ghidra.program.model.listing.Parameter;
+import ghidra.program.model.listing.ParameterImpl;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.symbol.SourceType;
+import ghidra.util.exception.InvalidInputException;
 import ghidra.util.task.TaskMonitor;
 
 
@@ -44,6 +51,9 @@ public class FunctionModifier extends GolangBinary {
 		if(!init_functions()) {
 			return;
 		}
+
+		init_hardcode_functions();
+
 		ok=true;
 	}
 
@@ -123,6 +133,116 @@ public class FunctionModifier extends GolangBinary {
 
 			GolangFunction gofunc=new GolangFunction(this, func_info_addr, func_end_value-func_entry_value);
 			gofunc_list.add(gofunc);
+		}
+		return true;
+	}
+
+	enum MEMCPY_FUNC_STAGE {
+		GET_SRC,
+		ADD_SRC,
+		SET_DST,
+		ADD_DST,
+	}
+	boolean check_memcopy(Function func) {
+		Instruction inst=program_listing.getInstructionAt(func.getEntryPoint());
+		MEMCPY_FUNC_STAGE stage=MEMCPY_FUNC_STAGE.GET_SRC;
+		String tmp_reg="TMP";
+		int size=0;
+		while(inst!=null) {
+			if(inst.toString().contains("RET")) {
+				break;
+			}
+
+			String mnemonic=inst.getMnemonicString();
+			if(inst.getNumOperands()<2) {
+				return false;
+			}
+			Object op1[]=inst.getOpObjects(0);
+			Object op2[]=inst.getOpObjects(1);
+			if(op1.length<1 || op2.length<1) {
+				return false;
+			}
+			switch(stage) {
+			case GET_SRC:
+				if(!mnemonic.contains("MOV")) {
+					return false;
+				}
+				tmp_reg=op1[0].toString();
+				if(!op2[0].toString().equals(pointer_size==8?"RSI":"ESI")) {
+					return false;
+				}
+				stage=MEMCPY_FUNC_STAGE.ADD_SRC;
+				break;
+			case ADD_SRC:
+				if(!mnemonic.equals("ADD")) {
+					return false;
+				}
+				if(!op1[0].toString().equals(pointer_size==8?"RSI":"ESI")) {
+					return false;
+				}
+				if(!(op2[0] instanceof Scalar)) {
+					return false;
+				}
+				size+=Integer.decode(op2[0].toString());
+				stage=MEMCPY_FUNC_STAGE.SET_DST;
+				break;
+			case SET_DST:
+				if(!mnemonic.contains("MOV")) {
+					return false;
+				}
+				if(!op1[0].toString().equals(pointer_size==8?"RDI":"EDI")) {
+					return false;
+				}
+				if(!op2[0].toString().equals(tmp_reg)) {
+					return false;
+				}
+				stage=MEMCPY_FUNC_STAGE.ADD_DST;
+				break;
+			case ADD_DST:
+				if(!mnemonic.equals("ADD")) {
+					return false;
+				}
+				if(!op1[0].toString().equals(pointer_size==8?"RDI":"EDI")) {
+					return false;
+				}
+				if(!(op2[0] instanceof Scalar)) {
+					return false;
+				}
+				stage=MEMCPY_FUNC_STAGE.GET_SRC;
+				break;
+			}
+			inst=inst.getNext();
+		}
+		if(size<=0) {
+			return false;
+		}
+
+		List<Parameter> params=new ArrayList<>();
+		String reg_names[]= {pointer_size==8?"RDI":"EDI", pointer_size==8?"RSI":"ESI"};
+		for(int i=0;i<reg_names.length;i++) {
+			try {
+				DataType data_type=new ByteDataType();
+				ArrayDataType array_datatype=new ArrayDataType(data_type, size, data_type.getLength());
+				params.add(new ParameterImpl(String.format("param_%d", i), new PointerDataType(array_datatype, pointer_size), program.getRegister(reg_names[i]), func.getProgram(), SourceType.USER_DEFINED));
+			} catch (InvalidInputException e) {
+			}
+		}
+		GolangFunction gofunc=new GolangFunction(this, func, String.format("memcopy_%x_%s", size, func.getName()), params);
+		gofunc_list.add(gofunc);
+
+		return true;
+	}
+
+	boolean init_hardcode_functions(){
+		for(Function func : program.getFunctionManager().getFunctions(true)) {
+			Address entry_addr=func.getEntryPoint();
+			GolangFunction find=gofunc_list.stream().filter(v -> v.func_addr.equals(entry_addr)).findFirst().orElse(null);
+			if(find!=null) {
+				continue;
+			}
+			if(check_memcopy(func)) {
+				continue;
+			}
 		}
 		return true;
 	}
