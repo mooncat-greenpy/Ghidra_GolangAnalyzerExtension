@@ -10,6 +10,7 @@ import ghidra.program.model.data.ArrayDataType;
 import ghidra.program.model.data.ByteDataType;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.PointerDataType;
+import ghidra.program.model.lang.Register;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.listing.Function.FunctionUpdateType;
@@ -223,11 +224,103 @@ public class FunctionModifier extends GolangBinary {
 			try {
 				DataType data_type=new ByteDataType();
 				ArrayDataType array_datatype=new ArrayDataType(data_type, size, data_type.getLength());
-				params.add(new ParameterImpl(String.format("param_%d", i), new PointerDataType(array_datatype, pointer_size), program.getRegister(reg_names[i]), func.getProgram(), SourceType.USER_DEFINED));
+				params.add(new ParameterImpl(String.format("param_%d", i+1), new PointerDataType(array_datatype, pointer_size), program.getRegister(reg_names[i]), func.getProgram(), SourceType.USER_DEFINED));
 			} catch (InvalidInputException e) {
 			}
 		}
-		GolangFunction gofunc=new GolangFunction(this, func, String.format("memcopy_%x_%s", size, func.getName()), params);
+		GolangFunction gofunc=new GolangFunction(this, func, String.format("memcpy_%#x_%s", size, func.getName()), params);
+		gofunc_list.add(gofunc);
+
+		return true;
+	}
+
+	boolean check_memset(Function func) {
+		Instruction inst=program_listing.getInstructionAt(func.getEntryPoint());
+		String tmp_reg="TMP";
+		int start=-1;
+		int size=0;
+		while(inst!=null) {
+			if(inst.toString().contains("RET")) {
+				break;
+			}
+
+			String mnemonic=inst.getMnemonicString();
+			if(inst.getNumOperands()<1) {
+				return false;
+			}
+			Object op1[]=inst.getOpObjects(0);
+			if(op1.length>=2 && mnemonic.equals("STOSD")) {
+				if(!op1[1].toString().equals("EDI")) {
+					return false;
+				}
+				start=0;
+				tmp_reg="EAX";
+				size+=4;
+				inst=inst.getNext();
+				continue;
+			}
+			Object op2[]=inst.getOpObjects(1);
+			if(inst.getNumOperands()<2) {
+				return false;
+			}
+			if(op1.length<1 || op2.length<1) {
+				return false;
+			}
+			if(mnemonic.equals("MOVUPS")) {
+				if(op1.length<2) {
+					if(!op1[0].toString().equals(pointer_size==8?"RDI":"EDI")) {
+						return false;
+					}
+					if(start<0) {
+						start=0;
+					}
+				}else {
+					if(!op1[0].toString().equals(pointer_size==8?"RDI":"EDI")) {
+						return false;
+					}
+					if(!(op1[1] instanceof Scalar)) {
+						return false;
+					}
+					if(start<0) {
+						start=Integer.decode(op1[1].toString());
+					}
+				}
+				if(!op2[0].toString().contains("XMM")) {
+					return false;
+				}
+				tmp_reg=op2[0].toString();
+			}else if(mnemonic.equals("LEA")) {
+				if(op2.length<2) {
+					return false;
+				}
+				if(!op1[0].toString().equals(pointer_size==8?"RDI":"EDI")) {
+					return false;
+				}
+				if(!op2[0].toString().equals(pointer_size==8?"RDI":"EDI")) {
+					return false;
+				}
+				if(!(op2[1] instanceof Scalar)) {
+					return false;
+				}
+				size+=Integer.decode(op2[1].toString());
+			}else {
+				return false;
+			}
+			inst=inst.getNext();
+		}
+
+		List<Parameter> params=new ArrayList<>();
+		try {
+			DataType data_type=new ByteDataType();
+			ArrayDataType array_datatype=new ArrayDataType(data_type, size, data_type.getLength());
+			params.add(new ParameterImpl(String.format("param_%d", 1), new PointerDataType(array_datatype, pointer_size), program.getRegister(pointer_size==8?"RDI":"EDI"), func.getProgram(), SourceType.USER_DEFINED));
+
+			Register reg=program.getRegister(tmp_reg);
+			array_datatype=new ArrayDataType(data_type, reg.getBitLength()/8, data_type.getLength());
+			params.add(new ParameterImpl(String.format("param_%d", 2), new PointerDataType(array_datatype, pointer_size), reg, func.getProgram(), SourceType.USER_DEFINED));
+		} catch (InvalidInputException e) {
+		}
+		GolangFunction gofunc=new GolangFunction(this, func, String.format("memset_%#x_%#x_%s", start, size, func.getName()), params);
 		gofunc_list.add(gofunc);
 
 		return true;
@@ -241,6 +334,9 @@ public class FunctionModifier extends GolangBinary {
 				continue;
 			}
 			if(check_memcopy(func)) {
+				continue;
+			}
+			if(check_memset(func)) {
 				continue;
 			}
 		}
