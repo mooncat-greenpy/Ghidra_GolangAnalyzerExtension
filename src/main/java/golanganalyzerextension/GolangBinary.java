@@ -6,6 +6,7 @@ import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressOutOfBoundsException;
 import ghidra.program.model.data.DataTypeConflictException;
 import ghidra.program.model.data.StringDataType;
+import ghidra.program.model.lang.Register;
 import ghidra.program.model.listing.Data;
 import ghidra.program.model.listing.Listing;
 import ghidra.program.model.listing.Program;
@@ -102,6 +103,10 @@ public class GolangBinary {
 			append_message(String.format("Failed to get value: %s %x", e.getMessage(), address.getOffset()));
 		}
 		return 0;
+	}
+
+	boolean compare_register(Register cmp1, Register cmp2) {
+		return cmp1.getBaseRegister().equals(cmp2.getBaseRegister());
 	}
 
 	String read_string(Address address, int size) {

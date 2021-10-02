@@ -17,6 +17,7 @@ import ghidra.program.model.data.Undefined5DataType;
 import ghidra.program.model.data.Undefined6DataType;
 import ghidra.program.model.data.Undefined7DataType;
 import ghidra.program.model.data.Undefined8DataType;
+import ghidra.program.model.lang.Register;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.listing.Parameter;
@@ -31,7 +32,6 @@ public class GolangFunction extends GolangBinary {
 	Address info_addr=null;
 	long func_size=0;
 	Map<Integer, Long> frame_map=null;
-	boolean is_reg_arg=false;
 
 	Address func_addr=null;
 	Function func=null;
@@ -135,34 +135,120 @@ public class GolangFunction extends GolangBinary {
 		return reg_arg_map.get(arg_count);
 	}
 
-	void check_inst_reg_arg(Instruction inst, int arg_num) {
+	boolean check_inst_reg_arg(Instruction inst, int arg_num) {
 		if(compare_go_version("go1.17beta1")>0) {
-			return;
+			return false;
 		}
 		String mnemonic=inst.getMnemonicString();
 		if(!mnemonic.equals("MOV") || inst.getNumOperands()<2) {
-			return;
+			return false;
 		}
 
 		Object op1[]=inst.getOpObjects(0);
 		Object op2[]=inst.getOpObjects(1);
 		if(op1.length<2 || op2.length<1) {
-			return;
+			return false;
 		}
 
 		if(!op1[0].toString().equals("RSP") ||
 				!(op1[1] instanceof Scalar)) {
-			return;
+			return false;
 		}
 		long frame_size=get_frame((int)(inst.getAddress().getOffset()-func_addr.getOffset()));
 		int arg_count=(Integer.decode(op1[1].toString())-(int)frame_size-pointer_size)/pointer_size+1;
 		String reg_arg_name=get_reg_arg_name(arg_count, arg_num);
 		if(reg_arg_name==null) {
-			return;
+			return false;
 		}
 		if(reg_arg_name.equals(op2[0].toString())) {
-			is_reg_arg=true;
+			return true;
 		}
+		return false;
+	}
+
+	enum REG_FLAG {
+		NOT_FOUND,
+		READ,
+		WRITE,
+	}
+	boolean check_inst_builtin_reg_arg(Instruction inst, REG_FLAG reg_flag[], List<Register> reg_arg) {
+		if(inst.getMnemonicString().equals("RET") || inst.getMnemonicString().equals("JMP")) {
+			return true;
+		}
+		Object op_input[]=inst.getInputObjects();
+		Object op_output[]=inst.getResultObjects();
+
+		for(int j=0;j<op_input.length;j++) {
+			if(!(op_input[j] instanceof Register)) {
+				continue;
+			}
+			Register reg=(Register)op_input[j];
+			int reg_read_index=-1;
+			if(compare_register(reg, program.getRegister("AX"))) {
+				reg_read_index=0;
+			}else if(compare_register(reg, program.getRegister("BX"))) {
+				reg_read_index=1;
+			}else if(compare_register(reg, program.getRegister("CX"))) {
+				reg_read_index=2;
+			}else if(compare_register(reg, program.getRegister("DX"))) {
+				reg_read_index=3;
+			}else if(compare_register(reg, program.getRegister("DI"))) {
+				reg_read_index=4;
+			}else if(compare_register(reg, program.getRegister("SI"))) {
+				reg_read_index=5;
+			}else if(compare_register(reg, program.getRegister("BP"))) {
+				reg_read_index=6;
+			}
+
+			if(reg_read_index<0 || reg_flag.length<=reg_read_index) {
+				continue;
+			}
+			if(inst.getMnemonicString().equals("XOR") &&
+					(inst.getNumOperands()==2 && inst.getOpObjects(0).length>0 && inst.getOpObjects(1).length>0 &&
+					inst.getOpObjects(0)[0].toString().equals(inst.getOpObjects(1)[0].toString()))) {
+				continue;
+			}
+			if(inst.getMnemonicString().equals("PUSH") || inst.getMnemonicString().equals("XCHG")) {
+				continue;
+			}
+			if(reg_flag[reg_read_index].equals(REG_FLAG.NOT_FOUND)) {
+				reg_flag[reg_read_index]=REG_FLAG.READ;
+				reg_arg.add(reg);
+			}
+		}
+		for(int j=0;j<op_output.length;j++) {
+			if(!(op_output[j] instanceof Register)) {
+				continue;
+			}
+			Register reg=(Register)op_output[j];
+			int reg_write_index=-1;
+			if(compare_register(reg, program.getRegister("AX"))) {
+				reg_write_index=0;
+			}else if(compare_register(reg, program.getRegister("BX"))) {
+				reg_write_index=1;
+			}else if(compare_register(reg, program.getRegister("CX"))) {
+				reg_write_index=2;
+			}else if(compare_register(reg, program.getRegister("DX"))) {
+				reg_write_index=3;
+			}else if(compare_register(reg, program.getRegister("DI"))) {
+				reg_write_index=4;
+			}else if(compare_register(reg, program.getRegister("SI"))) {
+				reg_write_index=5;
+			}else if(compare_register(reg, program.getRegister("BP"))) {
+				reg_write_index=6;
+			}
+
+			if(reg_write_index<0 || reg_flag.length<=reg_write_index) {
+				continue;
+			}
+			if(inst.getMnemonicString().equals("XCHG")) {
+				reg_flag[reg_write_index]=REG_FLAG.WRITE;
+			}
+			if(reg_flag[reg_write_index].equals(REG_FLAG.NOT_FOUND)) {
+				reg_flag[reg_write_index]=REG_FLAG.WRITE;
+			}
+		}
+		return false;
 	}
 
 	boolean init_params() {
@@ -171,13 +257,25 @@ public class GolangFunction extends GolangBinary {
 
 		init_frame_map();
 
+		boolean is_reg_arg=false;
+		REG_FLAG builtin_reg_flag[]= {REG_FLAG.NOT_FOUND, REG_FLAG.NOT_FOUND, REG_FLAG.NOT_FOUND, REG_FLAG.NOT_FOUND, REG_FLAG.NOT_FOUND, REG_FLAG.NOT_FOUND, REG_FLAG.NOT_FOUND};
+		List<Register> builtin_reg_arg=new ArrayList<>();
+		boolean is_checked_builtin_reg=false;
 		Instruction inst=program_listing.getInstructionAt(func_addr);
 		while(inst!=null && inst.getAddress().getOffset()<func_addr.getOffset()+func_size) {
-			check_inst_reg_arg(inst, args_num);
-			if(is_reg_arg) {
-				break;
+			if(!is_reg_arg) {
+				is_reg_arg=check_inst_reg_arg(inst, args_num);
+			}
+			if(!is_checked_builtin_reg) {
+				is_checked_builtin_reg=check_inst_builtin_reg_arg(inst, builtin_reg_flag, builtin_reg_arg);
 			}
 			inst=inst.getNext();
+		}
+
+		boolean is_builtin_reg=false;
+		if(args_num==0 && builtin_reg_arg.size()>=2 && !is_reg_arg) {
+			is_builtin_reg=true;
+			args_num=builtin_reg_arg.size();
 		}
 
 		try {
@@ -187,6 +285,8 @@ public class GolangFunction extends GolangBinary {
 				int size=pointer_size;
 				if(i==args_num-1 && arg_size%pointer_size>0) {
 					size=arg_size%pointer_size;
+				}else if(is_builtin_reg && !is_reg_arg) {
+					size=builtin_reg_arg.get(i).getBitLength()/8;
 				}
 				if(size==8) {
 					data_type=new Undefined8DataType();
@@ -207,15 +307,17 @@ public class GolangFunction extends GolangBinary {
 				}else {
 					data_type=func.getParameter(i).getDataType();
 				}
-				String reg_name=null;
+				Register reg=null;
 				if(is_reg_arg) {
-					reg_name=get_reg_arg_name(i+1, args_num);
+					reg=program.getRegister(get_reg_arg_name(i+1, args_num));
+				}else if(is_builtin_reg) {
+					reg=builtin_reg_arg.get(i);
 				}
 				Parameter add_param=null;
-				if(reg_name==null) {
+				if(reg==null) {
 					add_param=new ParameterImpl(String.format("param_%d", i+1), data_type, (i+1)*pointer_size, func.getProgram(), SourceType.USER_DEFINED);
 				}else {
-					add_param=new ParameterImpl(String.format("param_%d", i+1), data_type, program.getRegister(reg_name), func.getProgram(), SourceType.USER_DEFINED);
+					add_param=new ParameterImpl(String.format("param_%d", i+1), data_type, reg, func.getProgram(), SourceType.USER_DEFINED);
 				}
 				params.add(add_param);
 			}
