@@ -9,7 +9,13 @@ import java.util.TreeMap;
 import ghidra.app.cmd.function.CreateFunctionCmd;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.DataType;
+import ghidra.program.model.data.Undefined1DataType;
+import ghidra.program.model.data.Undefined2DataType;
+import ghidra.program.model.data.Undefined3DataType;
 import ghidra.program.model.data.Undefined4DataType;
+import ghidra.program.model.data.Undefined5DataType;
+import ghidra.program.model.data.Undefined6DataType;
+import ghidra.program.model.data.Undefined7DataType;
 import ghidra.program.model.data.Undefined8DataType;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Instruction;
@@ -160,7 +166,8 @@ public class GolangFunction extends GolangBinary {
 	}
 
 	boolean init_params() {
-		int args_num=(int)get_address_value(get_address(info_addr, pointer_size+4), 4)/pointer_size;
+		int arg_size=(int)get_address_value(get_address(info_addr, pointer_size+4), 4);
+		int args_num=arg_size/pointer_size+(arg_size%pointer_size==0?0:1);
 
 		init_frame_map();
 
@@ -177,10 +184,26 @@ public class GolangFunction extends GolangBinary {
 			params=new ArrayList<>();
 			for(int i=0;i<args_num && i<50;i++) {
 				DataType data_type=null;
-				if(pointer_size==8) {
+				int size=pointer_size;
+				if(i==args_num-1 && arg_size%pointer_size>0) {
+					size=arg_size%pointer_size;
+				}
+				if(size==8) {
 					data_type=new Undefined8DataType();
-				}else if(pointer_size==4) {
+				}else if(size==7) {
+					data_type=new Undefined7DataType();
+				}else if(size==6) {
+					data_type=new Undefined6DataType();
+				}else if(size==5) {
+					data_type=new Undefined5DataType();
+				}else if(size==4) {
 					data_type=new Undefined4DataType();
+				}else if(size==3) {
+					data_type=new Undefined3DataType();
+				}else if(size==2) {
+					data_type=new Undefined2DataType();
+				}else if(size==1) {
+					data_type=new Undefined1DataType();
 				}else {
 					data_type=func.getParameter(i).getDataType();
 				}
