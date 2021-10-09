@@ -115,7 +115,7 @@ public class GolangFunction extends GolangBinary {
 		return true;
 	}
 
-	Map<Integer, String> reg_arg_map= new HashMap<>(){
+	Map<Integer, String> reg_arg_map_x86=new HashMap<>(){
 		{
 			put(1, "RAX");
 			put(2, "RBX");
@@ -128,15 +128,15 @@ public class GolangFunction extends GolangBinary {
 			put(9, "R11");
 		}
 	};
-	String get_reg_arg_name(int arg_count, int arg_num) {
-		if(arg_num>=reg_arg_map.size()) {
-			arg_count-=arg_num-reg_arg_map.size();
+	String get_reg_arg_name_x86(int arg_count, int arg_num) {
+		if(arg_num>=reg_arg_map_x86.size()) {
+			arg_count-=arg_num-reg_arg_map_x86.size();
 		}
-		return reg_arg_map.get(arg_count);
+		return reg_arg_map_x86.get(arg_count);
 	}
 
-	boolean check_inst_reg_arg(Instruction inst, int arg_num) {
-		if(compare_go_version("go1.17beta1")>0) {
+	boolean check_inst_reg_arg_x86(Instruction inst, int arg_num) {
+		if(!program.getLanguage().getProcessor().toString().equals("x86") || compare_go_version("go1.17beta1")>0) {
 			return false;
 		}
 		String mnemonic=inst.getMnemonicString();
@@ -156,7 +156,7 @@ public class GolangFunction extends GolangBinary {
 		}
 		long frame_size=get_frame((int)(inst.getAddress().getOffset()-func_addr.getOffset()));
 		int arg_count=(Integer.decode(op1[1].toString())-(int)frame_size-pointer_size)/pointer_size+1;
-		String reg_arg_name=get_reg_arg_name(arg_count, arg_num);
+		String reg_arg_name=get_reg_arg_name_x86(arg_count, arg_num);
 		if(reg_arg_name==null) {
 			return false;
 		}
@@ -167,12 +167,11 @@ public class GolangFunction extends GolangBinary {
 	}
 
 	enum REG_FLAG {
-		NOT_FOUND,
 		READ,
 		WRITE,
 	}
-	boolean check_inst_builtin_reg_arg(Instruction inst, REG_FLAG reg_flag[], List<Register> reg_arg) {
-		if(inst.getMnemonicString().equals("RET") || inst.getMnemonicString().equals("JMP")) {
+	boolean check_inst_builtin_reg_arg(Instruction inst, Map<Register, REG_FLAG> builtin_reg_state, List<Register> reg_arg) {
+		if(inst.getMnemonicString().toUpperCase().equals("RET") || inst.getMnemonicString().equals("JMP") || inst.getMnemonicString().equals("b")) {
 			return true;
 		}
 		Object op_input[]=inst.getInputObjects();
@@ -183,36 +182,24 @@ public class GolangFunction extends GolangBinary {
 				continue;
 			}
 			Register reg=(Register)op_input[j];
-			int reg_read_index=-1;
-			if(compare_register(reg, program.getRegister("AX"))) {
-				reg_read_index=0;
-			}else if(compare_register(reg, program.getRegister("BX"))) {
-				reg_read_index=1;
-			}else if(compare_register(reg, program.getRegister("CX"))) {
-				reg_read_index=2;
-			}else if(compare_register(reg, program.getRegister("DX"))) {
-				reg_read_index=3;
-			}else if(compare_register(reg, program.getRegister("DI"))) {
-				reg_read_index=4;
-			}else if(compare_register(reg, program.getRegister("SI"))) {
-				reg_read_index=5;
-			}else if(compare_register(reg, program.getRegister("BP"))) {
-				reg_read_index=6;
-			}
-
-			if(reg_read_index<0 || reg_flag.length<=reg_read_index) {
-				continue;
-			}
-			if(inst.getMnemonicString().equals("XOR") &&
+			if(program.getLanguage().getProcessor().toString().equals("x86") && inst.getMnemonicString().equals("XOR") &&
 					(inst.getNumOperands()==2 && inst.getOpObjects(0).length>0 && inst.getOpObjects(1).length>0 &&
 					inst.getOpObjects(0)[0].toString().equals(inst.getOpObjects(1)[0].toString()))) {
 				continue;
 			}
-			if(inst.getMnemonicString().equals("PUSH") || inst.getMnemonicString().equals("XCHG")) {
+			if(program.getLanguage().getProcessor().toString().equals("x86") &&
+					(inst.getMnemonicString().equals("PUSH") || inst.getMnemonicString().equals("XCHG"))) {
 				continue;
 			}
-			if(reg_flag[reg_read_index].equals(REG_FLAG.NOT_FOUND)) {
-				reg_flag[reg_read_index]=REG_FLAG.READ;
+			if(!builtin_reg_state.containsKey(reg.getBaseRegister()) &&
+					inst.toString().contains(reg.toString()) &&
+					(reg.getTypeFlags()&(Register.TYPE_PC|Register.TYPE_SP))==0 &&
+					!reg.toString().toUpperCase().contains("SP") &&
+					(!program.getLanguage().getProcessor().toString().equals("x86") ||
+							(!compare_register(reg, program.getRegister("BP")))) &&
+					(!program.getLanguage().getProcessor().toString().equals("ARM") ||
+							(!compare_register(reg, program.getRegister("lr"))))) {
+				builtin_reg_state.put(reg.getBaseRegister(), REG_FLAG.READ);
 				reg_arg.add(reg);
 			}
 		}
@@ -221,31 +208,8 @@ public class GolangFunction extends GolangBinary {
 				continue;
 			}
 			Register reg=(Register)op_output[j];
-			int reg_write_index=-1;
-			if(compare_register(reg, program.getRegister("AX"))) {
-				reg_write_index=0;
-			}else if(compare_register(reg, program.getRegister("BX"))) {
-				reg_write_index=1;
-			}else if(compare_register(reg, program.getRegister("CX"))) {
-				reg_write_index=2;
-			}else if(compare_register(reg, program.getRegister("DX"))) {
-				reg_write_index=3;
-			}else if(compare_register(reg, program.getRegister("DI"))) {
-				reg_write_index=4;
-			}else if(compare_register(reg, program.getRegister("SI"))) {
-				reg_write_index=5;
-			}else if(compare_register(reg, program.getRegister("BP"))) {
-				reg_write_index=6;
-			}
-
-			if(reg_write_index<0 || reg_flag.length<=reg_write_index) {
-				continue;
-			}
-			if(inst.getMnemonicString().equals("XCHG")) {
-				reg_flag[reg_write_index]=REG_FLAG.WRITE;
-			}
-			if(reg_flag[reg_write_index].equals(REG_FLAG.NOT_FOUND)) {
-				reg_flag[reg_write_index]=REG_FLAG.WRITE;
+			if(!builtin_reg_state.containsKey(reg.getBaseRegister())) {
+				builtin_reg_state.put(reg.getBaseRegister(), REG_FLAG.WRITE);
 			}
 		}
 		return false;
@@ -257,23 +221,23 @@ public class GolangFunction extends GolangBinary {
 
 		init_frame_map();
 
-		boolean is_reg_arg=false;
-		REG_FLAG builtin_reg_flag[]= {REG_FLAG.NOT_FOUND, REG_FLAG.NOT_FOUND, REG_FLAG.NOT_FOUND, REG_FLAG.NOT_FOUND, REG_FLAG.NOT_FOUND, REG_FLAG.NOT_FOUND, REG_FLAG.NOT_FOUND};
+		boolean is_reg_arg_x86=false;
+		Map<Register, REG_FLAG> builtin_reg_state=new HashMap<>();
 		List<Register> builtin_reg_arg=new ArrayList<>();
 		boolean is_checked_builtin_reg=false;
 		Instruction inst=program_listing.getInstructionAt(func_addr);
 		while(inst!=null && inst.getAddress().getOffset()<func_addr.getOffset()+func_size) {
-			if(!is_reg_arg) {
-				is_reg_arg=check_inst_reg_arg(inst, args_num);
+			if(!is_reg_arg_x86) {
+				is_reg_arg_x86=check_inst_reg_arg_x86(inst, args_num);
 			}
 			if(!is_checked_builtin_reg) {
-				is_checked_builtin_reg=check_inst_builtin_reg_arg(inst, builtin_reg_flag, builtin_reg_arg);
+				is_checked_builtin_reg=check_inst_builtin_reg_arg(inst, builtin_reg_state, builtin_reg_arg);
 			}
 			inst=inst.getNext();
 		}
 
 		boolean is_builtin_reg=false;
-		if(args_num==0 && builtin_reg_arg.size()>=2 && !is_reg_arg) {
+		if(args_num==0 && builtin_reg_arg.size()>=2 && !is_reg_arg_x86) {
 			is_builtin_reg=true;
 			args_num=builtin_reg_arg.size();
 		}
@@ -285,7 +249,7 @@ public class GolangFunction extends GolangBinary {
 				int size=pointer_size;
 				if(i==args_num-1 && arg_size%pointer_size>0) {
 					size=arg_size%pointer_size;
-				}else if(is_builtin_reg && !is_reg_arg) {
+				}else if(is_builtin_reg && !is_reg_arg_x86) {
 					size=builtin_reg_arg.get(i).getBitLength()/8;
 				}
 				if(size==8) {
@@ -308,8 +272,8 @@ public class GolangFunction extends GolangBinary {
 					data_type=func.getParameter(i).getDataType();
 				}
 				Register reg=null;
-				if(is_reg_arg) {
-					reg=program.getRegister(get_reg_arg_name(i+1, args_num));
+				if(is_reg_arg_x86) {
+					reg=program.getRegister(get_reg_arg_name_x86(i+1, args_num));
 				}else if(is_builtin_reg) {
 					reg=builtin_reg_arg.get(i);
 				}

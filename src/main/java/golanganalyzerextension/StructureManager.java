@@ -104,7 +104,7 @@ public class StructureManager extends GolangBinary {
 			this.len=len;
 		}
 		public DataType get_datatype() {
-			if(len==0) {
+			if(len<=0) {
 				return new VoidDataType();
 			}
 			DataType inner_datatype=null;
