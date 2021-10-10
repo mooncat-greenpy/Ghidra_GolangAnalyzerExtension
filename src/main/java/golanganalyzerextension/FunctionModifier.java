@@ -228,7 +228,7 @@ public class FunctionModifier extends GolangBinary {
 			} catch (InvalidInputException e) {
 			}
 		}
-		GolangFunction gofunc=new GolangFunction(this, func, String.format("memcpy_%#x_%s", size, func.getName()), params);
+		GolangFunction gofunc=new GolangFunction(this, func, String.format("runtime.duffcopy_%#x_%s", size, func.getName()), params);
 		gofunc_list.add(gofunc);
 
 		return true;
@@ -236,11 +236,12 @@ public class FunctionModifier extends GolangBinary {
 
 	boolean check_memset(Function func) {
 		Instruction inst=program_listing.getInstructionAt(func.getEntryPoint());
-		String tmp_reg="TMP";
+		Register dst_reg=null;
+		Register src_reg=null;
 		int start=-1;
 		int size=0;
 		while(inst!=null) {
-			if(inst.toString().contains("RET")) {
+			if(inst.toString().toUpperCase().contains("RET") || inst.toString().equals("add pc,lr,#0x0")) {
 				break;
 			}
 
@@ -250,11 +251,12 @@ public class FunctionModifier extends GolangBinary {
 			}
 			Object op1[]=inst.getOpObjects(0);
 			if(op1.length>=2 && mnemonic.equals("STOSD")) {
-				if(!op1[1].toString().equals("EDI")) {
+				if(!(op1[1] instanceof Register) || !compare_register((Register)op1[1], program.getRegister("DI"))) {
 					return false;
 				}
 				start=0;
-				tmp_reg="EAX";
+				dst_reg=(Register)op1[1];
+				src_reg=program.getRegister("EAX");
 				size+=4;
 				inst=inst.getNext();
 				continue;
@@ -267,17 +269,14 @@ public class FunctionModifier extends GolangBinary {
 				return false;
 			}
 			if(mnemonic.equals("MOVUPS")) {
+				if(!(op1[0] instanceof Register) || !compare_register((Register)op1[0], program.getRegister("DI"))) {
+					return false;
+				}
 				if(op1.length<2) {
-					if(!op1[0].toString().equals(pointer_size==8?"RDI":"EDI")) {
-						return false;
-					}
 					if(start<0) {
 						start=0;
 					}
 				}else {
-					if(!op1[0].toString().equals(pointer_size==8?"RDI":"EDI")) {
-						return false;
-					}
 					if(!(op1[1] instanceof Scalar)) {
 						return false;
 					}
@@ -285,42 +284,97 @@ public class FunctionModifier extends GolangBinary {
 						start=Integer.decode(op1[1].toString());
 					}
 				}
-				if(!op2[0].toString().contains("XMM")) {
+				if(!(op2[0] instanceof Register) || !op2[0].toString().contains("XMM")) {
 					return false;
 				}
-				tmp_reg=op2[0].toString();
+				dst_reg=(Register)op1[0];
+				src_reg=(Register)op2[0];
 			}else if(mnemonic.equals("LEA")) {
 				if(op2.length<2) {
 					return false;
 				}
-				if(!op1[0].toString().equals(pointer_size==8?"RDI":"EDI")) {
+				if(!compare_register((Register)op1[0], program.getRegister("DI"))) {
 					return false;
 				}
-				if(!op2[0].toString().equals(pointer_size==8?"RDI":"EDI")) {
+				if(!compare_register((Register)op2[0], program.getRegister("DI"))) {
 					return false;
 				}
 				if(!(op2[1] instanceof Scalar)) {
 					return false;
 				}
 				size+=Integer.decode(op2[1].toString());
+			}else if(mnemonic.equals("str")) {
+				if(op2.length<2) {
+					return false;
+				}
+				if(!(op1[0] instanceof Register) || !compare_register((Register)op1[0], program.getRegister("r0"))) {
+					return false;
+				}
+				if(!(op2[0] instanceof Register) || !compare_register((Register)op2[0], program.getRegister("r1"))) {
+					return false;
+				}
+				if(!(op2[1] instanceof Scalar)) {
+					return false;
+				}
+				if(start<0) {
+					start=0;
+				}
+				dst_reg=(Register)op2[0];
+				src_reg=(Register)op1[0];
+				size+=Integer.decode(op2[1].toString());
+			}else if(mnemonic.equals("stp")) {
+				if(inst.getNumOperands()<3) {
+					return false;
+				}
+				Object op3[]=inst.getOpObjects(2);
+				if(op3.length<1) {
+					return false;
+				}
+				if(!compare_register((Register)op1[0], program.getRegister("xzr"))) {
+					return false;
+				}
+				if(!compare_register((Register)op2[0], program.getRegister("xzr"))) {
+					return false;
+				}
+				if(!(op3[0] instanceof Register) || !compare_register((Register)op3[0], program.getRegister("x20"))) {
+					return false;
+				}
+				if(start<0) {
+					start=0;
+				}
+				dst_reg=(Register)op3[0];
+				if(op3.length>=2 && op3[1] instanceof Scalar) {
+					size+=Integer.decode(op3[1].toString());
+				}else {
+					size+=0x10;
+				}
 			}else {
 				return false;
 			}
 			inst=inst.getNext();
 		}
 
+		if(size<=0) {
+			return false;
+		}
+
 		List<Parameter> params=new ArrayList<>();
 		try {
+			if(dst_reg==null) {
+				return false;
+			}
+
 			DataType data_type=new ByteDataType();
 			ArrayDataType array_datatype=new ArrayDataType(data_type, size, data_type.getLength());
-			params.add(new ParameterImpl(String.format("param_%d", 1), new PointerDataType(array_datatype, pointer_size), program.getRegister(pointer_size==8?"RDI":"EDI"), func.getProgram(), SourceType.USER_DEFINED));
+			params.add(new ParameterImpl(String.format("param_%d", 1), new PointerDataType(array_datatype, pointer_size), dst_reg, func.getProgram(), SourceType.USER_DEFINED));
 
-			Register reg=program.getRegister(tmp_reg);
-			array_datatype=new ArrayDataType(data_type, reg.getBitLength()/8, data_type.getLength());
-			params.add(new ParameterImpl(String.format("param_%d", 2), new PointerDataType(array_datatype, pointer_size), reg, func.getProgram(), SourceType.USER_DEFINED));
+			if(src_reg!=null) {
+				array_datatype=new ArrayDataType(data_type, src_reg.getBitLength()/8, data_type.getLength());
+				params.add(new ParameterImpl(String.format("param_%d", 2), new PointerDataType(array_datatype, pointer_size), src_reg, func.getProgram(), SourceType.USER_DEFINED));
+			}
 		} catch (InvalidInputException e) {
 		}
-		GolangFunction gofunc=new GolangFunction(this, func, String.format("memset_%#x_%#x_%s", start, size, func.getName()), params);
+		GolangFunction gofunc=new GolangFunction(this, func, String.format("runtime.duffzero_%#x_%#x_%s", start, size, func.getName()), params);
 		gofunc_list.add(gofunc);
 
 		return true;
