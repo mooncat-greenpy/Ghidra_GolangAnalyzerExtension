@@ -6,8 +6,6 @@ import java.util.Map;
 
 import ghidra.app.util.importer.MessageLog;
 import ghidra.program.model.address.Address;
-import ghidra.program.model.data.ArrayDataType;
-import ghidra.program.model.data.ByteDataType;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.PointerDataType;
 import ghidra.program.model.lang.Register;
@@ -149,11 +147,12 @@ public class FunctionModifier extends GolangBinary {
 		MEMCPY_FUNC_STAGE stage=MEMCPY_FUNC_STAGE.GET_SRC;
 		Register dst_reg=null;
 		Register src_reg=null;
+		DataType inner_datatype=null;
 		String tmp_reg1="TMP";
 		String tmp_reg2="TMP";
 		int size=0;
 		while(inst!=null) {
-			if(inst.toString().toUpperCase().contains("RET") || inst.toString().equals("add pc,lr,#0x0")) {
+			if(is_ret_inst(inst)) {
 				break;
 			}
 
@@ -179,10 +178,10 @@ public class FunctionModifier extends GolangBinary {
 					if(op2.length<2) {
 						return false;
 					}
-					if(!(op1[0] instanceof Register) || !compare_register((Register)op1[0], program.getRegister("r0"))) {
+					if(!(op1[0] instanceof Register)) {
 						return false;
 					}
-					if(!(op2[0] instanceof Register) || !compare_register((Register)op2[0], program.getRegister("r1"))) {
+					if(!(op2[0] instanceof Register)) {
 						return false;
 					}
 					if(!(op2[1] instanceof Scalar)) {
@@ -199,13 +198,13 @@ public class FunctionModifier extends GolangBinary {
 					if(op3.length<1) {
 						return false;
 					}
-					if(!(op1[0] instanceof Register) || !compare_register((Register)op1[0], program.getRegister("x26"))) {
+					if(!(op1[0] instanceof Register)) {
 						return false;
 					}
-					if(!(op2[0] instanceof Register) || !compare_register((Register)op2[0], program.getRegister("x27"))) {
+					if(!(op2[0] instanceof Register)) {
 						return false;
 					}
-					if(!(op3[0] instanceof Register) || !compare_register((Register)op3[0], program.getRegister("x20"))) {
+					if(!(op3[0] instanceof Register)) {
 						return false;
 					}
 					src_reg=(Register)op3[0];
@@ -235,7 +234,14 @@ public class FunctionModifier extends GolangBinary {
 					if(!op2[0].toString().equals(tmp_reg1)) {
 						return false;
 					}
-					dst_reg=(Register)op1[0];
+					if(dst_reg==null) {
+						dst_reg=(Register)op1[0];
+						if(op2[0].toString().contains("XMM")) {
+							inner_datatype=get_unsigned_number_datatype(4);
+						}else {
+							inner_datatype=get_unsigned_number_datatype(((Register)op2[0]).getBitLength()/8);
+						}
+					}
 					stage=MEMCPY_FUNC_STAGE.ADD_DST;
 				}else if(mnemonic.equals("str")) {
 					if(op2.length<2) {
@@ -244,13 +250,16 @@ public class FunctionModifier extends GolangBinary {
 					if(!(op1[0] instanceof Register) || !compare_register((Register)op1[0], program.getRegister(tmp_reg1))) {
 						return false;
 					}
-					if(!(op2[0] instanceof Register) || !compare_register((Register)op2[0], program.getRegister("r2"))) {
+					if(!(op2[0] instanceof Register)) {
 						return false;
 					}
 					if(!(op2[1] instanceof Scalar)) {
 						return false;
 					}
-					dst_reg=(Register)op2[0];
+					if(dst_reg==null) {
+						dst_reg=(Register)op2[0];
+						inner_datatype=get_unsigned_number_datatype(((Register)op1[0]).getBitLength()/8);
+					}
 					size+=Integer.decode(op2[1].toString());
 					stage=MEMCPY_FUNC_STAGE.GET_SRC;
 				}else if(mnemonic.equals("stp")) {
@@ -267,10 +276,13 @@ public class FunctionModifier extends GolangBinary {
 					if(!(op2[0] instanceof Register) || !compare_register((Register)op2[0], program.getRegister(tmp_reg2))) {
 						return false;
 					}
-					if(!(op3[0] instanceof Register) || !compare_register((Register)op3[0], program.getRegister("x21"))) {
+					if(!(op3[0] instanceof Register)) {
 						return false;
 					}
-					dst_reg=(Register)op3[0];
+					if(dst_reg==null) {
+						dst_reg=(Register)op3[0];
+						inner_datatype=get_unsigned_number_datatype(((Register)op1[0]).getBitLength()/8);
+					}
 					if(op3.length>=2 && op3[1] instanceof Scalar) {
 						size+=Integer.decode(op3[1].toString());
 					}else {
@@ -300,17 +312,14 @@ public class FunctionModifier extends GolangBinary {
 
 		List<Parameter> params=new ArrayList<>();
 		try {
-			if(dst_reg==null) {
+			if(dst_reg==null || inner_datatype==null) {
 				return false;
 			}
 
-			DataType data_type=new ByteDataType();
-			ArrayDataType array_datatype=new ArrayDataType(data_type, size, data_type.getLength());
-			params.add(new ParameterImpl(String.format("param_%d", 1), new PointerDataType(array_datatype, pointer_size), dst_reg, func.getProgram(), SourceType.USER_DEFINED));
+			params.add(new ParameterImpl(String.format("param_%d", 1), new PointerDataType(inner_datatype, pointer_size), dst_reg, func.getProgram(), SourceType.USER_DEFINED));
 
 			if(src_reg!=null) {
-				array_datatype=new ArrayDataType(data_type, src_reg.getBitLength()/8, data_type.getLength());
-				params.add(new ParameterImpl(String.format("param_%d", 2), new PointerDataType(array_datatype, pointer_size), src_reg, func.getProgram(), SourceType.USER_DEFINED));
+				params.add(new ParameterImpl(String.format("param_%d", 2), new PointerDataType(inner_datatype, pointer_size), src_reg, func.getProgram(), SourceType.USER_DEFINED));
 			}
 		} catch (InvalidInputException e) {
 		}
@@ -324,10 +333,11 @@ public class FunctionModifier extends GolangBinary {
 		Instruction inst=program_listing.getInstructionAt(func.getEntryPoint());
 		Register dst_reg=null;
 		Register src_reg=null;
+		DataType inner_datatype=null;
 		int start=-1;
 		int size=0;
 		while(inst!=null) {
-			if(inst.toString().toUpperCase().contains("RET") || inst.toString().equals("add pc,lr,#0x0")) {
+			if(is_ret_inst(inst)) {
 				break;
 			}
 
@@ -340,9 +350,12 @@ public class FunctionModifier extends GolangBinary {
 				if(!(op1[1] instanceof Register) || !compare_register((Register)op1[1], program.getRegister("DI"))) {
 					return false;
 				}
-				start=0;
-				dst_reg=(Register)op1[1];
-				src_reg=program.getRegister("EAX");
+				if(start<0) {
+					start=0;
+					dst_reg=(Register)op1[1];
+					src_reg=program.getRegister("EAX");
+					inner_datatype=get_unsigned_number_datatype(src_reg.getBitLength()/8);
+				}
 				size+=4;
 				inst=inst.getNext();
 				continue;
@@ -358,6 +371,14 @@ public class FunctionModifier extends GolangBinary {
 				if(!(op1[0] instanceof Register) || !compare_register((Register)op1[0], program.getRegister("DI"))) {
 					return false;
 				}
+				if(!(op2[0] instanceof Register) || !op2[0].toString().contains("XMM")) {
+					return false;
+				}
+				if(start<0) {
+					dst_reg=(Register)op1[0];
+					src_reg=(Register)op2[0];
+					inner_datatype=get_unsigned_number_datatype(4);
+				}
 				if(op1.length<2) {
 					if(start<0) {
 						start=0;
@@ -370,11 +391,6 @@ public class FunctionModifier extends GolangBinary {
 						start=Integer.decode(op1[1].toString());
 					}
 				}
-				if(!(op2[0] instanceof Register) || !op2[0].toString().contains("XMM")) {
-					return false;
-				}
-				dst_reg=(Register)op1[0];
-				src_reg=(Register)op2[0];
 			}else if(mnemonic.equals("LEA")) {
 				if(op2.length<2) {
 					return false;
@@ -393,10 +409,10 @@ public class FunctionModifier extends GolangBinary {
 				if(op2.length<2) {
 					return false;
 				}
-				if(!(op1[0] instanceof Register) || !compare_register((Register)op1[0], program.getRegister("r0"))) {
+				if(!(op1[0] instanceof Register)) {
 					return false;
 				}
-				if(!(op2[0] instanceof Register) || !compare_register((Register)op2[0], program.getRegister("r1"))) {
+				if(!(op2[0] instanceof Register)) {
 					return false;
 				}
 				if(!(op2[1] instanceof Scalar)) {
@@ -404,9 +420,10 @@ public class FunctionModifier extends GolangBinary {
 				}
 				if(start<0) {
 					start=0;
+					dst_reg=(Register)op2[0];
+					src_reg=(Register)op1[0];
+					inner_datatype=get_unsigned_number_datatype(src_reg.getBitLength()/8);
 				}
-				dst_reg=(Register)op2[0];
-				src_reg=(Register)op1[0];
 				size+=Integer.decode(op2[1].toString());
 			}else if(mnemonic.equals("stp")) {
 				if(inst.getNumOperands()<3) {
@@ -422,13 +439,14 @@ public class FunctionModifier extends GolangBinary {
 				if(!(op2[0] instanceof Register) || !compare_register((Register)op2[0], program.getRegister("xzr"))) {
 					return false;
 				}
-				if(!(op3[0] instanceof Register) || !compare_register((Register)op3[0], program.getRegister("x20"))) {
+				if(!(op3[0] instanceof Register)) {
 					return false;
 				}
 				if(start<0) {
 					start=0;
+					dst_reg=(Register)op3[0];
+					inner_datatype=get_unsigned_number_datatype(((Register)op1[0]).getBitLength()/8);
 				}
-				dst_reg=(Register)op3[0];
 				if(op3.length>=2 && op3[1] instanceof Scalar) {
 					size+=Integer.decode(op3[1].toString());
 				}else {
@@ -446,17 +464,14 @@ public class FunctionModifier extends GolangBinary {
 
 		List<Parameter> params=new ArrayList<>();
 		try {
-			if(dst_reg==null) {
+			if(dst_reg==null || inner_datatype==null) {
 				return false;
 			}
 
-			DataType data_type=new ByteDataType();
-			ArrayDataType array_datatype=new ArrayDataType(data_type, size, data_type.getLength());
-			params.add(new ParameterImpl(String.format("param_%d", 1), new PointerDataType(array_datatype, pointer_size), dst_reg, func.getProgram(), SourceType.USER_DEFINED));
+			params.add(new ParameterImpl(String.format("param_%d", 1), new PointerDataType(inner_datatype, pointer_size), dst_reg, func.getProgram(), SourceType.USER_DEFINED));
 
 			if(src_reg!=null) {
-				array_datatype=new ArrayDataType(data_type, src_reg.getBitLength()/8, data_type.getLength());
-				params.add(new ParameterImpl(String.format("param_%d", 2), new PointerDataType(array_datatype, pointer_size), src_reg, func.getProgram(), SourceType.USER_DEFINED));
+				params.add(new ParameterImpl(String.format("param_%d", 2), get_unsigned_number_datatype(src_reg.getBitLength()/8), src_reg, func.getProgram(), SourceType.USER_DEFINED));
 			}
 		} catch (InvalidInputException e) {
 		}

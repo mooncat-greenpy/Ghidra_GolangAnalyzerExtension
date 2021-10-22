@@ -4,10 +4,30 @@ package golanganalyzerextension;
 import ghidra.app.util.importer.MessageLog;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressOutOfBoundsException;
+import ghidra.program.model.data.ByteDataType;
+import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.DataTypeConflictException;
+import ghidra.program.model.data.Integer16DataType;
+import ghidra.program.model.data.Integer3DataType;
+import ghidra.program.model.data.Integer5DataType;
+import ghidra.program.model.data.Integer6DataType;
+import ghidra.program.model.data.Integer7DataType;
+import ghidra.program.model.data.IntegerDataType;
+import ghidra.program.model.data.LongLongDataType;
+import ghidra.program.model.data.ShortDataType;
+import ghidra.program.model.data.SignedByteDataType;
 import ghidra.program.model.data.StringDataType;
+import ghidra.program.model.data.UnsignedInteger16DataType;
+import ghidra.program.model.data.UnsignedInteger3DataType;
+import ghidra.program.model.data.UnsignedInteger5DataType;
+import ghidra.program.model.data.UnsignedInteger6DataType;
+import ghidra.program.model.data.UnsignedInteger7DataType;
+import ghidra.program.model.data.UnsignedIntegerDataType;
+import ghidra.program.model.data.UnsignedLongLongDataType;
+import ghidra.program.model.data.UnsignedShortDataType;
 import ghidra.program.model.lang.Register;
 import ghidra.program.model.listing.Data;
+import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.listing.Listing;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.Memory;
@@ -106,7 +126,69 @@ public class GolangBinary {
 	}
 
 	boolean compare_register(Register cmp1, Register cmp2) {
+		if(cmp1==null || cmp2==null) {
+			return false;
+		}
 		return cmp1.getBaseRegister().equals(cmp2.getBaseRegister());
+	}
+
+	DataType get_unsigned_number_datatype(int size) {
+		if(size==1) {
+			return new ByteDataType();
+		}else if(size==2) {
+			return new UnsignedShortDataType();
+		}else if(size==3) {
+			return new UnsignedInteger3DataType();
+		}else if(size==4) {
+			return new UnsignedIntegerDataType();
+		}else if(size==5) {
+			return new UnsignedInteger5DataType();
+		}else if(size==6) {
+			return new UnsignedInteger6DataType();
+		}else if(size==7) {
+			return new UnsignedInteger7DataType();
+		}else if(size==8) {
+			return new UnsignedLongLongDataType();
+		}else if(size==16) {
+			return new UnsignedInteger16DataType();
+		}else if(pointer_size==8) {
+			return new UnsignedLongLongDataType();
+		}else {
+			return new UnsignedIntegerDataType();
+		}
+	}
+
+	DataType get_signed_number_datatype(int size) {
+		if(size==1) {
+			return new SignedByteDataType();
+		}else if(size==2) {
+			return new ShortDataType();
+		}else if(size==3) {
+			return new Integer3DataType();
+		}else if(size==4) {
+			return new IntegerDataType();
+		}else if(size==5) {
+			return new Integer5DataType();
+		}else if(size==6) {
+			return new Integer6DataType();
+		}else if(size==7) {
+			return new Integer7DataType();
+		}else if(size==8) {
+			return new LongLongDataType();
+		}else if(size==16) {
+			return new Integer16DataType();
+		}else if(pointer_size==8) {
+			return new LongLongDataType();
+		}else {
+			return new IntegerDataType();
+		}
+	}
+
+	boolean is_ret_inst(Instruction inst) {
+		if(inst.toString().toUpperCase().contains("RET") || inst.toString().toLowerCase().equals("add pc,lr,#0x0")) {
+			return true;
+		}
+		return false;
 	}
 
 	String read_string(Address address, int size) {

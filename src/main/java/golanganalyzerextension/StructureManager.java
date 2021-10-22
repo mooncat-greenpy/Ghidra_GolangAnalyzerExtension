@@ -611,39 +611,27 @@ public class StructureManager extends GolangBinary {
 		if(basic_info.kind==Kind.Bool) {
 			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, new BooleanDataType()));
 		}else if(basic_info.kind==Kind.Int) {
-			if(pointer_size==8) {
-				basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, new LongLongDataType()));
-			}else {
-				basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, new IntegerDataType()));
-			}
+			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, get_signed_number_datatype(pointer_size)));
 		}else if(basic_info.kind==Kind.Int8) {
-			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, new SignedByteDataType()));
+			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, get_signed_number_datatype(1)));
 		}else if(basic_info.kind==Kind.Int16) {
-			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, new ShortDataType()));
+			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, get_signed_number_datatype(2)));
 		}else if(basic_info.kind==Kind.Int32) {
-			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, new IntegerDataType()));
+			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, get_signed_number_datatype(4)));
 		}else if(basic_info.kind==Kind.Int64) {
-			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, new LongLongDataType()));
+			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, get_signed_number_datatype(8)));
 		}else if(basic_info.kind==Kind.Uint) {
-			if(pointer_size==8) {
-				basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, new UnsignedLongLongDataType()));
-			}else {
-				basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, new UnsignedIntegerDataType()));
-			}
+			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, get_unsigned_number_datatype(pointer_size)));
 		}else if(basic_info.kind==Kind.Uint8) {
-			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, new ByteDataType()));
+			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, get_unsigned_number_datatype(1)));
 		}else if(basic_info.kind==Kind.Uint16) {
-			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, new UnsignedShortDataType()));
+			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, get_unsigned_number_datatype(2)));
 		}else if(basic_info.kind==Kind.Uint32) {
-			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, new UnsignedIntegerDataType()));
+			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, get_unsigned_number_datatype(4)));
 		}else if(basic_info.kind==Kind.Uint64) {
-			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, new UnsignedLongLongDataType()));
+			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, get_unsigned_number_datatype(8)));
 		}else if(basic_info.kind==Kind.Uintptr) {
-			if(pointer_size==8) {
-				basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, new UnsignedLongLongDataType()));
-			}else {
-				basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, new UnsignedIntegerDataType()));
-			}
+			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, get_unsigned_number_datatype(pointer_size)));
 		}else if(basic_info.kind==Kind.Float32) {
 			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, new Float4DataType()));
 		}else if(basic_info.kind==Kind.Float64) {
