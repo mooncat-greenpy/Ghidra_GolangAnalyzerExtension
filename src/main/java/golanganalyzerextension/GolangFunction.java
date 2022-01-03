@@ -17,6 +17,7 @@ import ghidra.program.model.data.Undefined5DataType;
 import ghidra.program.model.data.Undefined6DataType;
 import ghidra.program.model.data.Undefined7DataType;
 import ghidra.program.model.data.Undefined8DataType;
+import ghidra.program.model.data.UnsignedInteger16DataType;
 import ghidra.program.model.lang.Register;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Instruction;
@@ -196,7 +197,8 @@ public class GolangFunction extends GolangBinary {
 					(reg.getTypeFlags()&(Register.TYPE_PC|Register.TYPE_SP))==0 &&
 					!reg.toString().toUpperCase().contains("SP") &&
 					(!program.getLanguage().getProcessor().toString().equals("x86") ||
-							(!compare_register(reg, program.getRegister("BP")))) &&
+							// XMM15 is used as a zero register.
+							(!compare_register(reg, program.getRegister("BP")) && !compare_register(reg, program.getRegister("XMM15")))) &&
 					(!program.getLanguage().getProcessor().toString().equals("ARM") ||
 							(!compare_register(reg, program.getRegister("lr"))))) {
 				builtin_reg_state.put(reg.getBaseRegister(), REG_FLAG.READ);
@@ -268,8 +270,10 @@ public class GolangFunction extends GolangBinary {
 					data_type=new Undefined2DataType();
 				}else if(size==1) {
 					data_type=new Undefined1DataType();
+				}else if(size==16) {
+					data_type=new UnsignedInteger16DataType();
 				}else {
-					data_type=func.getParameter(i).getDataType();
+					data_type=new Undefined8DataType();
 				}
 				Register reg=null;
 				if(is_reg_arg_x86) {
