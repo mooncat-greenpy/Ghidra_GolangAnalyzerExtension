@@ -29,6 +29,7 @@ import ghidra.program.model.symbol.SourceType;
 // debug/gosym/pclntab.go
 public class GolangFunction extends GolangBinary {
 	List<String> file_name_list=null;
+	boolean extended_option=false;
 
 	Address info_addr=null;
 	long func_size=0;
@@ -44,6 +45,7 @@ public class GolangFunction extends GolangBinary {
 		super(obj);
 
 		this.file_name_list=obj.file_name_list;
+		this.extended_option=obj.extended_option;
 		this.info_addr=func_info_addr;
 		this.func_size=func_size;
 		this.frame_map = new TreeMap<>();
@@ -57,6 +59,7 @@ public class GolangFunction extends GolangBinary {
 
 	public GolangFunction(FunctionModifier obj, Function func, String func_name, List<Parameter> params) {
 		super(obj);
+		this.extended_option=obj.extended_option;
 
 		this.func_addr=func.getEntryPoint();
 		this.func=func;
@@ -232,7 +235,7 @@ public class GolangFunction extends GolangBinary {
 			if(!is_reg_arg_x86) {
 				is_reg_arg_x86=check_inst_reg_arg_x86(inst, args_num);
 			}
-			if(!is_checked_builtin_reg) {
+			if(extended_option && !is_checked_builtin_reg) {
 				is_checked_builtin_reg=check_inst_builtin_reg_arg(inst, builtin_reg_state, builtin_reg_arg);
 			}
 			inst=inst.getNext();

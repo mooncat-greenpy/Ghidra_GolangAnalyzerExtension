@@ -16,6 +16,7 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 	boolean param_option=true;
 	boolean comment_option=true;
 	boolean datatype_option=true;
+	boolean extended_option=true;
 	boolean debugmode_option=false;
 
 	public GolangAnalyzerExtensionAnalyzer() {
@@ -44,6 +45,7 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 		options.registerOption("Modify arguments", param_option, null, "Modify function arguments");
 		options.registerOption("Add comment", comment_option, null, "Add source file and line information to comments");
 		options.registerOption("Add data type", datatype_option, null, "Add data type");
+		options.registerOption("Extended analysis", extended_option, null, "Analyze functions in detail");
 		options.registerOption("Debug mode", debugmode_option, null, "Debug mode");
 	}
 
@@ -54,6 +56,7 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 		param_option=options.getBoolean("Modify arguments", param_option);
 		comment_option=options.getBoolean("Add comment", comment_option);
 		datatype_option=options.getBoolean("Add data type", datatype_option);
+		extended_option=options.getBoolean("Extended analysis", extended_option);
 		debugmode_option=options.getBoolean("Debug mode", debugmode_option);
 	}
 
@@ -61,7 +64,7 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 	public boolean added(Program program, AddressSetView set, TaskMonitor monitor, MessageLog log)
 			throws CancelledException {
 		try {
-			FunctionModifier func_modifier=new FunctionModifier(program, monitor, log, rename_option, param_option, comment_option, debugmode_option);
+			FunctionModifier func_modifier=new FunctionModifier(program, monitor, log, rename_option, param_option, comment_option, extended_option, debugmode_option);
 			func_modifier.modify();
 
 			StructureManager struct_manager=new StructureManager(program, monitor, log, datatype_option, debugmode_option);

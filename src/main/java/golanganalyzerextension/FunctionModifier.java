@@ -30,13 +30,15 @@ public class FunctionModifier extends GolangBinary {
 	boolean rename_option=false;
 	boolean param_option=false;
 	boolean comment_option=false;
+	boolean extended_option=false;
 
-	public FunctionModifier(Program program, TaskMonitor monitor, MessageLog log, boolean rename_option, boolean param_option, boolean comment_option, boolean debugmode) {
+	public FunctionModifier(Program program, TaskMonitor monitor, MessageLog log, boolean rename_option, boolean param_option, boolean comment_option, boolean extended_option, boolean debugmode) {
 		super(program, monitor, log, debugmode);
 
 		this.rename_option=rename_option;
 		this.param_option=param_option;
 		this.comment_option=comment_option;
+		this.extended_option=extended_option;
 
 		if(!rename_option && !param_option && !comment_option) {
 			return;
@@ -52,7 +54,9 @@ public class FunctionModifier extends GolangBinary {
 			return;
 		}
 
-		init_hardcode_functions();
+		if(extended_option) {
+			init_hardcode_functions();
+		}
 
 		ok=true;
 	}
