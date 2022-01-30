@@ -295,15 +295,14 @@ public class StructureManager extends GolangBinary {
 			return;
 		}
 
-		this.datatype_manager=program.getDataTypeManager();
-		hardcode_datatype_map=new HashMap<String, DataType>();
-		name_to_type_map=new HashMap<String, Long>();
-		basic_type_info_map=new HashMap<Long, BasicTypeInfo>();
-
-		if(!init_gopclntab()) {
-			append_message("Failed to init gopclntab");
+		if(this.gopclntab_base==null) {
 			return;
 		}
+
+		this.datatype_manager=program.getDataTypeManager();
+		this.hardcode_datatype_map=new HashMap<String, DataType>();
+		this.name_to_type_map=new HashMap<String, Long>();
+		this.basic_type_info_map=new HashMap<Long, BasicTypeInfo>();
 
 		if(!init_basig_golang_hardcode_datatype()) {
 			return;
@@ -314,7 +313,7 @@ public class StructureManager extends GolangBinary {
 			return;
 		}
 
-		ok=true;
+		this.ok=true;
 		return;
 	}
 

@@ -60,6 +60,13 @@ public class GolangBinary {
 		this.memory=program.getMemory();
 		this.ok=false;
 		this.debugmode=debugmode;
+
+		if(!init_go_version()) {
+			append_message("Failed to init go version");
+		}
+		if(!init_gopclntab()) {
+			append_message("Failed to init gopclntab");
+		}
 	}
 
 	public GolangBinary(GolangBinary obj) {
@@ -323,14 +330,12 @@ public class GolangBinary {
 		return tmp_gopclntab_base;
 	}
 
-	boolean init_gopclntab(Address addr) {
-		if(gopclntab_base!=null) {
+	boolean init_gopclntab() {
+		if(this.gopclntab_base!=null) {
 			return true;
 		}
-		if(addr==null) {
-			addr=get_gopclntab();
-		}
-		this.gopclntab_base=addr;
+
+		this.gopclntab_base=get_gopclntab();
 		if(this.gopclntab_base==null) {
 			append_message("Failed to get gopclntab");
 			return false;
@@ -350,15 +355,9 @@ public class GolangBinary {
 		return true;
 	}
 
-	boolean init_gopclntab() {
-		return init_gopclntab(get_gopclntab());
-	}
-
 	boolean init_go_version()
 	{
-		if(go_version.length()>0) {
-			return true;
-		}
+		go_version="";
 		// cmd/go/internal/version/version.go
 		// "\xff Go buildinf:"
 		byte build_info_magic[]= {(byte)0xff,(byte)0x20,(byte)0x47,(byte)0x6f,(byte)0x20,(byte)0x62,(byte)0x75,(byte)0x69,(byte)0x6c,(byte)0x64,(byte)0x69,(byte)0x6e,(byte)0x66,(byte)0x3a};
@@ -366,7 +365,6 @@ public class GolangBinary {
 		base_addr=memory.findBytes(base_addr, build_info_magic, new byte[] {(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff}, true, monitor);
 		if(base_addr==null) {
 			append_message("Failed to find \"\\xff Go buildinf:\"");
-			go_version="go0.0.0";
 			return false;
 		}
 
@@ -399,7 +397,6 @@ public class GolangBinary {
 	}
 
 	int compare_go_version(String cmp_go_version) {
-		init_go_version();
 		String cmp1=cmp_go_version.substring(2);
 		String cmp2=go_version.length()>2?go_version.substring(2):"0.0.0";
 		String[] sp_cmp1=cmp1.split("\\.");

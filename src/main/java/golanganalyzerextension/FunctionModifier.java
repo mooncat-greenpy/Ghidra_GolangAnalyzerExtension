@@ -35,6 +35,10 @@ public class FunctionModifier extends GolangBinary {
 	public FunctionModifier(Program program, TaskMonitor monitor, MessageLog log, boolean rename_option, boolean param_option, boolean comment_option, boolean extended_option, boolean debugmode) {
 		super(program, monitor, log, debugmode);
 
+		if(this.gopclntab_base==null) {
+			return;
+		}
+
 		this.rename_option=rename_option;
 		this.param_option=param_option;
 		this.comment_option=comment_option;
@@ -44,9 +48,6 @@ public class FunctionModifier extends GolangBinary {
 			return;
 		}
 
-		if(!init_gopclntab()) {
-			return;
-		}
 		if(!init_file_name_list()) {
 			return;
 		}
@@ -58,7 +59,7 @@ public class FunctionModifier extends GolangBinary {
 			init_hardcode_functions();
 		}
 
-		ok=true;
+		this.ok=true;
 	}
 
 	boolean init_file_name_list() {
