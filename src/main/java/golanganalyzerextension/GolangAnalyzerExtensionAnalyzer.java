@@ -65,11 +65,12 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 			throws CancelledException {
 		try {
 			Logger.set_logger(log, debugmode_option);
+			GolangBinary go_bin=new GolangBinary(program, monitor);
 
-			FunctionModifier func_modifier=new FunctionModifier(program, monitor, rename_option, param_option, comment_option, extended_option);
+			FunctionModifier func_modifier=new FunctionModifier(go_bin, rename_option, param_option, comment_option, extended_option);
 			func_modifier.modify();
 
-			StructureManager struct_manager=new StructureManager(program, monitor, datatype_option);
+			StructureManager struct_manager=new StructureManager(go_bin, program, datatype_option);
 			struct_manager.modify();
 		}catch(Exception e) {
 			log.appendMsg(String.format("Error: %s", e.getMessage()));

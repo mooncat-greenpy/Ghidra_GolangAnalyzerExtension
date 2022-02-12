@@ -1,6 +1,7 @@
 package golanganalyzerextension;
 
 
+import ghidra.app.cmd.function.CreateFunctionCmd;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressOutOfBoundsException;
 import ghidra.program.model.data.ByteDataType;
@@ -26,12 +27,15 @@ import ghidra.program.model.data.UnsignedLongLongDataType;
 import ghidra.program.model.data.UnsignedShortDataType;
 import ghidra.program.model.lang.Register;
 import ghidra.program.model.listing.Data;
+import ghidra.program.model.listing.Function;
+import ghidra.program.model.listing.FunctionIterator;
 import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.listing.Listing;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.Memory;
 import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.program.model.mem.MemoryBlock;
+import ghidra.program.model.symbol.SourceType;
 import ghidra.program.model.util.CodeUnitInsertionException;
 import ghidra.util.exception.InvalidInputException;
 import ghidra.util.task.TaskMonitor;
@@ -106,6 +110,14 @@ public class GolangBinary {
 		return null;
 	}
 
+	Address get_address(long addr_value) {
+		return program.getAddressFactory().getDefaultAddressSpace().getAddress(addr_value);
+	}
+
+	Address get_address(String addr_string) {
+		return program.getAddressFactory().getAddress(addr_string);
+	}
+
 	long get_address_value(Address address, int size) {
 		if(address==null) {
 			return 0;
@@ -123,6 +135,14 @@ public class GolangBinary {
 			Logger.append_message(String.format("Failed to get value: %s %x", e.getMessage(), address.getOffset()));
 		}
 		return 0;
+	}
+
+	Address find_memory(Address base_addr, byte[] target, byte[] mask) {
+		return memory.findBytes(base_addr, target, mask, true, monitor);
+	}
+
+	Register get_register(String reg_str) {
+		return program.getRegister(reg_str);
 	}
 
 	boolean compare_register(Register cmp1, Register cmp2) {
@@ -246,6 +266,11 @@ public class GolangBinary {
 		return (String)string_data.getValue();
 	}
 
+	void create_data(Address addr, DataType datatype) throws CodeUnitInsertionException, DataTypeConflictException {
+		program_listing.clearCodeUnits(addr, get_address(addr, datatype.getLength()), false);
+		program.getListing().createData(addr, datatype);
+	}
+
 	void create_label(Address address, String str) {
 		try {
 			str=str.replace(" ", "_");
@@ -253,6 +278,35 @@ public class GolangBinary {
 		} catch (InvalidInputException e) {
 			Logger.append_message(String.format("Failed to create label: %x %s", address.getOffset(), str));
 		}
+	}
+
+	void set_comment(Address addr, int type, String comment) {
+		program.getListing().setComment(addr, type, comment);
+	}
+
+	boolean is_x86() {
+		return program.getLanguage().getProcessor().toString().equals("x86");
+	}
+
+	boolean is_arm() {
+		return program.getLanguage().getProcessor().toString().equals("ARM");
+	}
+
+	Function get_function(Address addr) {
+		return program.getFunctionManager().getFunctionAt(addr);
+	}
+
+	FunctionIterator get_functions() {
+		return program.getFunctionManager().getFunctions(true);
+	}
+
+	void create_function(String name, Address addr) {
+		CreateFunctionCmd cmd=new CreateFunctionCmd(name, addr, null, SourceType.ANALYSIS);
+		cmd.applyTo(program, monitor);
+	}
+
+	Instruction get_instruction(Address addr) {
+		return program_listing.getInstructionAt(addr);
 	}
 
 	boolean is_ok() {
