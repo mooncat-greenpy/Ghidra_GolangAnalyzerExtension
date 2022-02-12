@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import ghidra.app.util.importer.MessageLog;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.*;
 import ghidra.program.model.listing.Program;
@@ -288,8 +287,8 @@ public class StructureManager extends GolangBinary {
 		}
 	}
 
-	public StructureManager(Program program, TaskMonitor monitor, MessageLog log, boolean datatype_option, boolean debugmode) {
-		super(program, monitor, log, debugmode);
+	public StructureManager(Program program, TaskMonitor monitor, boolean datatype_option) {
+		super(program, monitor);
 
 		if(!datatype_option) {
 			return;
@@ -309,7 +308,7 @@ public class StructureManager extends GolangBinary {
 		}
 
 		if(!init_basig_golang_datatype()) {
-			append_message("Failed to init datatype");
+			Logger.append_message("Failed to init datatype");
 			return;
 		}
 
@@ -319,7 +318,7 @@ public class StructureManager extends GolangBinary {
 
 	void modify() {
 		if(!ok) {
-			append_message("Failed to setup StructureManager");
+			Logger.append_message("Failed to setup StructureManager");
 			return;
 		}
 
@@ -603,7 +602,7 @@ public class StructureManager extends GolangBinary {
 						String.format("%x", type_base_addr.getOffset()+basic_info.ptr_to_this_off));
 			}
 		} catch (CodeUnitInsertionException | DataTypeConflictException e) {
-			append_message(String.format("Failed to create data: %s %x %s", e.getMessage(), get_address(type_base_addr, offset).getOffset(), basic_info.name));
+			Logger.append_message(String.format("Failed to create data: %s %x %s", e.getMessage(), get_address(type_base_addr, offset).getOffset(), basic_info.name));
 		}
 
 		Address ext_base_addr=get_address(type_base_addr, offset+pointer_size*4+16);

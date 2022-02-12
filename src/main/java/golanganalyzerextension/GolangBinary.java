@@ -1,7 +1,6 @@
 package golanganalyzerextension;
 
 
-import ghidra.app.util.importer.MessageLog;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressOutOfBoundsException;
 import ghidra.program.model.data.ByteDataType;
@@ -40,11 +39,9 @@ import ghidra.util.task.TaskMonitor;
 public class GolangBinary {
 	Program program=null;
 	TaskMonitor monitor=null;
-	MessageLog log=null;
 	Listing program_listing=null;
 	Memory memory=null;
 	boolean ok=false;
-	boolean debugmode=false;
 	Address gopclntab_base=null;
 	int magic=0;
 	int quantum=0;
@@ -52,31 +49,27 @@ public class GolangBinary {
 	String go_version="";
 	String go_version_mod="";
 
-	public GolangBinary(Program program, TaskMonitor monitor, MessageLog log, boolean debugmode) {
+	public GolangBinary(Program program, TaskMonitor monitor) {
 		this.program=program;
 		this.monitor=monitor;
-		this.log=log;
 		this.program_listing=program.getListing();
 		this.memory=program.getMemory();
 		this.ok=false;
-		this.debugmode=debugmode;
 
 		if(!init_go_version()) {
-			append_message("Failed to init go version");
+			Logger.append_message("Failed to init go version");
 		}
 		if(!init_gopclntab()) {
-			append_message("Failed to init gopclntab");
+			Logger.append_message("Failed to init gopclntab");
 		}
 	}
 
 	public GolangBinary(GolangBinary obj) {
 		this.program=obj.program;
 		this.monitor=obj.monitor;
-		this.log=obj.log;
 		this.program_listing=obj.program_listing;
 		this.memory=obj.memory;
 		this.ok=false;
-		this.debugmode=obj.debugmode;
 
 		this.gopclntab_base=obj.gopclntab_base;
 		this.magic=obj.magic;
@@ -108,7 +101,7 @@ public class GolangBinary {
 		try {
 			return base.add(offset);
 		}catch(AddressOutOfBoundsException e) {
-			append_message(String.format("Failed to get address: %s %x+%x", e.getMessage(), base.getOffset(), offset));
+			Logger.append_message(String.format("Failed to get address: %s %x+%x", e.getMessage(), base.getOffset(), offset));
 		}
 		return null;
 	}
@@ -127,7 +120,7 @@ public class GolangBinary {
 			}
 			return memory.getByte(address)&0xff;
 		}catch(MemoryAccessException e) {
-			append_message(String.format("Failed to get value: %s %x", e.getMessage(), address.getOffset()));
+			Logger.append_message(String.format("Failed to get value: %s %x", e.getMessage(), address.getOffset()));
 		}
 		return 0;
 	}
@@ -204,7 +197,7 @@ public class GolangBinary {
 			memory.getBytes(address, bytes, 0, size);
 			return new String(bytes);
 		} catch (MemoryAccessException e) {
-			append_message(String.format("Failed to read string: %s %x", e.getMessage(), address.getOffset()));
+			Logger.append_message(String.format("Failed to read string: %s %x", e.getMessage(), address.getOffset()));
 		}
 		return "not found";
 	}
@@ -239,7 +232,7 @@ public class GolangBinary {
 					return "not found";
 				}
 			} catch (CodeUnitInsertionException | DataTypeConflictException e) {
-				append_message(String.format("Failed to create string data: %s %x", e.getMessage(), address.getOffset()));
+				Logger.append_message(String.format("Failed to create string data: %s %x", e.getMessage(), address.getOffset()));
 			}
 		}
 		if(string_data==null) {
@@ -258,13 +251,7 @@ public class GolangBinary {
 			str=str.replace(" ", "_");
 			program.getSymbolTable().createLabel(address, str, ghidra.program.model.symbol.SourceType.USER_DEFINED);
 		} catch (InvalidInputException e) {
-			append_message(String.format("Failed to create label: %x %s", address.getOffset(), str));
-		}
-	}
-
-	void append_message(String str) {
-		if(debugmode) {
-			log.appendMsg(str);
+			Logger.append_message(String.format("Failed to create label: %x %s", address.getOffset(), str));
 		}
 	}
 
@@ -337,7 +324,7 @@ public class GolangBinary {
 
 		this.gopclntab_base=get_gopclntab();
 		if(this.gopclntab_base==null) {
-			append_message("Failed to get gopclntab");
+			Logger.append_message("Failed to get gopclntab");
 			return false;
 		}
 
@@ -347,7 +334,7 @@ public class GolangBinary {
 		this.pointer_size=(int)get_address_value(get_address(gopclntab_base, 7), 1);         // pointer size
 		if((quantum!=1 && quantum!=2 && quantum!=4) ||
 				(pointer_size!=4 && pointer_size!=8)) {
-			append_message(String.format("Invalid gopclntab addr: %x", gopclntab_base.getOffset()));
+			Logger.append_message(String.format("Invalid gopclntab addr: %x", gopclntab_base.getOffset()));
 			this.gopclntab_base=null;
 			return false;
 		}
@@ -364,14 +351,14 @@ public class GolangBinary {
 		Address base_addr=null;
 		base_addr=memory.findBytes(base_addr, build_info_magic, new byte[] {(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff}, true, monitor);
 		if(base_addr==null) {
-			append_message("Failed to find \"\\xff Go buildinf:\"");
+			Logger.append_message("Failed to find \"\\xff Go buildinf:\"");
 			return false;
 		}
 
 		byte size=(byte)get_address_value(get_address(base_addr, 14), 1);
 		boolean is_big_endian=get_address_value(get_address(base_addr, 15), 1)!=0;
 		if(is_big_endian) {
-			append_message("Go version is big endian");
+			Logger.append_message("Go version is big endian");
 			return false;
 		}
 

@@ -81,7 +81,7 @@ public class GolangFunction extends GolangBinary {
 			func=program.getFunctionManager().getFunctionAt(func_addr);
 		}
 		if(func==null) {
-			append_message(String.format("Failed to get function: %x", entry_addr_value));
+			Logger.append_message(String.format("Failed to get function: %x", entry_addr_value));
 			return false;
 		}
 
@@ -293,7 +293,7 @@ public class GolangFunction extends GolangBinary {
 				params.add(add_param);
 			}
 		}catch(Exception e) {
-			append_message(String.format("Failed to set function parameters: %s", e.getMessage()));
+			Logger.append_message(String.format("Failed to set function parameters: %s", e.getMessage()));
 			return false;
 		}
 		return true;
@@ -441,7 +441,7 @@ public class GolangFunction extends GolangBinary {
 					return create_string_data(file_name_addr);
 				}
 				if((int)file_no-1<0 || file_name_list.size()<=(int)file_no-1) {
-					append_message(String.format("File name list index out of range: %x", (int)file_no-1));
+					Logger.append_message(String.format("File name list index out of range: %x", (int)file_no-1));
 					return null;
 				}
 				return file_name_list.get((int)file_no-1);

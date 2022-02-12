@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import ghidra.app.util.importer.MessageLog;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.PointerDataType;
@@ -32,8 +31,8 @@ public class FunctionModifier extends GolangBinary {
 	boolean comment_option=false;
 	boolean extended_option=false;
 
-	public FunctionModifier(Program program, TaskMonitor monitor, MessageLog log, boolean rename_option, boolean param_option, boolean comment_option, boolean extended_option, boolean debugmode) {
-		super(program, monitor, log, debugmode);
+	public FunctionModifier(Program program, TaskMonitor monitor, boolean rename_option, boolean param_option, boolean comment_option, boolean extended_option) {
+		super(program, monitor);
 
 		if(this.gopclntab_base==null) {
 			return;
@@ -132,7 +131,7 @@ public class FunctionModifier extends GolangBinary {
 			}
 			if(func_addr_value!=func_entry_value)
 			{
-				append_message(String.format("Function addr mismatch: %x != %x", func_addr_value, func_entry_value));
+				Logger.append_message(String.format("Function addr mismatch: %x != %x", func_addr_value, func_entry_value));
 				continue;
 			}
 
@@ -506,7 +505,7 @@ public class FunctionModifier extends GolangBinary {
 
 	void modify() {
 		if(!ok) {
-			append_message("Failed to setup FunctionModifier");
+			Logger.append_message("Failed to setup FunctionModifier");
 			return;
 		}
 
@@ -536,7 +535,7 @@ public class FunctionModifier extends GolangBinary {
 		try {
 			func.setName(func_name, SourceType.USER_DEFINED);
 		}catch(Exception e) {
-			append_message(String.format("Failed to set function name: %s", e.getMessage()));
+			Logger.append_message(String.format("Failed to set function name: %s", e.getMessage()));
 		}
 	}
 
@@ -551,7 +550,7 @@ public class FunctionModifier extends GolangBinary {
 			func.updateFunction(null, null, new_params, FunctionUpdateType.CUSTOM_STORAGE, true, SourceType.USER_DEFINED);
 			func.setReturnType(new VoidDataType(), SourceType.USER_DEFINED);
 		}catch(Exception e) {
-			append_message(String.format("Failed to set function parameters: %s", e.getMessage()));
+			Logger.append_message(String.format("Failed to set function parameters: %s", e.getMessage()));
 		}
 	}
 
