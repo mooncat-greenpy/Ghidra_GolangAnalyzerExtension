@@ -41,24 +41,26 @@ import ghidra.util.exception.InvalidInputException;
 import ghidra.util.task.TaskMonitor;
 
 public class GolangBinary {
-	Program program=null;
-	TaskMonitor monitor=null;
-	Listing program_listing=null;
-	Memory memory=null;
-	boolean ok=false;
-	Address gopclntab_base=null;
-	int magic=0;
-	int quantum=0;
-	int pointer_size=0;
-	String go_version="";
-	String go_version_mod="";
+	private Program program=null;
+	private TaskMonitor monitor=null;
+	private Listing program_listing=null;
+	private Memory memory=null;
+
+	private boolean ok=false;
+
+	private Address gopclntab_base=null;
+	private int magic=0;
+	private int quantum=0;
+	private int pointer_size=0;
+
+	private String go_version="";
+	private String go_version_mod="";
 
 	public GolangBinary(Program program, TaskMonitor monitor) {
 		this.program=program;
 		this.monitor=monitor;
 		this.program_listing=program.getListing();
 		this.memory=program.getMemory();
-		this.ok=false;
 
 		if(!init_go_version()) {
 			Logger.append_message("Failed to init go version");
@@ -66,6 +68,8 @@ public class GolangBinary {
 		if(!init_gopclntab()) {
 			Logger.append_message("Failed to init gopclntab");
 		}
+
+		this.ok=true;
 	}
 
 	public GolangBinary(GolangBinary obj) {
@@ -73,7 +77,6 @@ public class GolangBinary {
 		this.monitor=obj.monitor;
 		this.program_listing=obj.program_listing;
 		this.memory=obj.memory;
-		this.ok=false;
 
 		this.gopclntab_base=obj.gopclntab_base;
 		this.magic=obj.magic;
@@ -81,24 +84,15 @@ public class GolangBinary {
 		this.pointer_size=obj.pointer_size;
 		this.go_version=obj.go_version;
 		this.go_version_mod=obj.go_version_mod;
+
+		this.ok=true;
 	}
 
-	boolean is_valid_address(Address addr) {
-		boolean ret=false;
-		try {
-			memory.getByte(addr);
-			ret=true;
-		} catch (MemoryAccessException e) {
-			ret=false;
-		}
-		return ret;
+	public boolean is_ok() {
+		return ok;
 	}
 
-	boolean is_valid_address(long addr_value) {
-		return is_valid_address(program.getAddressFactory().getAddress(String.format("%x", addr_value)));
-	}
-
-	Address get_address(Address base, long offset) {
+	public Address get_address(Address base, long offset) {
 		if(base==null) {
 			return null;
 		}
@@ -110,49 +104,60 @@ public class GolangBinary {
 		return null;
 	}
 
-	Address get_address(long addr_value) {
+	public Address get_address(long addr_value) {
 		return program.getAddressFactory().getDefaultAddressSpace().getAddress(addr_value);
 	}
 
-	Address get_address(String addr_string) {
-		return program.getAddressFactory().getAddress(addr_string);
+	public Address get_address(String addr_str) {
+		return program.getAddressFactory().getAddress(addr_str);
 	}
 
-	long get_address_value(Address address, int size) {
-		if(address==null) {
+	public boolean is_valid_address(Address addr) {
+		boolean ret=false;
+		try {
+			memory.getByte(addr);
+			ret=true;
+		} catch (MemoryAccessException e) {
+			ret=false;
+		}
+		return ret;
+	}
+
+	public boolean is_valid_address(long addr_value) {
+		return is_valid_address(get_address(addr_value));
+	}
+
+	public long get_address_value(Address addr, int size) {
+		if(addr==null) {
 			return 0;
 		}
 		try {
 			if(size==8) {
-				return memory.getLong(address);
+				return memory.getLong(addr);
 			}else if(size==4) {
-				return memory.getInt(address);
+				return memory.getInt(addr);
 			}else if(size==2) {
-				return memory.getShort(address);
+				return memory.getShort(addr);
 			}
-			return memory.getByte(address)&0xff;
+			return memory.getByte(addr)&0xff;
 		}catch(MemoryAccessException e) {
-			Logger.append_message(String.format("Failed to get value: %s %x", e.getMessage(), address.getOffset()));
+			Logger.append_message(String.format("Failed to get value: %s %x", e.getMessage(), addr.getOffset()));
 		}
 		return 0;
 	}
 
-	Address find_memory(Address base_addr, byte[] target, byte[] mask) {
+	public long get_address_value(Address addr, long offset, int size) {
+		if(addr==null) {
+			return 0;
+		}
+		return get_address_value(get_address(addr, offset), size);
+	}
+
+	public Address find_memory(Address base_addr, byte[] target, byte[] mask) {
 		return memory.findBytes(base_addr, target, mask, true, monitor);
 	}
 
-	Register get_register(String reg_str) {
-		return program.getRegister(reg_str);
-	}
-
-	boolean compare_register(Register cmp1, Register cmp2) {
-		if(cmp1==null || cmp2==null) {
-			return false;
-		}
-		return cmp1.getBaseRegister().equals(cmp2.getBaseRegister());
-	}
-
-	DataType get_unsigned_number_datatype(int size) {
+	public DataType get_unsigned_number_datatype(int size) {
 		if(size==1) {
 			return new ByteDataType();
 		}else if(size==2) {
@@ -178,7 +183,7 @@ public class GolangBinary {
 		}
 	}
 
-	DataType get_signed_number_datatype(int size) {
+	public DataType get_signed_number_datatype(int size) {
 		if(size==1) {
 			return new SignedByteDataType();
 		}else if(size==2) {
@@ -204,25 +209,18 @@ public class GolangBinary {
 		}
 	}
 
-	boolean is_ret_inst(Instruction inst) {
-		if(inst.toString().toUpperCase().contains("RET") || inst.toString().toLowerCase().equals("add pc,lr,#0x0")) {
-			return true;
-		}
-		return false;
-	}
-
-	String read_string(Address address, int size) {
+	public String read_string(Address addr, int size) {
 		try {
 			byte[] bytes=new byte[size];
-			memory.getBytes(address, bytes, 0, size);
+			memory.getBytes(addr, bytes, 0, size);
 			return new String(bytes);
 		} catch (MemoryAccessException e) {
-			Logger.append_message(String.format("Failed to read string: %s %x", e.getMessage(), address.getOffset()));
+			Logger.append_message(String.format("Failed to read string: %s %x", e.getMessage(), addr.getOffset()));
 		}
 		return "not found";
 	}
 
-	String read_string_struct(Address string_struct_addr, int value_size) {
+	public String read_string_struct(Address string_struct_addr, int value_size) {
 		if(!is_valid_address(string_struct_addr)) {
 			return null;
 		}
@@ -231,89 +229,115 @@ public class GolangBinary {
 		if(!is_valid_address(string_addr)) {
 			return null;
 		}
-		long string_size=get_address_value(get_address(string_struct_addr, value_size), value_size);
+		long string_size=get_address_value(string_struct_addr, value_size, value_size);
 		return read_string(string_addr, (int)string_size);
 	}
 
-	String read_string_struct(long string_struct_addr_value, int value_size) {
+	public String read_string_struct(long string_struct_addr_value, int value_size) {
 		return read_string_struct(program.getAddressFactory().getAddress(String.format("%x", string_struct_addr_value)), value_size);
 	}
 
-	String create_string_data(Address address){
-		if(address==null) {
+	public String create_string_data(Address addr) {
+		if(addr==null) {
 			return "not found";
 		}
-		program_listing.clearCodeUnits(address, address.add(1), false);
-		Data string_data=program_listing.getDefinedDataAt(address);
+		program_listing.clearCodeUnits(addr, addr.add(1), false);
+		Data string_data=program_listing.getDefinedDataAt(addr);
 		if(string_data==null) {
 			try {
-				string_data=program_listing.createData(address, new StringDataType());
+				string_data=program_listing.createData(addr, new StringDataType());
 				if(!string_data.getDataType().isEquivalent((new StringDataType()))) {
 					return "not found";
 				}
 			} catch (CodeUnitInsertionException | DataTypeConflictException e) {
-				Logger.append_message(String.format("Failed to create string data: %s %x", e.getMessage(), address.getOffset()));
+				Logger.append_message(String.format("Failed to create string data: %s %x", e.getMessage(), addr.getOffset()));
 			}
 		}
 		if(string_data==null) {
-			Address zero_addr=memory.findBytes(address, new byte[] {(byte)0x0}, new byte[] {(byte)0xff}, true, monitor);
+			Address zero_addr=memory.findBytes(addr, new byte[] {(byte)0x0}, new byte[] {(byte)0xff}, true, monitor);
 			if(zero_addr==null) {
 				return "not found";
 			}
-			int size=(int)(zero_addr.getOffset()-address.getOffset());
-			return read_string(address, size);
+			int size=(int)(zero_addr.getOffset()-addr.getOffset());
+			return read_string(addr, size);
 		}
 		return (String)string_data.getValue();
 	}
 
-	void create_data(Address addr, DataType datatype) throws CodeUnitInsertionException, DataTypeConflictException {
+	public void create_data(Address addr, DataType datatype) throws CodeUnitInsertionException, DataTypeConflictException {
 		program_listing.clearCodeUnits(addr, get_address(addr, datatype.getLength()), false);
 		program.getListing().createData(addr, datatype);
 	}
 
-	void create_label(Address address, String str) {
-		try {
-			str=str.replace(" ", "_");
-			program.getSymbolTable().createLabel(address, str, ghidra.program.model.symbol.SourceType.USER_DEFINED);
-		} catch (InvalidInputException e) {
-			Logger.append_message(String.format("Failed to create label: %x %s", address.getOffset(), str));
-		}
-	}
-
-	void set_comment(Address addr, int type, String comment) {
-		program.getListing().setComment(addr, type, comment);
-	}
-
-	boolean is_x86() {
-		return program.getLanguage().getProcessor().toString().equals("x86");
-	}
-
-	boolean is_arm() {
-		return program.getLanguage().getProcessor().toString().equals("ARM");
-	}
-
-	Function get_function(Address addr) {
+	public Function get_function(Address addr) {
 		return program.getFunctionManager().getFunctionAt(addr);
 	}
 
-	FunctionIterator get_functions() {
+	public FunctionIterator get_functions() {
 		return program.getFunctionManager().getFunctions(true);
 	}
 
-	void create_function(String name, Address addr) {
+	public void create_function(String name, Address addr) {
 		CreateFunctionCmd cmd=new CreateFunctionCmd(name, addr, null, SourceType.ANALYSIS);
 		cmd.applyTo(program, monitor);
 	}
 
-	Instruction get_instruction(Address addr) {
+	public boolean is_x86() {
+		return program.getLanguage().getProcessor().toString().equals("x86");
+	}
+
+	public boolean is_arm() {
+		return program.getLanguage().getProcessor().toString().equals("ARM");
+	}
+
+	public Instruction get_instruction(Address addr) {
 		return program_listing.getInstructionAt(addr);
 	}
 
-	boolean is_ok() {
-		return ok;
+	public boolean is_ret_inst(Instruction inst) {
+		if(inst.toString().toUpperCase().contains("RET") || inst.toString().toLowerCase().equals("add pc,lr,#0x0")) {
+			return true;
+		}
+		return false;
 	}
 
-	Address get_gopclntab() {
+	public Register get_register(String reg_str) {
+		return program.getRegister(reg_str);
+	}
+
+	public boolean compare_register(Register cmp1, Register cmp2) {
+		if(cmp1==null || cmp2==null) {
+			return false;
+		}
+		return cmp1.getBaseRegister().equals(cmp2.getBaseRegister());
+	}
+
+	public void create_label(Address addr, String str) {
+		try {
+			str=str.replace(" ", "_");
+			program.getSymbolTable().createLabel(addr, str, ghidra.program.model.symbol.SourceType.USER_DEFINED);
+		} catch (InvalidInputException e) {
+			Logger.append_message(String.format("Failed to create label: %x %s", addr.getOffset(), str));
+		}
+	}
+
+	public void set_comment(Address addr, int type, String comment) {
+		program.getListing().setComment(addr, type, comment);
+	}
+
+	public Address get_gopclntab_base() {
+		return gopclntab_base;
+	}
+
+	public int get_pointer_size() {
+		return pointer_size;
+	}
+
+	public int get_quantum() {
+		return quantum;
+	}
+
+	private Address search_gopclntab() {
 		MemoryBlock gopclntab_section=null;
 		for (MemoryBlock mb : memory.getBlocks()) {
 			if(mb.getName().equals(".gopclntab")) {
@@ -339,22 +363,22 @@ public class GolangBinary {
 				break;
 			}
 
-			int tmp_quantum=(int)get_address_value(get_address(tmp_gopclntab_base, 6), 1);
-			int tmp_pointer_size=(int)get_address_value(get_address(tmp_gopclntab_base, 7), 1);
+			int tmp_quantum=(int)get_address_value(tmp_gopclntab_base, 6, 1);
+			int tmp_pointer_size=(int)get_address_value(tmp_gopclntab_base, 7, 1);
 
 			Address func_list_base=null;
 			if(is_go116) {
-				func_list_base=get_address(tmp_gopclntab_base, get_address_value(get_address(tmp_gopclntab_base, 8+tmp_pointer_size*6), tmp_pointer_size));
+				func_list_base=get_address(tmp_gopclntab_base, get_address_value(tmp_gopclntab_base, 8+tmp_pointer_size*6, tmp_pointer_size));
 			}else {
 				func_list_base=get_address(tmp_gopclntab_base, 8+tmp_pointer_size);
 			}
-			long func_addr_value=get_address_value(get_address(func_list_base, 0), tmp_pointer_size);
-			long func_info_offset=get_address_value(get_address(func_list_base, tmp_pointer_size), tmp_pointer_size);
+			long func_addr_value=get_address_value(func_list_base, 0, tmp_pointer_size);
+			long func_info_offset=get_address_value(func_list_base, tmp_pointer_size, tmp_pointer_size);
 			long func_entry_value=0;
 			if(is_go116) {
-				func_entry_value=get_address_value(get_address(func_list_base, func_info_offset), tmp_pointer_size);
+				func_entry_value=get_address_value(func_list_base, func_info_offset, tmp_pointer_size);
 			}else {
-				func_entry_value=get_address_value(get_address(tmp_gopclntab_base, func_info_offset), tmp_pointer_size);
+				func_entry_value=get_address_value(tmp_gopclntab_base, func_info_offset, tmp_pointer_size);
 			}
 
 			if((tmp_quantum==1 || tmp_quantum==2 || tmp_quantum==4) && (tmp_pointer_size==4 || tmp_pointer_size==8) &&
@@ -371,12 +395,12 @@ public class GolangBinary {
 		return tmp_gopclntab_base;
 	}
 
-	boolean init_gopclntab() {
+	private boolean init_gopclntab() {
 		if(this.gopclntab_base!=null) {
 			return true;
 		}
 
-		this.gopclntab_base=get_gopclntab();
+		this.gopclntab_base=search_gopclntab();
 		if(this.gopclntab_base==null) {
 			Logger.append_message("Failed to get gopclntab");
 			return false;
@@ -384,8 +408,8 @@ public class GolangBinary {
 
 		this.magic=(int)get_address_value(gopclntab_base, 4);                                // magic
 		                                                                                     // two zero bytes
-		this.quantum=(int)get_address_value(get_address(gopclntab_base, 6), 1);              // arch(x86=1, ?=2, arm=4)
-		this.pointer_size=(int)get_address_value(get_address(gopclntab_base, 7), 1);         // pointer size
+		this.quantum=(int)get_address_value(gopclntab_base, 6, 1);                           // arch(x86=1, ?=2, arm=4)
+		this.pointer_size=(int)get_address_value(gopclntab_base, 7, 1);                      // pointer size
 		if((quantum!=1 && quantum!=2 && quantum!=4) ||
 				(pointer_size!=4 && pointer_size!=8)) {
 			Logger.append_message(String.format("Invalid gopclntab addr: %x", gopclntab_base.getOffset()));
@@ -396,7 +420,7 @@ public class GolangBinary {
 		return true;
 	}
 
-	boolean init_go_version()
+	private boolean init_go_version()
 	{
 		go_version="";
 		// cmd/go/internal/version/version.go
@@ -409,21 +433,21 @@ public class GolangBinary {
 			return false;
 		}
 
-		byte size=(byte)get_address_value(get_address(base_addr, 14), 1);
-		boolean is_big_endian=get_address_value(get_address(base_addr, 15), 1)!=0;
+		byte size=(byte)get_address_value(base_addr, 14, 1);
+		boolean is_big_endian=get_address_value(base_addr, 15, 1)!=0;
 		if(is_big_endian) {
 			Logger.append_message("Go version is big endian");
 			return false;
 		}
 
-		go_version=read_string_struct(get_address_value(get_address(base_addr, 16), size), size);
+		go_version=read_string_struct(get_address_value(base_addr, 16, size), size);
 		if(go_version==null)
 		{
 			go_version="";
 			return false;
 		}
 
-		go_version_mod=read_string_struct(get_address_value(get_address(base_addr, 16+size), size), size);
+		go_version_mod=read_string_struct(get_address_value(base_addr, 16+size, size), size);
 		if(go_version_mod==null) {
 			go_version_mod="";
 		}
@@ -437,7 +461,7 @@ public class GolangBinary {
 		return true;
 	}
 
-	int compare_go_version(String cmp_go_version) {
+	public int compare_go_version(String cmp_go_version) {
 		String cmp1=cmp_go_version.substring(2);
 		String cmp2=go_version.length()>2?go_version.substring(2):"0.0.0";
 		String[] sp_cmp1=cmp1.split("\\.");

@@ -129,9 +129,10 @@ public class StructureManager {
 			this.dir=dir;
 		}
 		public DataType get_datatype() {
+			int pointer_size=go_bin.get_pointer_size();
 			// runtime/chan.go
 			StructureDataType hchan_datatype=new StructureDataType(name, 0);
-			hchan_datatype.setExplicitMinimumAlignment(go_bin.pointer_size);
+			hchan_datatype.setExplicitMinimumAlignment(pointer_size);
 			hchan_datatype.add(get_datatype_by_name("uint"), "qcount", "");
 			hchan_datatype.add(get_datatype_by_name("uint"), "dataqsiz", "");
 			hchan_datatype.add(get_datatype_by_name("unsafe.Pointer"), "buf", "");
@@ -143,7 +144,7 @@ public class StructureManager {
 			hchan_datatype.add(new PointerDataType(get_datatype_by_name("waitq")), "recvq", "");
 			hchan_datatype.add(new PointerDataType(get_datatype_by_name("waitq")), "sendq", "");
 			hchan_datatype.add(get_datatype_by_name("mutex"), "lock", "");
-			DataType chan_datatype=new PointerDataType(hchan_datatype, go_bin.pointer_size);
+			DataType chan_datatype=new PointerDataType(hchan_datatype, pointer_size);
 			return chan_datatype;
 		}
 	}
@@ -156,7 +157,7 @@ public class StructureManager {
 			this.out_type_key=out_type_key;
 		}
 		public DataType get_datatype() {
-			DataType ptr_datatype=new PointerDataType(new VoidDataType(), go_bin.pointer_size);
+			DataType ptr_datatype=new PointerDataType(new VoidDataType(), go_bin.get_pointer_size());
 			return ptr_datatype;
 		}
 	}
@@ -173,7 +174,7 @@ public class StructureManager {
 		public DataType get_datatype() {
 			// runtime/iface.go
 			StructureDataType interface_datatype=new StructureDataType(name, 0);
-			interface_datatype.setExplicitMinimumAlignment(go_bin.pointer_size);
+			interface_datatype.setExplicitMinimumAlignment(go_bin.get_pointer_size());
 			interface_datatype.add(new PointerDataType(get_datatype_by_name("_type")), "tab", "");
 			interface_datatype.add(new PointerDataType(), "data", "");
 			return interface_datatype;
@@ -188,9 +189,10 @@ public class StructureManager {
 			this.elem_type_key=elem_type_key;
 		}
 		public DataType get_datatype() {
+			int pointer_size=go_bin.get_pointer_size();
 			// runtime/map.go
 			StructureDataType hmap_datatype=new StructureDataType(name, 0);
-			hmap_datatype.setExplicitMinimumAlignment(go_bin.pointer_size);
+			hmap_datatype.setExplicitMinimumAlignment(pointer_size);
 			hmap_datatype.add(get_datatype_by_name("int"), "count", "");
 			hmap_datatype.add(get_datatype_by_name("uint8"), "flags", "");
 			hmap_datatype.add(get_datatype_by_name("uint8"), "B", "");
@@ -200,7 +202,7 @@ public class StructureManager {
 			hmap_datatype.add(get_datatype_by_name("unsafe.Pointer"), "oldbuckets", "");
 			hmap_datatype.add(get_datatype_by_name("uintptr"), "nevacuate", "");
 			hmap_datatype.add(new PointerDataType(), "extra", "");
-			DataType map_datatype=new PointerDataType(hmap_datatype, go_bin.pointer_size);
+			DataType map_datatype=new PointerDataType(hmap_datatype, pointer_size);
 			return map_datatype;
 		}
 	}
@@ -224,7 +226,7 @@ public class StructureManager {
 			if(inner_datatype==null || inner_datatype.getLength()<=0) {
 				inner_datatype=new VoidDataType();
 			}
-			DataType ptr_datatype=new PointerDataType(inner_datatype, go_bin.pointer_size);
+			DataType ptr_datatype=new PointerDataType(inner_datatype, go_bin.get_pointer_size());
 			return ptr_datatype;
 		}
 	}
@@ -242,10 +244,11 @@ public class StructureManager {
 			if(inner_datatype==null || inner_datatype.getLength()<=0) {
 				inner_datatype=new VoidDataType();
 			}
+			int pointer_size=go_bin.get_pointer_size();
 			// cmd/cgo/out.go
 			StructureDataType slice_datatype=new StructureDataType(name, 0);
-			slice_datatype.setExplicitMinimumAlignment(go_bin.pointer_size);
-			slice_datatype.add(new PointerDataType(inner_datatype, go_bin.pointer_size), "__values", null);
+			slice_datatype.setExplicitMinimumAlignment(pointer_size);
+			slice_datatype.add(new PointerDataType(inner_datatype, pointer_size), "__values", null);
 			slice_datatype.add(get_datatype_by_name("uintptr"), "__count", null);
 			slice_datatype.add(get_datatype_by_name("uintptr"), "__capacity", null);
 			return slice_datatype;
@@ -294,10 +297,6 @@ public class StructureManager {
 		this.go_bin=go_bin;
 
 		if(!datatype_option) {
-			return;
-		}
-
-		if(go_bin.gopclntab_base==null) {
 			return;
 		}
 
@@ -356,9 +355,10 @@ public class StructureManager {
 	}
 
 	boolean init_basig_golang_hardcode_datatype() {
+		int pointer_size=go_bin.get_pointer_size();
 		// reflect/type.go
 		StructureDataType _type_datatype=new StructureDataType("_type", 0);
-		_type_datatype.setExplicitMinimumAlignment(go_bin.pointer_size);
+		_type_datatype.setExplicitMinimumAlignment(pointer_size);
 		_type_datatype.add(new PointerDataType(), "size", "");
 		_type_datatype.add(new PointerDataType(), "ptrdata", "");
 		_type_datatype.add(new UnsignedIntegerDataType(), "hash", "");
@@ -374,21 +374,21 @@ public class StructureManager {
 
 		// runtime/chan.go
 		StructureDataType waitq_datatype=new StructureDataType("waitq", 0);
-		waitq_datatype.setExplicitMinimumAlignment(go_bin.pointer_size);
+		waitq_datatype.setExplicitMinimumAlignment(pointer_size);
 		waitq_datatype.add(new PointerDataType(), "first", "");
 		waitq_datatype.add(new PointerDataType(), "last", "");
 		hardcode_datatype_map.put("waitq", waitq_datatype);
 
 		// runtime/runtime2.go
 		StructureDataType mutex_datatype=new StructureDataType("mutex", 0);
-		mutex_datatype.setExplicitMinimumAlignment(go_bin.pointer_size);
+		mutex_datatype.setExplicitMinimumAlignment(pointer_size);
 		// lockRankStruct
 		mutex_datatype.add(new PointerDataType(), "key", "");
 		hardcode_datatype_map.put("mutex", mutex_datatype);
 
 
 		hardcode_datatype_map.put("bool", new BooleanDataType());
-		if(go_bin.pointer_size==8) {
+		if(pointer_size==8) {
 			hardcode_datatype_map.put("int", new LongLongDataType());
 		}else {
 			hardcode_datatype_map.put("int", new IntegerDataType());
@@ -397,7 +397,7 @@ public class StructureManager {
 		hardcode_datatype_map.put("int16", new ShortDataType());
 		hardcode_datatype_map.put("int32", new IntegerDataType());
 		hardcode_datatype_map.put("int64", new LongLongDataType());
-		if(go_bin.pointer_size==8) {
+		if(pointer_size==8) {
 			hardcode_datatype_map.put("uint", new UnsignedLongLongDataType());
 		}else {
 			hardcode_datatype_map.put("uint", new UnsignedIntegerDataType());
@@ -406,7 +406,7 @@ public class StructureManager {
 		hardcode_datatype_map.put("uint16", new UnsignedShortDataType());
 		hardcode_datatype_map.put("uint32", new UnsignedIntegerDataType());
 		hardcode_datatype_map.put("uint64", new UnsignedLongLongDataType());
-		if(go_bin.pointer_size==8) {
+		if(pointer_size==8) {
 			hardcode_datatype_map.put("uintptr", new UnsignedLongLongDataType());
 		}else {
 			hardcode_datatype_map.put("uintptr", new UnsignedIntegerDataType());
@@ -423,7 +423,7 @@ public class StructureManager {
 		}
 
 		ByteBuffer buffer=ByteBuffer.allocate(Long.BYTES);
-		buffer.putLong(go_bin.gopclntab_base.getOffset());
+		buffer.putLong(go_bin.get_gopclntab_base().getOffset());
 		buffer.flip();
 		buffer.order(ByteOrder.LITTLE_ENDIAN);
 		long reverse=buffer.getLong();
@@ -431,9 +431,10 @@ public class StructureManager {
 		buffer.putLong(reverse);
 		byte gopclntab_base_bytes[]=buffer.array();
 
+		int pointer_size=go_bin.get_pointer_size();
 		Address base_addr=null;
 		while(true) {
-			if(go_bin.pointer_size==4) {
+			if(pointer_size==4) {
 				base_addr=go_bin.find_memory(base_addr, gopclntab_base_bytes, new byte[] {(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x00});
 			}else {
 				base_addr=go_bin.find_memory(base_addr, gopclntab_base_bytes, new byte[] {(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff});
@@ -448,31 +449,31 @@ public class StructureManager {
 			long typelink_len=0;
 			boolean is_go16=false;
 			if(is_go116) {
-				type_addr_value=go_bin.get_address_value(go_bin.get_address(base_addr, 35*go_bin.pointer_size), go_bin.pointer_size);
-				typelink_addr_value=go_bin.get_address_value(go_bin.get_address(base_addr, 40*go_bin.pointer_size), go_bin.pointer_size);
-				typelink_len=go_bin.get_address_value(go_bin.get_address(base_addr, 41*go_bin.pointer_size), go_bin.pointer_size);
+				type_addr_value=go_bin.get_address_value(base_addr, 35*pointer_size, pointer_size);
+				typelink_addr_value=go_bin.get_address_value(base_addr, 40*pointer_size, pointer_size);
+				typelink_len=go_bin.get_address_value(base_addr, 41*pointer_size, pointer_size);
 			}else {
-				type_addr_value=go_bin.get_address_value(go_bin.get_address(base_addr, 25*go_bin.pointer_size), go_bin.pointer_size);
-				typelink_addr_value=go_bin.get_address_value(go_bin.get_address(base_addr, 30*go_bin.pointer_size), go_bin.pointer_size);
-				typelink_len=go_bin.get_address_value(go_bin.get_address(base_addr, 31*go_bin.pointer_size), go_bin.pointer_size);
+				type_addr_value=go_bin.get_address_value(base_addr, 25*pointer_size, pointer_size);
+				typelink_addr_value=go_bin.get_address_value(base_addr, 30*pointer_size, pointer_size);
+				typelink_len=go_bin.get_address_value(base_addr, 31*pointer_size, pointer_size);
 
-				Address tmp_type_addr=go_bin.get_address(String.format("%x", type_addr_value));
-				Address tmp_typelink_addr=go_bin.get_address(String.format("%x", typelink_addr_value));
-				if(get_basic_type_info(tmp_type_addr, go_bin.get_address_value(go_bin.get_address(tmp_typelink_addr, 0), 4), is_go16)==null) {
-					type_addr_value=go_bin.get_address_value(go_bin.get_address(base_addr, 25*go_bin.pointer_size), go_bin.pointer_size);
-					typelink_addr_value=go_bin.get_address_value(go_bin.get_address(base_addr, 27*go_bin.pointer_size), go_bin.pointer_size);
-					typelink_len=go_bin.get_address_value(go_bin.get_address(base_addr, 28*go_bin.pointer_size), go_bin.pointer_size);
-					tmp_type_addr=go_bin.get_address(String.format("%x", type_addr_value));
-					tmp_typelink_addr=go_bin.get_address(String.format("%x", typelink_addr_value));
+				Address tmp_type_addr=go_bin.get_address(type_addr_value);
+				Address tmp_typelink_addr=go_bin.get_address(typelink_addr_value);
+				if(get_basic_type_info(tmp_type_addr, go_bin.get_address_value(tmp_typelink_addr, 0, 4), is_go16)==null) {
+					type_addr_value=go_bin.get_address_value(base_addr, 25*pointer_size, pointer_size);
+					typelink_addr_value=go_bin.get_address_value(base_addr, 27*pointer_size, pointer_size);
+					typelink_len=go_bin.get_address_value(base_addr, 28*pointer_size, pointer_size);
+					tmp_type_addr=go_bin.get_address(type_addr_value);
+					tmp_typelink_addr=go_bin.get_address(typelink_addr_value);
 				}
-				if(get_basic_type_info(tmp_type_addr, go_bin.get_address_value(go_bin.get_address(tmp_typelink_addr, 0), 4), is_go16)==null) {
+				if(get_basic_type_info(tmp_type_addr, go_bin.get_address_value(tmp_typelink_addr, 0, 4), is_go16)==null) {
 					is_go16=true;
-					typelink_len=go_bin.get_address_value(go_bin.get_address(base_addr, 26*go_bin.pointer_size), go_bin.pointer_size);
+					typelink_len=go_bin.get_address_value(base_addr, 26*pointer_size, pointer_size);
 				}
 			}
 
-			Address type_addr=go_bin.get_address(String.format("%x", type_addr_value));
-			Address typelink_addr=go_bin.get_address(String.format("%x", typelink_addr_value));
+			Address type_addr=go_bin.get_address(type_addr_value);
+			Address typelink_addr=go_bin.get_address(typelink_addr_value);
 
 			if((!go_bin.is_valid_address(type_addr) || !go_bin.is_valid_address(typelink_addr)) && !is_go16)
 			{
@@ -487,9 +488,9 @@ public class StructureManager {
 			{
 				long offset=0;
 				if(is_go16) {
-					offset=go_bin.get_address_value(go_bin.get_address(type_addr, go_bin.pointer_size*i), go_bin.pointer_size)-type_addr.getOffset();
+					offset=go_bin.get_address_value(type_addr, pointer_size*i, pointer_size)-type_addr.getOffset();
 				}else {
-					offset=go_bin.get_address_value(go_bin.get_address(typelink_addr, i*4), 4);
+					offset=go_bin.get_address_value(typelink_addr, i*4, 4);
 				}
 				analyze_type(type_addr, offset, is_go16);
 			}
@@ -515,10 +516,10 @@ public class StructureManager {
 
 		String str=null;
 		if(is_go117) {
-			int size=(int)(go_bin.get_address_value(go_bin.get_address(address, 1), 1));
+			int size=(int)(go_bin.get_address_value(address, 1, 1));
 			str=go_bin.read_string(go_bin.get_address(address, 2), size);
 		}else {
-			int size=(int)(go_bin.get_address_value(go_bin.get_address(address, 1), 1)<<8)+(int)(go_bin.get_address_value(go_bin.get_address(address, 2), 1));
+			int size=(int)(go_bin.get_address_value(address, 1, 1)<<8)+(int)(go_bin.get_address_value(address, 2, 1));
 			str=go_bin.read_string(go_bin.get_address(address, 3), size);
 		}
 		if(str.length()>0 && check_tflag(tflag, Tflag.ExtraStar)) {
@@ -544,35 +545,36 @@ public class StructureManager {
 	}
 
 	BasicTypeInfo get_basic_type_info(Address type_base_addr, long offset, boolean is_go16) {
+		int pointer_size=go_bin.get_pointer_size();
 		// runtime/type.go
-		long size=go_bin.get_address_value(go_bin.get_address(type_base_addr, offset), go_bin.pointer_size);
-		long ptrdata=go_bin.get_address_value(go_bin.get_address(type_base_addr, offset+go_bin.pointer_size), go_bin.pointer_size);
-		int hash=(int)go_bin.get_address_value(go_bin.get_address(type_base_addr, offset+go_bin.pointer_size*2), 4);
-		int tflag=(int)go_bin.get_address_value(go_bin.get_address(type_base_addr, offset+go_bin.pointer_size*2+4), 1);
-		int align=(int)go_bin.get_address_value(go_bin.get_address(type_base_addr, offset+go_bin.pointer_size*2+4+1), 1);
-		int field_align=(int)go_bin.get_address_value(go_bin.get_address(type_base_addr, offset+go_bin.pointer_size*2+4+1*2), 1);
-		int kind=(int)go_bin.get_address_value(go_bin.get_address(type_base_addr, offset+go_bin.pointer_size*2+4+1*3), 1)&0x1f;
-		long equal=go_bin.get_address_value(go_bin.get_address(type_base_addr, offset+go_bin.pointer_size*2+4+1*4), go_bin.pointer_size);
-		long gcdata=go_bin.get_address_value(go_bin.get_address(type_base_addr, offset+go_bin.pointer_size*3+4+1*4), go_bin.pointer_size);
+		long size=go_bin.get_address_value(type_base_addr, offset, pointer_size);
+		long ptrdata=go_bin.get_address_value(type_base_addr, offset+pointer_size, pointer_size);
+		int hash=(int)go_bin.get_address_value(type_base_addr, offset+pointer_size*2, 4);
+		int tflag=(int)go_bin.get_address_value(type_base_addr, offset+pointer_size*2+4, 1);
+		int align=(int)go_bin.get_address_value(type_base_addr, offset+pointer_size*2+4+1, 1);
+		int field_align=(int)go_bin.get_address_value(type_base_addr, offset+pointer_size*2+4+1*2, 1);
+		int kind=(int)go_bin.get_address_value(type_base_addr, offset+pointer_size*2+4+1*3, 1)&0x1f;
+		long equal=go_bin.get_address_value(type_base_addr, offset+pointer_size*2+4+1*4, pointer_size);
+		long gcdata=go_bin.get_address_value(type_base_addr, offset+pointer_size*3+4+1*4, pointer_size);
 		String name="";
 		long ptr_to_this_off=0;
 		if(is_go16) {
-			name=go_bin.read_string_struct(go_bin.get_address_value(go_bin.get_address(type_base_addr, offset+go_bin.pointer_size*4+4+1*4), go_bin.pointer_size), go_bin.pointer_size);
+			name=go_bin.read_string_struct(go_bin.get_address_value(type_base_addr, offset+pointer_size*4+4+1*4, pointer_size), pointer_size);
 			if(name==null) {
 				return null;
 			}
-			long x=go_bin.get_address_value(go_bin.get_address(type_base_addr, offset+go_bin.pointer_size*5+4+1*4), go_bin.pointer_size);
-			ptr_to_this_off=go_bin.get_address_value(go_bin.get_address(type_base_addr, offset+go_bin.pointer_size*6+4+1*4), go_bin.pointer_size);
+			long x=go_bin.get_address_value(type_base_addr, offset+pointer_size*5+4+1*4, pointer_size);
+			ptr_to_this_off=go_bin.get_address_value(type_base_addr, offset+pointer_size*6+4+1*4, pointer_size);
 			if(ptr_to_this_off!=0) {
 				ptr_to_this_off-=type_base_addr.getOffset();
 			}
 		}else {
-			int name_off=(int)go_bin.get_address_value(go_bin.get_address(type_base_addr, offset+go_bin.pointer_size*4+4+1*4), 4);
+			int name_off=(int)go_bin.get_address_value(type_base_addr, offset+pointer_size*4+4+1*4, 4);
 			if(name_off==0 || !go_bin.is_valid_address(go_bin.get_address(type_base_addr, name_off))) {
 				return null;
 			}
 			name=get_type_string(go_bin.get_address(type_base_addr, name_off), tflag);
-			ptr_to_this_off=go_bin.get_address_value(go_bin.get_address(type_base_addr, offset+go_bin.pointer_size*4+4*2+1*4), 4);
+			ptr_to_this_off=go_bin.get_address_value(type_base_addr, offset+pointer_size*4+4*2+1*4, 4);
 		}
 
 		if(kind>=Kind.MaxKind.ordinal() ||
@@ -590,6 +592,8 @@ public class StructureManager {
 			return true;
 		}
 
+		int pointer_size=go_bin.get_pointer_size();
+
 		// reflect/type.go
 		BasicTypeInfo basic_info=get_basic_type_info(type_base_addr, offset, is_go16);
 		if(basic_info==null) {
@@ -601,21 +605,21 @@ public class StructureManager {
 		go_bin.create_label(go_bin.get_address(type_base_addr, offset), String.format("datatype.%s.%s", basic_info.kind.name(), basic_info.name));
 		try {
 			go_bin.create_data(go_bin.get_address(type_base_addr, offset), get_datatype_by_name("_type"));
-			go_bin.set_comment(go_bin.get_address(type_base_addr, offset+go_bin.pointer_size*2+4+1*3), ghidra.program.model.listing.CodeUnit.EOL_COMMENT, basic_info.kind.name());
-			go_bin.set_comment(go_bin.get_address(type_base_addr, offset+go_bin.pointer_size*4+4+1*4), ghidra.program.model.listing.CodeUnit.EOL_COMMENT, basic_info.name);
+			go_bin.set_comment(go_bin.get_address(type_base_addr, offset+pointer_size*2+4+1*3), ghidra.program.model.listing.CodeUnit.EOL_COMMENT, basic_info.kind.name());
+			go_bin.set_comment(go_bin.get_address(type_base_addr, offset+pointer_size*4+4+1*4), ghidra.program.model.listing.CodeUnit.EOL_COMMENT, basic_info.name);
 			if(basic_info.ptr_to_this_off!=0) {
-				go_bin.set_comment(go_bin.get_address(type_base_addr, offset+go_bin.pointer_size*4+4*2+1*4), ghidra.program.model.listing.CodeUnit.EOL_COMMENT,
+				go_bin.set_comment(go_bin.get_address(type_base_addr, offset+pointer_size*4+4*2+1*4), ghidra.program.model.listing.CodeUnit.EOL_COMMENT,
 						String.format("%x", type_base_addr.getOffset()+basic_info.ptr_to_this_off));
 			}
 		} catch (CodeUnitInsertionException | DataTypeConflictException e) {
 			Logger.append_message(String.format("Failed to create data: %s %x %s", e.getMessage(), go_bin.get_address(type_base_addr, offset).getOffset(), basic_info.name));
 		}
 
-		Address ext_base_addr=go_bin.get_address(type_base_addr, offset+go_bin.pointer_size*4+16);
+		Address ext_base_addr=go_bin.get_address(type_base_addr, offset+pointer_size*4+16);
 		if(basic_info.kind==Kind.Bool) {
 			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, new BooleanDataType()));
 		}else if(basic_info.kind==Kind.Int) {
-			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, go_bin.get_signed_number_datatype(go_bin.pointer_size)));
+			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, go_bin.get_signed_number_datatype(pointer_size)));
 		}else if(basic_info.kind==Kind.Int8) {
 			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, go_bin.get_signed_number_datatype(1)));
 		}else if(basic_info.kind==Kind.Int16) {
@@ -625,7 +629,7 @@ public class StructureManager {
 		}else if(basic_info.kind==Kind.Int64) {
 			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, go_bin.get_signed_number_datatype(8)));
 		}else if(basic_info.kind==Kind.Uint) {
-			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, go_bin.get_unsigned_number_datatype(go_bin.pointer_size)));
+			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, go_bin.get_unsigned_number_datatype(pointer_size)));
 		}else if(basic_info.kind==Kind.Uint8) {
 			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, go_bin.get_unsigned_number_datatype(1)));
 		}else if(basic_info.kind==Kind.Uint16) {
@@ -635,7 +639,7 @@ public class StructureManager {
 		}else if(basic_info.kind==Kind.Uint64) {
 			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, go_bin.get_unsigned_number_datatype(8)));
 		}else if(basic_info.kind==Kind.Uintptr) {
-			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, go_bin.get_unsigned_number_datatype(go_bin.pointer_size)));
+			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, go_bin.get_unsigned_number_datatype(pointer_size)));
 		}else if(basic_info.kind==Kind.Float32) {
 			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, new Float4DataType()));
 		}else if(basic_info.kind==Kind.Float64) {
@@ -653,35 +657,35 @@ public class StructureManager {
 			complex128_datatype.add(new Float8DataType(), "im", null);
 			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, complex128_datatype));
 		}else if(basic_info.kind==Kind.Array) {
-			long elem_addr_value=go_bin.get_address_value(ext_base_addr, go_bin.pointer_size);
-			long slice=go_bin.get_address_value(go_bin.get_address(ext_base_addr, go_bin.pointer_size), go_bin.pointer_size);
-			long len=go_bin.get_address_value(go_bin.get_address(ext_base_addr, go_bin.pointer_size*2), go_bin.pointer_size);
+			long elem_addr_value=go_bin.get_address_value(ext_base_addr, pointer_size);
+			long slice=go_bin.get_address_value(ext_base_addr, pointer_size, pointer_size);
+			long len=go_bin.get_address_value(ext_base_addr, pointer_size*2, pointer_size);
 			if(elem_addr_value!=0) {
 				analyze_type(type_base_addr, elem_addr_value-type_base_addr.getOffset(), is_go16);
 			}
 			basic_type_info_map.replace(offset, new ArrayTypeInfo(basic_info, elem_addr_value-type_base_addr.getOffset(), slice, len));
 		}else if(basic_info.kind==Kind.Chan) {
-			long elem_addr_value=go_bin.get_address_value(ext_base_addr, go_bin.pointer_size);
-			long dir=go_bin.get_address_value(go_bin.get_address(ext_base_addr, go_bin.pointer_size), go_bin.pointer_size);
+			long elem_addr_value=go_bin.get_address_value(ext_base_addr, pointer_size);
+			long dir=go_bin.get_address_value(ext_base_addr, pointer_size, pointer_size);
 			if(elem_addr_value!=0) {
 				analyze_type(type_base_addr, elem_addr_value-type_base_addr.getOffset(), is_go16);
 			}
 			basic_type_info_map.replace(offset, new ChanTypeInfo(basic_info, elem_addr_value-type_base_addr.getOffset(), dir));
 		}else if(basic_info.kind==Kind.Func) {
 			int in_len=(short)go_bin.get_address_value(ext_base_addr, 2);
-			int out_len=(short)go_bin.get_address_value(go_bin.get_address(ext_base_addr, 2), 2);
+			int out_len=(short)go_bin.get_address_value(ext_base_addr, 2, 2);
 			out_len=(short)(out_len&0x1f);
 			List<Long> in_type_offset_list = new ArrayList<Long>();
 			List<Long> out_type_offset_list = new ArrayList<Long>();
 			for(int i=0;i<in_len;i++) {
-				long in_type_addr_value=go_bin.get_address_value(go_bin.get_address(ext_base_addr, go_bin.pointer_size+i*go_bin.pointer_size), go_bin.pointer_size);
+				long in_type_addr_value=go_bin.get_address_value(ext_base_addr, pointer_size+i*pointer_size, pointer_size);
 				if(in_type_addr_value!=0) {
 					analyze_type(type_base_addr, in_type_addr_value-type_base_addr.getOffset(), is_go16);
 				}
 				in_type_offset_list.add(in_type_addr_value-type_base_addr.getOffset());
 			}
 			for(int i=0;i<out_len;i++) {
-				long out_type_addr_value=go_bin.get_address_value(go_bin.get_address(ext_base_addr, go_bin.pointer_size+in_len*go_bin.pointer_size+i*go_bin.pointer_size), go_bin.pointer_size);
+				long out_type_addr_value=go_bin.get_address_value(ext_base_addr, pointer_size+in_len*pointer_size+i*pointer_size, pointer_size);
 				if(out_type_addr_value>type_base_addr.getOffset()) {
 					analyze_type(type_base_addr, out_type_addr_value-type_base_addr.getOffset(), is_go16);
 				}
@@ -689,9 +693,9 @@ public class StructureManager {
 			}
 			basic_type_info_map.replace(offset, new FuncTypeInfo(basic_info, in_type_offset_list, out_type_offset_list));
 		}else if(basic_info.kind==Kind.Interface) {
-			long pkg_path_addr_value=go_bin.get_address_value(ext_base_addr, go_bin.pointer_size);
-			long methods_addr_value=go_bin.get_address_value(go_bin.get_address(ext_base_addr, go_bin.pointer_size), go_bin.pointer_size);
-			long methods_len=go_bin.get_address_value(go_bin.get_address(ext_base_addr, go_bin.pointer_size*2), go_bin.pointer_size);
+			long pkg_path_addr_value=go_bin.get_address_value(ext_base_addr, pointer_size);
+			long methods_addr_value=go_bin.get_address_value(ext_base_addr, pointer_size, pointer_size);
+			long methods_len=go_bin.get_address_value(ext_base_addr, pointer_size*2, pointer_size);
 
 			String pkg_name="";
 			if(pkg_path_addr_value!=0) {
@@ -700,8 +704,8 @@ public class StructureManager {
 			List<String> method_name_list = new ArrayList<String>();
 			List<Long> method_type_offset_list = new ArrayList<Long>();
 			for(int i=0;i<methods_len;i++) {
-				long method_name_addr_value=go_bin.get_address_value(go_bin.get_address(type_base_addr, methods_addr_value+i*2*4-type_base_addr.getOffset()), 4);
-				long method_type_offset=go_bin.get_address_value(go_bin.get_address(type_base_addr, methods_addr_value+i*2*4-type_base_addr.getOffset()+4), 4);
+				long method_name_addr_value=go_bin.get_address_value(type_base_addr, methods_addr_value+i*2*4-type_base_addr.getOffset(), 4);
+				long method_type_offset=go_bin.get_address_value(type_base_addr, methods_addr_value+i*2*4-type_base_addr.getOffset()+4, 4);
 
 				String method_name="";
 				if(method_name_addr_value!=0) {
@@ -716,8 +720,8 @@ public class StructureManager {
 			}
 			basic_type_info_map.replace(offset, new InterfaceTypeInfo(basic_info, pkg_name, method_name_list, method_type_offset_list));
 		}else if(basic_info.kind==Kind.Map) {
-			long key_addr_value=go_bin.get_address_value(ext_base_addr, go_bin.pointer_size);
-			long elem_addr_value=go_bin.get_address_value(go_bin.get_address(ext_base_addr, go_bin.pointer_size), go_bin.pointer_size);
+			long key_addr_value=go_bin.get_address_value(ext_base_addr, pointer_size);
+			long elem_addr_value=go_bin.get_address_value(ext_base_addr, pointer_size, pointer_size);
 			// ...
 			if(key_addr_value!=0) {
 				analyze_type(type_base_addr, key_addr_value-type_base_addr.getOffset(), is_go16);
@@ -727,13 +731,13 @@ public class StructureManager {
 			}
 			basic_type_info_map.replace(offset, new MapTypeInfo(basic_info, key_addr_value-type_base_addr.getOffset(), elem_addr_value));
 		}else if(basic_info.kind==Kind.Ptr) {
-			long elem_addr_value=go_bin.get_address_value(ext_base_addr, go_bin.pointer_size);
+			long elem_addr_value=go_bin.get_address_value(ext_base_addr, pointer_size);
 			if(elem_addr_value!=0) {
 				analyze_type(type_base_addr, elem_addr_value-type_base_addr.getOffset(), is_go16);
 			}
 			basic_type_info_map.replace(offset, new PtrTypeInfo(basic_info, elem_addr_value-type_base_addr.getOffset()));
 		}else if(basic_info.kind==Kind.Slice) {
-			long elem_addr_value=go_bin.get_address_value(ext_base_addr, go_bin.pointer_size);
+			long elem_addr_value=go_bin.get_address_value(ext_base_addr, pointer_size);
 			if(elem_addr_value!=0) {
 				analyze_type(type_base_addr, elem_addr_value-type_base_addr.getOffset(), is_go16);
 			}
@@ -741,13 +745,13 @@ public class StructureManager {
 		}else if(basic_info.kind==Kind.String) {
 			StructureDataType string_datatype=new StructureDataType("string", 0);
 			string_datatype.setExplicitMinimumAlignment(basic_info.align);
-			string_datatype.add(new PointerDataType(new StringDataType(), go_bin.pointer_size), "__data", null);
+			string_datatype.add(new PointerDataType(new StringDataType(), pointer_size), "__data", null);
 			string_datatype.add(new IntegerDataType(), "__length", null);
 			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, string_datatype));
 		}else if(basic_info.kind==Kind.Struct) {
-			long pkg_path_addr_value=go_bin.get_address_value(ext_base_addr, go_bin.pointer_size);
-			long fields_addr_value=go_bin.get_address_value(go_bin.get_address(ext_base_addr, go_bin.pointer_size), go_bin.pointer_size);
-			long field_len=go_bin.get_address_value(go_bin.get_address(ext_base_addr, go_bin.pointer_size*2), go_bin.pointer_size);
+			long pkg_path_addr_value=go_bin.get_address_value(ext_base_addr, pointer_size);
+			long fields_addr_value=go_bin.get_address_value(ext_base_addr, pointer_size, pointer_size);
+			long field_len=go_bin.get_address_value(ext_base_addr, pointer_size*2, pointer_size);
 
 			String pkg_name_string="";
 			if(pkg_path_addr_value!=0) {
@@ -756,9 +760,9 @@ public class StructureManager {
 			List<String> field_name_list = new ArrayList<String>();
 			List<Long> field_type_offset_list = new ArrayList<Long>();
 			for(int i=0;i<field_len;i++) {
-				long field_name_addr_value=go_bin.get_address_value(go_bin.get_address(type_base_addr, fields_addr_value+i*3*go_bin.pointer_size-type_base_addr.getOffset()), go_bin.pointer_size);
-				long field_type_addr_value=go_bin.get_address_value(go_bin.get_address(type_base_addr, fields_addr_value+i*3*go_bin.pointer_size-type_base_addr.getOffset()+go_bin.pointer_size), go_bin.pointer_size);
-				long offset_embed=go_bin.get_address_value(go_bin.get_address(type_base_addr, fields_addr_value+i*3*go_bin.pointer_size-type_base_addr.getOffset()+go_bin.pointer_size*2), go_bin.pointer_size);
+				long field_name_addr_value=go_bin.get_address_value(type_base_addr, fields_addr_value+i*3*pointer_size-type_base_addr.getOffset(), pointer_size);
+				long field_type_addr_value=go_bin.get_address_value(type_base_addr, fields_addr_value+i*3*pointer_size-type_base_addr.getOffset()+pointer_size, pointer_size);
+				long offset_embed=go_bin.get_address_value(type_base_addr, fields_addr_value+i*3*pointer_size-type_base_addr.getOffset()+pointer_size*2, pointer_size);
 
 				String field_name=get_type_string(go_bin.get_address(type_base_addr, field_name_addr_value-type_base_addr.getOffset()), 0);
 				analyze_type(type_base_addr, field_type_addr_value-type_base_addr.getOffset(), is_go16);

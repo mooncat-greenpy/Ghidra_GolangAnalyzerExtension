@@ -79,7 +79,7 @@ public class GolangFunction {
 	}
 
 	boolean init_func() {
-		long entry_addr_value=go_bin.get_address_value(info_addr, go_bin.pointer_size);
+		long entry_addr_value=go_bin.get_address_value(info_addr, go_bin.get_pointer_size());
 		func_addr=go_bin.get_address(entry_addr_value);
 		func=go_bin.get_function(func_addr);
 		if(func==null) {
@@ -110,13 +110,15 @@ public class GolangFunction {
 			is_go116=true;
 		}
 
-		int func_name_offset=(int)go_bin.get_address_value(go_bin.get_address(info_addr, go_bin.pointer_size), 4);
+		int pointer_size=go_bin.get_pointer_size();
+		Address gopclntab_base=go_bin.get_gopclntab_base();
+		int func_name_offset=(int)go_bin.get_address_value(info_addr, pointer_size, 4);
 		Address func_name_addr=null;
 		if(is_go116) {
-			Address func_name_base=go_bin.get_address(go_bin.gopclntab_base, go_bin.get_address_value(go_bin.get_address(go_bin.gopclntab_base, 8+go_bin.pointer_size*2), go_bin.pointer_size));
+			Address func_name_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*2, pointer_size));
 			func_name_addr=go_bin.get_address(func_name_base, func_name_offset);
 		}else {
-			func_name_addr=go_bin.get_address(go_bin.gopclntab_base, func_name_offset);
+			func_name_addr=go_bin.get_address(gopclntab_base, func_name_offset);
 		}
 		if(func_name_addr==null) {
 			return false;
@@ -165,7 +167,8 @@ public class GolangFunction {
 			return false;
 		}
 		long frame_size=get_frame((int)(inst.getAddress().getOffset()-func_addr.getOffset()));
-		int arg_count=(Integer.decode(op1[1].toString())-(int)frame_size-go_bin.pointer_size)/go_bin.pointer_size+1;
+		int pointer_size=go_bin.get_pointer_size();
+		int arg_count=(Integer.decode(op1[1].toString())-(int)frame_size-pointer_size)/pointer_size+1;
 		String reg_arg_name=get_reg_arg_name_x86(arg_count, arg_num);
 		if(reg_arg_name==null) {
 			return false;
@@ -227,8 +230,9 @@ public class GolangFunction {
 	}
 
 	boolean init_params() {
-		int arg_size=(int)go_bin.get_address_value(go_bin.get_address(info_addr, go_bin.pointer_size+4), 4);
-		int args_num=arg_size/go_bin.pointer_size+(arg_size%go_bin.pointer_size==0?0:1);
+		int pointer_size=go_bin.get_pointer_size();
+		int arg_size=(int)go_bin.get_address_value(info_addr, pointer_size+4, 4);
+		int args_num=arg_size/pointer_size+(arg_size%pointer_size==0?0:1);
 
 		init_frame_map();
 
@@ -257,9 +261,9 @@ public class GolangFunction {
 			params=new ArrayList<>();
 			for(int i=0;i<args_num && i<50;i++) {
 				DataType data_type=null;
-				int size=go_bin.pointer_size;
-				if(i==args_num-1 && arg_size%go_bin.pointer_size>0) {
-					size=arg_size%go_bin.pointer_size;
+				int size=pointer_size;
+				if(i==args_num-1 && arg_size%pointer_size>0) {
+					size=arg_size%pointer_size;
 				}else if(is_builtin_reg && !is_reg_arg_x86) {
 					size=builtin_reg_arg.get(i).getBitLength()/8;
 				}
@@ -292,7 +296,7 @@ public class GolangFunction {
 				}
 				Parameter add_param=null;
 				if(reg==null) {
-					add_param=new ParameterImpl(String.format("param_%d", i+1), data_type, (i+1)*go_bin.pointer_size, func.getProgram(), SourceType.USER_DEFINED);
+					add_param=new ParameterImpl(String.format("param_%d", i+1), data_type, (i+1)*pointer_size, func.getProgram(), SourceType.USER_DEFINED);
 				}else {
 					add_param=new ParameterImpl(String.format("param_%d", i+1), data_type, reg, func.getProgram(), SourceType.USER_DEFINED);
 				}
@@ -313,13 +317,15 @@ public class GolangFunction {
 
 		file_line_comment_map = new HashMap<>();
 
+		int pointer_size=go_bin.get_pointer_size();
+		Address gopclntab_base=go_bin.get_gopclntab_base();
 		Address pcln_base=null;
-		int pcln_offset=(int)go_bin.get_address_value(go_bin.get_address(info_addr, go_bin.pointer_size+5*4), 4);
+		int pcln_offset=(int)go_bin.get_address_value(info_addr, pointer_size+5*4, 4);
 		if(is_go116) {
-			pcln_base=go_bin.get_address(go_bin.gopclntab_base, go_bin.get_address_value(go_bin.get_address(go_bin.gopclntab_base, 8+go_bin.pointer_size*5), go_bin.pointer_size));
+			pcln_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*5, pointer_size));
 			pcln_base=go_bin.get_address(pcln_base, pcln_offset);
 		}else {
-			pcln_base=go_bin.get_address(go_bin.gopclntab_base, pcln_offset);
+			pcln_base=go_bin.get_address(gopclntab_base, pcln_offset);
 		}
 
 		long line_num=-1;
@@ -339,7 +345,7 @@ public class GolangFunction {
 			int key=pc_offset;
 			line_num_add=zig_zag_decode(line_num_add);
 			line_num+=line_num_add;
-			pc_offset+=byte_size*go_bin.quantum;
+			pc_offset+=byte_size*go_bin.get_quantum();
 			String file_name=pc_to_file_name(pc_offset);
 			if(file_name==null) {
 				file_name="not found";
@@ -356,13 +362,15 @@ public class GolangFunction {
 			is_go116=true;
 		}
 
+		int pointer_size=go_bin.get_pointer_size();
+		Address gopclntab_base=go_bin.get_gopclntab_base();
 		Address pcln_base=null;
-		int pcln_offset=(int)go_bin.get_address_value(go_bin.get_address(info_addr, go_bin.pointer_size+3*4), 4);
+		int pcln_offset=(int)go_bin.get_address_value(info_addr, pointer_size+3*4, 4);
 		if(is_go116) {
-			pcln_base=go_bin.get_address(go_bin.gopclntab_base, go_bin.get_address_value(go_bin.get_address(go_bin.gopclntab_base, 8+go_bin.pointer_size*5), go_bin.pointer_size));
+			pcln_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*5, pointer_size));
 			pcln_base=go_bin.get_address(pcln_base, pcln_offset);
 		}else {
-			pcln_base=go_bin.get_address(go_bin.gopclntab_base, pcln_offset);
+			pcln_base=go_bin.get_address(gopclntab_base, pcln_offset);
 		}
 
 		long frame_size=-1;
@@ -381,7 +389,7 @@ public class GolangFunction {
 			first=false;
 			frame_size_add=zig_zag_decode(frame_size_add);
 			frame_size+=frame_size_add;
-			pc_offset+=byte_size*go_bin.quantum;
+			pc_offset+=byte_size*go_bin.get_quantum();
 
 			frame_map.put(pc_offset, frame_size);
 		}
@@ -405,13 +413,15 @@ public class GolangFunction {
 			is_go116=true;
 		}
 
+		int pointer_size=go_bin.get_pointer_size();
+		Address gopclntab_base=go_bin.get_gopclntab_base();
 		Address pcfile_base=null;
-		int pcfile_offset=(int)go_bin.get_address_value(go_bin.get_address(info_addr, go_bin.pointer_size+4*4), 4);
+		int pcfile_offset=(int)go_bin.get_address_value(info_addr, pointer_size+4*4, 4);
 		if(is_go116) {
-			pcfile_base=go_bin.get_address(go_bin.gopclntab_base, go_bin.get_address_value(go_bin.get_address(go_bin.gopclntab_base, 8+go_bin.pointer_size*5), go_bin.pointer_size));
+			pcfile_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*5, pointer_size));
 			pcfile_base=go_bin.get_address(pcfile_base, pcfile_offset);
 		}else {
-			pcfile_base=go_bin.get_address(go_bin.gopclntab_base, pcfile_offset);
+			pcfile_base=go_bin.get_address(gopclntab_base, pcfile_offset);
 		}
 
 		long file_no=-1;
@@ -429,17 +439,17 @@ public class GolangFunction {
 			first=false;
 			file_no_add=zig_zag_decode(file_no_add);
 			file_no+=file_no_add;
-			pc_offset+=byte_size*go_bin.quantum;
+			pc_offset+=byte_size*go_bin.get_quantum();
 
 			if(target_pc_offset<=pc_offset) {
 				if(is_go116) {
-					int cu_offset=(int)go_bin.get_address_value(go_bin.get_address(info_addr, go_bin.pointer_size+4*7), 4);
-					Address cutab_base=go_bin.get_address(go_bin.gopclntab_base, go_bin.get_address_value(go_bin.get_address(go_bin.gopclntab_base, 8+go_bin.pointer_size*3), go_bin.pointer_size));
+					int cu_offset=(int)go_bin.get_address_value(info_addr, pointer_size+4*7, 4);
+					Address cutab_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*3, pointer_size));
 					if(cutab_base==null) {
 						return null;
 					}
-					long file_no_offset=go_bin.get_address_value(go_bin.get_address(cutab_base, (cu_offset+file_no)*4), 4);
-					Address file_base=go_bin.get_address(go_bin.gopclntab_base, go_bin.get_address_value(go_bin.get_address(go_bin.gopclntab_base, 8+go_bin.pointer_size*4), go_bin.pointer_size));
+					long file_no_offset=go_bin.get_address_value(cutab_base, (cu_offset+file_no)*4, 4);
+					Address file_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*4, pointer_size));
 					Address file_name_addr=go_bin.get_address(file_base, file_no_offset);
 					if(file_name_addr==null) {
 						return null;
@@ -473,7 +483,7 @@ public class GolangFunction {
 		int value=0;
 		for(int i=0, shift=0;;i++, shift+=7) {
 			int tmp=0;
-			tmp=(int)go_bin.get_address_value(go_bin.get_address(addr, i), 1);
+			tmp=(int)go_bin.get_address_value(addr, i, 1);
 			value|=(tmp&0x7f)<<shift;
 			if((tmp&0x80)==0) {
 				break;

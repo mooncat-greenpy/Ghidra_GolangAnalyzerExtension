@@ -66,6 +66,9 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 		try {
 			Logger.set_logger(log, debugmode_option);
 			GolangBinary go_bin=new GolangBinary(program, monitor);
+			if(!go_bin.is_ok()) {
+				log.appendMsg(String.format("Failed to init GolangBinary"));
+			}
 
 			FunctionModifier func_modifier=new FunctionModifier(go_bin, rename_option, param_option, comment_option, extended_option);
 			func_modifier.modify();

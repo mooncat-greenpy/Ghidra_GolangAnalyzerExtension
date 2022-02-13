@@ -36,10 +36,6 @@ public class FunctionModifier{
 	public FunctionModifier(GolangBinary go_bin, boolean rename_option, boolean param_option, boolean comment_option, boolean extended_option) {
 		this.go_bin=go_bin;
 
-		if(go_bin.gopclntab_base==null) {
-			return;
-		}
-
 		this.rename_option=rename_option;
 		this.param_option=param_option;
 		this.comment_option=comment_option;
@@ -73,29 +69,31 @@ public class FunctionModifier{
 			is_go116=true;
 		}
 
-		func_num=go_bin.get_address_value(go_bin.get_address(go_bin.gopclntab_base, 8), go_bin.pointer_size);
+		int pointer_size=go_bin.get_pointer_size();
+		Address gopclntab_base=go_bin.get_gopclntab_base();
+		func_num=go_bin.get_address_value(gopclntab_base, 8, pointer_size);
 		file_name_list=new ArrayList<>();
 		if(is_go116) {
 			return true;
 		}
-		Address func_list_base=go_bin.get_address(go_bin.gopclntab_base, 8+go_bin.pointer_size);
+		Address func_list_base=go_bin.get_address(gopclntab_base, 8+pointer_size);
 		if(func_list_base==null) {
 			return false;
 		}
 
-		long file_name_table_offset=go_bin.get_address_value(go_bin.get_address(func_list_base, func_num*go_bin.pointer_size*2+go_bin.pointer_size), go_bin.pointer_size);
-		Address file_name_table=go_bin.get_address(go_bin.gopclntab_base, file_name_table_offset);
+		long file_name_table_offset=go_bin.get_address_value(func_list_base, func_num*pointer_size*2+pointer_size, pointer_size);
+		Address file_name_table=go_bin.get_address(gopclntab_base, file_name_table_offset);
 		long file_name_table_size=go_bin.get_address_value(file_name_table, 4);
 		if(file_name_table==null || file_name_table_size==0) {
 			return false;
 		}
 
 		for(int i=1;i<file_name_table_size;i++) {
-			long file_name_offset=go_bin.get_address_value(go_bin.get_address(file_name_table, 4*i),4);
+			long file_name_offset=go_bin.get_address_value(file_name_table, 4*i,4);
 			if(file_name_offset==0) {
 				return false;
 			}
-			Address file_name_addr=go_bin.get_address(go_bin.gopclntab_base, file_name_offset);
+			Address file_name_addr=go_bin.get_address(gopclntab_base, file_name_offset);
 			if(file_name_addr==null) {
 				return false;
 			}
@@ -110,27 +108,29 @@ public class FunctionModifier{
 			is_go116=true;
 		}
 
+		int pointer_size=go_bin.get_pointer_size();
+		Address gopclntab_base=go_bin.get_gopclntab_base();
 		gofunc_list=new ArrayList<>();
 		Address func_list_base=null;
 		if(is_go116) {
-			func_list_base=go_bin.get_address(go_bin.gopclntab_base, go_bin.get_address_value(go_bin.get_address(go_bin.gopclntab_base, 8+go_bin.pointer_size*6), go_bin.pointer_size));
+			func_list_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*6, pointer_size));
 		}else {
-			func_list_base=go_bin.get_address(go_bin.gopclntab_base, 8+go_bin.pointer_size);
+			func_list_base=go_bin.get_address(gopclntab_base, 8+pointer_size);
 		}
 		if(func_list_base==null) {
 			return false;
 		}
 		for(int i=0; i<func_num; i++) {
-			long func_addr_value=go_bin.get_address_value(go_bin.get_address(func_list_base, i*go_bin.pointer_size*2), go_bin.pointer_size);
-			long func_info_offset=go_bin.get_address_value(go_bin.get_address(func_list_base, i*go_bin.pointer_size*2+go_bin.pointer_size), go_bin.pointer_size);
+			long func_addr_value=go_bin.get_address_value(func_list_base, i*pointer_size*2, pointer_size);
+			long func_info_offset=go_bin.get_address_value(func_list_base, i*pointer_size*2+pointer_size, pointer_size);
 			Address func_info_addr=null;
 			if(is_go116) {
 				func_info_addr=go_bin.get_address(func_list_base, func_info_offset);
 			}else {
-				func_info_addr=go_bin.get_address(go_bin.gopclntab_base, func_info_offset);
+				func_info_addr=go_bin.get_address(gopclntab_base, func_info_offset);
 			}
-			long func_entry_value=go_bin.get_address_value(func_info_addr, go_bin.pointer_size);
-			long func_end_value=go_bin.get_address_value(go_bin.get_address(func_list_base, i*go_bin.pointer_size*2+go_bin.pointer_size*2), go_bin.pointer_size);
+			long func_entry_value=go_bin.get_address_value(func_info_addr, pointer_size);
+			long func_end_value=go_bin.get_address_value(func_list_base, i*pointer_size*2+pointer_size*2, pointer_size);
 
 			if(func_addr_value==0 || func_info_offset==0 || func_entry_value==0) {
 				return false;
@@ -327,10 +327,11 @@ public class FunctionModifier{
 				return false;
 			}
 
-			params.add(new ParameterImpl(String.format("param_%d", 1), new PointerDataType(inner_datatype, go_bin.pointer_size), dst_reg, func.getProgram(), SourceType.USER_DEFINED));
+			int pointer_size=go_bin.get_pointer_size();
+			params.add(new ParameterImpl(String.format("param_%d", 1), new PointerDataType(inner_datatype, pointer_size), dst_reg, func.getProgram(), SourceType.USER_DEFINED));
 
 			if(src_reg!=null) {
-				params.add(new ParameterImpl(String.format("param_%d", 2), new PointerDataType(inner_datatype, go_bin.pointer_size), src_reg, func.getProgram(), SourceType.USER_DEFINED));
+				params.add(new ParameterImpl(String.format("param_%d", 2), new PointerDataType(inner_datatype, pointer_size), src_reg, func.getProgram(), SourceType.USER_DEFINED));
 			}
 		} catch (InvalidInputException e) {
 		}
@@ -479,7 +480,7 @@ public class FunctionModifier{
 				return false;
 			}
 
-			params.add(new ParameterImpl(String.format("param_%d", 1), new PointerDataType(inner_datatype, go_bin.pointer_size), dst_reg, func.getProgram(), SourceType.USER_DEFINED));
+			params.add(new ParameterImpl(String.format("param_%d", 1), new PointerDataType(inner_datatype, go_bin.get_pointer_size()), dst_reg, func.getProgram(), SourceType.USER_DEFINED));
 
 			if(src_reg!=null) {
 				params.add(new ParameterImpl(String.format("param_%d", 2), go_bin.get_unsigned_number_datatype(src_reg.getBitLength()/8), src_reg, func.getProgram(), SourceType.USER_DEFINED));
