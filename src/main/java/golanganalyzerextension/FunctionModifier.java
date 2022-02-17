@@ -141,7 +141,14 @@ public class FunctionModifier{
 				continue;
 			}
 
-			GolangFunction gofunc=new GolangFunction(go_bin, func_info_addr, func_end_value-func_entry_value, file_name_list, extended_option);
+			GolangFunction gofunc=null;
+			if(go_bin.is_x86()) {
+				gofunc=new GolangFunctionX86(go_bin, func_info_addr, func_end_value-func_entry_value, file_name_list, extended_option);
+			}else if(go_bin.is_arm()) {
+				gofunc=new GolangFunctionArm(go_bin, func_info_addr, func_end_value-func_entry_value, file_name_list, extended_option);
+			}else {
+				gofunc=new GolangFunction(go_bin, func_info_addr, func_end_value-func_entry_value, file_name_list, extended_option);
+			}
 			gofunc_list.add(gofunc);
 		}
 		return true;

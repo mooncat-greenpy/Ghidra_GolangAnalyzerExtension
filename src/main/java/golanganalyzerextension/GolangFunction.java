@@ -22,8 +22,8 @@ import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.listing.Parameter;
 import ghidra.program.model.listing.ParameterImpl;
-import ghidra.program.model.scalar.Scalar;
 import ghidra.program.model.symbol.SourceType;
+
 
 // debug/gosym/pclntab.go
 public class GolangFunction {
@@ -127,105 +127,20 @@ public class GolangFunction {
 		return true;
 	}
 
-	Map<Integer, String> reg_arg_map_x86=new HashMap<>(){
-		{
-			put(1, "RAX");
-			put(2, "RBX");
-			put(3, "RCX");
-			put(4, "RDI");
-			put(5, "RSI");
-			put(6, "R8");
-			put(7, "R9");
-			put(8, "R10");
-			put(9, "R11");
-		}
-	};
-	String get_reg_arg_name_x86(int arg_count, int arg_num) {
-		if(arg_num>=reg_arg_map_x86.size()) {
-			arg_count-=arg_num-reg_arg_map_x86.size();
-		}
-		return reg_arg_map_x86.get(arg_count);
-	}
-
-	boolean check_inst_reg_arg_x86(Instruction inst, int arg_num) {
-		if(!go_bin.is_x86() || go_bin.compare_go_version("go1.17beta1")>0) {
-			return false;
-		}
-		String mnemonic=inst.getMnemonicString();
-		if(!mnemonic.equals("MOV") || inst.getNumOperands()<2) {
-			return false;
-		}
-
-		Object op1[]=inst.getOpObjects(0);
-		Object op2[]=inst.getOpObjects(1);
-		if(op1.length<2 || op2.length<1) {
-			return false;
-		}
-
-		if(!op1[0].toString().equals("RSP") ||
-				!(op1[1] instanceof Scalar)) {
-			return false;
-		}
-		long frame_size=get_frame((int)(inst.getAddress().getOffset()-func_addr.getOffset()));
-		int pointer_size=go_bin.get_pointer_size();
-		int arg_count=(Integer.decode(op1[1].toString())-(int)frame_size-pointer_size)/pointer_size+1;
-		String reg_arg_name=get_reg_arg_name_x86(arg_count, arg_num);
-		if(reg_arg_name==null) {
-			return false;
-		}
-		if(reg_arg_name.equals(op2[0].toString())) {
-			return true;
-		}
-		return false;
-	}
-
 	enum REG_FLAG {
 		READ,
 		WRITE,
 	}
-	boolean check_inst_builtin_reg_arg(Instruction inst, Map<Register, REG_FLAG> builtin_reg_state, List<Register> reg_arg) {
-		if(inst.getMnemonicString().toUpperCase().equals("RET") || inst.getMnemonicString().equals("JMP") || inst.getMnemonicString().equals("b")) {
-			return true;
-		}
-		Object op_input[]=inst.getInputObjects();
-		Object op_output[]=inst.getResultObjects();
 
-		for(int j=0;j<op_input.length;j++) {
-			if(!(op_input[j] instanceof Register)) {
-				continue;
-			}
-			Register reg=(Register)op_input[j];
-			if(go_bin.is_x86() && inst.getMnemonicString().equals("XOR") &&
-					(inst.getNumOperands()==2 && inst.getOpObjects(0).length>0 && inst.getOpObjects(1).length>0 &&
-					inst.getOpObjects(0)[0].toString().equals(inst.getOpObjects(1)[0].toString()))) {
-				continue;
-			}
-			if(go_bin.is_x86() &&
-					(inst.getMnemonicString().equals("PUSH") || inst.getMnemonicString().equals("XCHG"))) {
-				continue;
-			}
-			if(!builtin_reg_state.containsKey(reg.getBaseRegister()) &&
-					inst.toString().contains(reg.toString()) &&
-					(reg.getTypeFlags()&(Register.TYPE_PC|Register.TYPE_SP))==0 &&
-					!reg.toString().toUpperCase().contains("SP") &&
-					(!go_bin.is_x86() ||
-							// XMM15 is used as a zero register.
-							(!go_bin.compare_register(reg, go_bin.get_register("BP")) && !go_bin.compare_register(reg, go_bin.get_register("XMM15")))) &&
-					(!go_bin.is_arm() ||
-							(!go_bin.compare_register(reg, go_bin.get_register("lr"))))) {
-				builtin_reg_state.put(reg.getBaseRegister(), REG_FLAG.READ);
-				reg_arg.add(reg);
-			}
-		}
-		for(int j=0;j<op_output.length;j++) {
-			if(!(op_output[j] instanceof Register)) {
-				continue;
-			}
-			Register reg=(Register)op_output[j];
-			if(!builtin_reg_state.containsKey(reg.getBaseRegister())) {
-				builtin_reg_state.put(reg.getBaseRegister(), REG_FLAG.WRITE);
-			}
-		}
+	boolean check_inst_builtin_reg_arg(Instruction inst, Map<Register, REG_FLAG> builtin_reg_state, List<Register> reg_arg) {
+		return false;
+	}
+
+	String get_reg_arg_name(int arg_count) {
+		return "";
+	}
+
+	boolean check_inst_reg_arg(Instruction inst, Map<Register, REG_FLAG> builtin_reg_state) {
 		return false;
 	}
 
@@ -236,35 +151,36 @@ public class GolangFunction {
 
 		init_frame_map();
 
-		boolean is_reg_arg_x86=false;
+		boolean is_reg_arg=false;
 		Map<Register, REG_FLAG> builtin_reg_state=new HashMap<>();
 		List<Register> builtin_reg_arg=new ArrayList<>();
 		boolean is_checked_builtin_reg=false;
 		Instruction inst=go_bin.get_instruction(func_addr);
 		while(inst!=null && inst.getAddress().getOffset()<func_addr.getOffset()+func_size) {
-			if(!is_reg_arg_x86) {
-				is_reg_arg_x86=check_inst_reg_arg_x86(inst, args_num);
-			}
 			if(extended_option && !is_checked_builtin_reg) {
 				is_checked_builtin_reg=check_inst_builtin_reg_arg(inst, builtin_reg_state, builtin_reg_arg);
+			}
+			if(!is_reg_arg) {
+				is_reg_arg=check_inst_reg_arg(inst, builtin_reg_state);
 			}
 			inst=inst.getNext();
 		}
 
 		boolean is_builtin_reg=false;
-		if(args_num==0 && builtin_reg_arg.size()>=2 && !is_reg_arg_x86) {
+		if(args_num==0 && builtin_reg_arg.size()>=2 && !is_reg_arg) {
 			is_builtin_reg=true;
 			args_num=builtin_reg_arg.size();
 		}
 
 		try {
 			params=new ArrayList<>();
+			int stack_count=0;
 			for(int i=0;i<args_num && i<50;i++) {
 				DataType data_type=null;
 				int size=pointer_size;
 				if(i==args_num-1 && arg_size%pointer_size>0) {
 					size=arg_size%pointer_size;
-				}else if(is_builtin_reg && !is_reg_arg_x86) {
+				}else if(is_builtin_reg && !is_reg_arg) {
 					size=builtin_reg_arg.get(i).getBitLength()/8;
 				}
 				if(size==8) {
@@ -289,14 +205,15 @@ public class GolangFunction {
 					data_type=new Undefined8DataType();
 				}
 				Register reg=null;
-				if(is_reg_arg_x86) {
-					reg=go_bin.get_register(get_reg_arg_name_x86(i+1, args_num));
+				if(is_reg_arg) {
+					reg=go_bin.get_register(get_reg_arg_name(i));
 				}else if(is_builtin_reg) {
 					reg=builtin_reg_arg.get(i);
 				}
 				Parameter add_param=null;
 				if(reg==null) {
-					add_param=new ParameterImpl(String.format("param_%d", i+1), data_type, (i+1)*pointer_size, func.getProgram(), SourceType.USER_DEFINED);
+					add_param=new ParameterImpl(String.format("param_%d", i+1), data_type, (stack_count+1)*pointer_size, func.getProgram(), SourceType.USER_DEFINED);
+					stack_count++;
 				}else {
 					add_param=new ParameterImpl(String.format("param_%d", i+1), data_type, reg, func.getProgram(), SourceType.USER_DEFINED);
 				}
