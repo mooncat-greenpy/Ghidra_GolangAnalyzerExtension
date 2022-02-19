@@ -60,18 +60,24 @@ public class GolangFunction {
 		this.ok=true;
 	}
 
-	public GolangFunction(GolangBinary go_bin, Function func, String func_name, List<Parameter> params, boolean extended_option) {
+	public GolangFunction(GolangBinary go_bin, Function func, boolean extended_option) {
 		this.go_bin=go_bin;
 		this.extended_option=extended_option;
 
 		this.func_addr=func.getEntryPoint();
 		this.func=func;
-		this.func_name=func_name;
-		this.params=params;
 		this.file_line_comment_map=new HashMap<>();
 		this.frame_map = new TreeMap<>();
 
-		this.ok=true;
+		if(check_memcopy()) {
+			this.ok=true;
+			return;
+		}
+		if(check_memset()) {
+			this.ok=true;
+			return;
+		}
+		this.ok=false;
 	}
 
 	boolean is_ok() {
@@ -224,6 +230,14 @@ public class GolangFunction {
 			return false;
 		}
 		return true;
+	}
+
+	boolean check_memcopy() {
+		return false;
+	}
+
+	boolean check_memset() {
+		return false;
 	}
 
 	boolean init_file_line_map() {
