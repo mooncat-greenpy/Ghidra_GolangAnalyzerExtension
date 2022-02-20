@@ -2,8 +2,11 @@ package golanganalyzerextension;
 
 
 import ghidra.app.cmd.function.CreateFunctionCmd;
+import ghidra.program.disassemble.Disassembler;
+import ghidra.program.disassemble.DisassemblerMessageListener;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressOutOfBoundsException;
+import ghidra.program.model.address.AddressSet;
 import ghidra.program.model.data.ByteDataType;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.DataTypeConflictException;
@@ -39,6 +42,7 @@ import ghidra.program.model.symbol.SourceType;
 import ghidra.program.model.util.CodeUnitInsertionException;
 import ghidra.util.exception.InvalidInputException;
 import ghidra.util.task.TaskMonitor;
+
 
 public class GolangBinary {
 	private Program program=null;
@@ -288,6 +292,30 @@ public class GolangBinary {
 
 	public boolean is_arm() {
 		return program.getLanguage().getProcessor().toString().equals("ARM") || program.getLanguage().getProcessor().toString().equals("AARCH64");
+	}
+
+	public void disassemble(Address addr, long size) {
+		Instruction inst=get_instruction(addr);
+		if (inst!=null) {
+			return;
+		}
+		program_listing.clearCodeUnits(addr, addr.add(size), false);
+		Address target=addr;
+		Disassembler disassembler=Disassembler.getDisassembler(program, monitor, new DisassemblerMessageListener() {
+			@Override
+			public void disassembleMessageReported(String msg) {
+				Logger.append_message(msg);
+			}
+		});
+		AddressSet addr_set=new AddressSet(program, addr, addr.add(size));
+		while(target.getOffset()<addr.add(size).getOffset()) {
+			disassembler.disassemble(target, addr_set, true);
+			inst=get_instruction(target);
+			if (inst==null) {
+				return;
+			}
+			target=target.add(inst.getLength());
+		}
 	}
 
 	public Instruction get_instruction(Address addr) {

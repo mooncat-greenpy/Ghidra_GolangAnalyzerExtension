@@ -87,6 +87,7 @@ public class GolangFunction {
 	boolean init_func() {
 		long entry_addr_value=go_bin.get_address_value(info_addr, go_bin.get_pointer_size());
 		func_addr=go_bin.get_address(entry_addr_value);
+		go_bin.disassemble(func_addr, func_size);
 		func=go_bin.get_function(func_addr);
 		if(func==null) {
 			go_bin.create_function(func_name, func_addr);
