@@ -22,16 +22,18 @@ public class FunctionModifier{
 	boolean rename_option=false;
 	boolean param_option=false;
 	boolean comment_option=false;
+	boolean disasm_option=false;
 	boolean extended_option=false;
 
 	boolean ok=false;
 
-	public FunctionModifier(GolangBinary go_bin, boolean rename_option, boolean param_option, boolean comment_option, boolean extended_option) {
+	public FunctionModifier(GolangBinary go_bin, boolean rename_option, boolean param_option, boolean comment_option, boolean disasm_option, boolean extended_option) {
 		this.go_bin=go_bin;
 
 		this.rename_option=rename_option;
 		this.param_option=param_option;
 		this.comment_option=comment_option;
+		this.disasm_option=disasm_option;
 		this.extended_option=extended_option;
 
 		if(!rename_option && !param_option && !comment_option) {
@@ -136,11 +138,11 @@ public class FunctionModifier{
 
 			GolangFunction gofunc=null;
 			if(go_bin.is_x86()) {
-				gofunc=new GolangFunctionX86(go_bin, func_info_addr, func_end_value-func_entry_value, file_name_list, extended_option);
+				gofunc=new GolangFunctionX86(go_bin, func_info_addr, func_end_value-func_entry_value, file_name_list, disasm_option, extended_option);
 			}else if(go_bin.is_arm()) {
-				gofunc=new GolangFunctionArm(go_bin, func_info_addr, func_end_value-func_entry_value, file_name_list, extended_option);
+				gofunc=new GolangFunctionArm(go_bin, func_info_addr, func_end_value-func_entry_value, file_name_list, disasm_option, extended_option);
 			}else {
-				gofunc=new GolangFunction(go_bin, func_info_addr, func_end_value-func_entry_value, file_name_list, extended_option);
+				gofunc=new GolangFunction(go_bin, func_info_addr, func_end_value-func_entry_value, file_name_list, disasm_option, extended_option);
 			}
 			gofunc_list.add(gofunc);
 		}
@@ -156,11 +158,11 @@ public class FunctionModifier{
 			}
 			GolangFunction gofunc=null;
 			if(go_bin.is_x86()) {
-				gofunc=new GolangFunctionX86(go_bin, func, extended_option);
+				gofunc=new GolangFunctionX86(go_bin, func, disasm_option, extended_option);
 			}else if(go_bin.is_arm()) {
-				gofunc=new GolangFunctionArm(go_bin, func, extended_option);
+				gofunc=new GolangFunctionArm(go_bin, func, disasm_option, extended_option);
 			}else {
-				gofunc=new GolangFunction(go_bin, func, extended_option);
+				gofunc=new GolangFunction(go_bin, func, disasm_option, extended_option);
 			}
 			if(gofunc.is_ok()) {
 				gofunc_list.add(gofunc);

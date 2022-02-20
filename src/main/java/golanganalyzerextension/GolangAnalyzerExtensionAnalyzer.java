@@ -15,6 +15,7 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 	boolean rename_option=true;
 	boolean param_option=true;
 	boolean comment_option=true;
+	boolean disasm_option=true;
 	boolean datatype_option=true;
 	boolean extended_option=true;
 	boolean debugmode_option=false;
@@ -44,6 +45,7 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 		options.registerOption("Rename functions", rename_option, null, "Rename functions");
 		options.registerOption("Modify arguments", param_option, null, "Modify function arguments");
 		options.registerOption("Add comment", comment_option, null, "Add source file and line information to comments");
+		options.registerOption("Disassemble function", disasm_option, null, "Disassemble function");
 		options.registerOption("Add data type", datatype_option, null, "Add data type");
 		options.registerOption("Extended analysis", extended_option, null, "Analyze functions in detail");
 		options.registerOption("Debug mode", debugmode_option, null, "Debug mode");
@@ -55,6 +57,7 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 		rename_option=options.getBoolean("Rename functions", rename_option);
 		param_option=options.getBoolean("Modify arguments", param_option);
 		comment_option=options.getBoolean("Add comment", comment_option);
+		disasm_option=options.getBoolean("Disassemble function", disasm_option);
 		datatype_option=options.getBoolean("Add data type", datatype_option);
 		extended_option=options.getBoolean("Extended analysis", extended_option);
 		debugmode_option=options.getBoolean("Debug mode", debugmode_option);
@@ -70,7 +73,7 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 				log.appendMsg(String.format("Failed to init GolangBinary"));
 			}
 
-			FunctionModifier func_modifier=new FunctionModifier(go_bin, rename_option, param_option, comment_option, extended_option);
+			FunctionModifier func_modifier=new FunctionModifier(go_bin, rename_option, param_option, comment_option, disasm_option, extended_option);
 			func_modifier.modify();
 
 			StructureManager struct_manager=new StructureManager(go_bin, program, datatype_option);

@@ -30,6 +30,7 @@ public class GolangFunction {
 	GolangBinary go_bin=null;
 
 	List<String> file_name_list=null;
+	boolean disasm_option=false;
 	boolean extended_option=false;
 
 	Address info_addr=null;
@@ -44,10 +45,11 @@ public class GolangFunction {
 
 	boolean ok=false;
 
-	public GolangFunction(GolangBinary go_bin, Address func_info_addr, long func_size, List<String> file_name_list, boolean extended_option) {
+	public GolangFunction(GolangBinary go_bin, Address func_info_addr, long func_size, List<String> file_name_list, boolean disasm_option, boolean extended_option) {
 		this.go_bin=go_bin;
 
 		this.file_name_list=file_name_list;
+		this.disasm_option=disasm_option;
 		this.extended_option=extended_option;
 		this.info_addr=func_info_addr;
 		this.func_size=func_size;
@@ -60,8 +62,9 @@ public class GolangFunction {
 		this.ok=true;
 	}
 
-	public GolangFunction(GolangBinary go_bin, Function func, boolean extended_option) {
+	public GolangFunction(GolangBinary go_bin, Function func, boolean disasm_option, boolean extended_option) {
 		this.go_bin=go_bin;
+		this.disasm_option=disasm_option;
 		this.extended_option=extended_option;
 
 		this.func_addr=func.getEntryPoint();
@@ -87,7 +90,9 @@ public class GolangFunction {
 	boolean init_func() {
 		long entry_addr_value=go_bin.get_address_value(info_addr, go_bin.get_pointer_size());
 		func_addr=go_bin.get_address(entry_addr_value);
-		go_bin.disassemble(func_addr, func_size);
+		if(disasm_option) {
+			go_bin.disassemble(func_addr, func_size);
+		}
 		func=go_bin.get_function(func_addr);
 		if(func==null) {
 			go_bin.create_function(func_name, func_addr);

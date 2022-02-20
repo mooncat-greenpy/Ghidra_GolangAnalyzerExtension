@@ -18,12 +18,12 @@ import ghidra.util.exception.InvalidInputException;
 
 public class GolangFunctionX86 extends GolangFunction {
 
-	public GolangFunctionX86(GolangBinary go_bin, Address func_info_addr, long func_size, List<String> file_name_list, boolean extended_option) {
-		super(go_bin, func_info_addr, func_size, file_name_list, extended_option);
+	public GolangFunctionX86(GolangBinary go_bin, Address func_info_addr, long func_size, List<String> file_name_list, boolean disasm_option, boolean extended_option) {
+		super(go_bin, func_info_addr, func_size, file_name_list, disasm_option, extended_option);
 	}
 
-	public GolangFunctionX86(GolangBinary go_bin, Function func, boolean extended_option) {
-		super(go_bin, func, extended_option);
+	public GolangFunctionX86(GolangBinary go_bin, Function func, boolean disasm_option, boolean extended_option) {
+		super(go_bin, func, disasm_option, extended_option);
 	}
 
 	private static final String[] reg_arg_str={"RAX", "RBX", "RCX", "RDI", "RSI", "R8", "R9", "R10", "R11"};
