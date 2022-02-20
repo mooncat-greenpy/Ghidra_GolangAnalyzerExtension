@@ -287,7 +287,7 @@ public class GolangBinary {
 	}
 
 	public boolean is_arm() {
-		return program.getLanguage().getProcessor().toString().equals("ARM");
+		return program.getLanguage().getProcessor().toString().equals("ARM") || program.getLanguage().getProcessor().toString().equals("AARCH64");
 	}
 
 	public Instruction get_instruction(Address addr) {
