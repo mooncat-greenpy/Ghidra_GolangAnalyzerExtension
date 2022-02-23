@@ -295,10 +295,6 @@ public class GolangBinary {
 	}
 
 	public void disassemble(Address addr, long size) {
-		Instruction inst=get_instruction(addr);
-		if (inst!=null) {
-			return;
-		}
 		program_listing.clearCodeUnits(addr, addr.add(size), false);
 		Address target=addr;
 		Disassembler disassembler=Disassembler.getDisassembler(program, monitor, new DisassemblerMessageListener() {
@@ -310,7 +306,7 @@ public class GolangBinary {
 		AddressSet addr_set=new AddressSet(program, addr, addr.add(size));
 		while(target.getOffset()<addr.add(size).getOffset()) {
 			disassembler.disassemble(target, addr_set, true);
-			inst=get_instruction(target);
+			Instruction inst=get_instruction(target);
 			if (inst==null) {
 				return;
 			}
