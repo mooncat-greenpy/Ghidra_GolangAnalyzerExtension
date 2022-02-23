@@ -1,5 +1,6 @@
 package golanganalyzerextension;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -8,6 +9,7 @@ import ghidra.program.model.address.Address;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.PointerDataType;
 import ghidra.program.model.lang.Register;
+import ghidra.program.model.listing.ContextChangeException;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.listing.ParameterImpl;
@@ -27,6 +29,19 @@ public class GolangFunctionArm extends GolangFunction {
 	}
 
 	private static final String[] reg_arg_str={};
+
+	@Override
+	void disassemble() {
+		try {
+			Register tmode=go_bin.get_register("TMode");
+			if(tmode!=null) {
+				// func_addr, func_addr.add(func_size) -> java.lang.NullPointerException
+				go_bin.set_register(tmode, func_addr, func_addr, BigInteger.ZERO);
+			}
+		} catch (ContextChangeException e) {
+		}
+		super.disassemble();
+	}
 
 	@Override
 	boolean check_inst_builtin_reg_arg(Instruction inst, Map<Register, REG_FLAG> builtin_reg_state, List<Register> reg_arg) {

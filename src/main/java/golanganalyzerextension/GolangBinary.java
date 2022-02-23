@@ -1,6 +1,8 @@
 package golanganalyzerextension;
 
 
+import java.math.BigInteger;
+
 import ghidra.app.cmd.function.CreateFunctionCmd;
 import ghidra.program.disassemble.Disassembler;
 import ghidra.program.disassemble.DisassemblerMessageListener;
@@ -29,6 +31,7 @@ import ghidra.program.model.data.UnsignedIntegerDataType;
 import ghidra.program.model.data.UnsignedLongLongDataType;
 import ghidra.program.model.data.UnsignedShortDataType;
 import ghidra.program.model.lang.Register;
+import ghidra.program.model.listing.ContextChangeException;
 import ghidra.program.model.listing.Data;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionIterator;
@@ -213,6 +216,10 @@ public class GolangBinary {
 		}
 	}
 
+	public void clear_data(Address addr, long size) {
+		program_listing.clearCodeUnits(addr, addr.add(size), false);
+	}
+
 	public String read_string(Address addr, int size) {
 		try {
 			byte[] bytes=new byte[size];
@@ -245,7 +252,7 @@ public class GolangBinary {
 		if(addr==null) {
 			return "not found";
 		}
-		program_listing.clearCodeUnits(addr, addr.add(1), false);
+		clear_data(addr, 1);
 		Data string_data=program_listing.getDefinedDataAt(addr);
 		if(string_data==null) {
 			try {
@@ -269,7 +276,7 @@ public class GolangBinary {
 	}
 
 	public void create_data(Address addr, DataType datatype) throws CodeUnitInsertionException, DataTypeConflictException {
-		program_listing.clearCodeUnits(addr, get_address(addr, datatype.getLength()), false);
+		clear_data(addr, datatype.getLength());
 		program.getListing().createData(addr, datatype);
 	}
 
@@ -295,7 +302,7 @@ public class GolangBinary {
 	}
 
 	public void disassemble(Address addr, long size) {
-		program_listing.clearCodeUnits(addr, addr.add(size), false);
+		clear_data(addr, size);
 		Address target=addr;
 		Disassembler disassembler=Disassembler.getDisassembler(program, monitor, new DisassemblerMessageListener() {
 			@Override
@@ -327,6 +334,10 @@ public class GolangBinary {
 
 	public Register get_register(String reg_str) {
 		return program.getRegister(reg_str);
+	}
+
+	public void set_register(Register reg, Address start, Address end, BigInteger value) throws ContextChangeException {
+		program.getProgramContext().setValue(reg, start, end, value);
 	}
 
 	public boolean compare_register(Register cmp1, Register cmp2) {

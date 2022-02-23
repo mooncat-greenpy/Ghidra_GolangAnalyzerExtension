@@ -87,11 +87,18 @@ public class GolangFunction {
 		return ok;
 	}
 
+	void disassemble() {
+		if(!disasm_option) {
+			return;
+		}
+		go_bin.disassemble(func_addr, func_size);
+	}
+
 	boolean init_func() {
 		long entry_addr_value=go_bin.get_address_value(info_addr, go_bin.get_pointer_size());
 		func_addr=go_bin.get_address(entry_addr_value);
 		if(disasm_option) {
-			go_bin.disassemble(func_addr, func_size);
+			disassemble();
 		}
 		func=go_bin.get_function(func_addr);
 		if(func==null) {
