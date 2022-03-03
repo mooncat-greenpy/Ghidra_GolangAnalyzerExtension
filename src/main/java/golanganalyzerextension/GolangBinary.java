@@ -336,7 +336,11 @@ public class GolangBinary {
 		return program.getRegister(reg_str);
 	}
 
-	public void set_register(Register reg, Address start, Address end, BigInteger value) throws ContextChangeException {
+	public BigInteger get_register_value(Register reg, Address addr) {
+		return program.getProgramContext().getRegisterValue(reg, addr).getSignedValue();
+	}
+
+	public void set_register_value(Register reg, Address start, Address end, BigInteger value) throws ContextChangeException {
 		program.getProgramContext().setValue(reg, start, end, value);
 	}
 

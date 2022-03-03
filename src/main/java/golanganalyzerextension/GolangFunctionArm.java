@@ -36,9 +36,10 @@ public class GolangFunctionArm extends GolangFunction {
 			Register tmode=go_bin.get_register("TMode");
 			if(tmode!=null) {
 				// func_addr, func_addr.add(func_size) -> java.lang.NullPointerException
-				go_bin.set_register(tmode, func_addr, func_addr, BigInteger.ZERO);
+				go_bin.set_register_value(tmode, func_addr, func_addr, BigInteger.ZERO);
 			}
 		} catch (ContextChangeException e) {
+			// Fail in some disassembled functions
 		}
 		super.disassemble();
 	}
