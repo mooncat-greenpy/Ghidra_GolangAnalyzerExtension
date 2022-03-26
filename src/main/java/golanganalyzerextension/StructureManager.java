@@ -98,12 +98,12 @@ public class StructureManager {
 	class ArrayTypeInfo extends BasicTypeInfo {
 		long elem_type_key=0;
 		long slice=0;
-		long len=0;
+		int len=0;
 		ArrayTypeInfo(BasicTypeInfo basic_info, long elem_type_key, long slice, long len) {
 			super(basic_info);
 			this.elem_type_key=elem_type_key;
 			this.slice=slice;
-			this.len=len;
+			this.len=(int)len;
 		}
 		public DataType get_datatype() {
 			if(len<=0) {
@@ -116,7 +116,7 @@ public class StructureManager {
 			if(inner_datatype==null || inner_datatype.getLength()<=0) {
 				inner_datatype=new UnsignedCharDataType();
 			}
-			ArrayDataType array_datatype=new ArrayDataType(inner_datatype, (int)len, inner_datatype.getLength());
+			ArrayDataType array_datatype=new ArrayDataType(inner_datatype, len, inner_datatype.getLength());
 			return array_datatype;
 		}
 	}
