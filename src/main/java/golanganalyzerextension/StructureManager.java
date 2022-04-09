@@ -132,6 +132,7 @@ public class StructureManager {
 			int pointer_size=go_bin.get_pointer_size();
 			// runtime/chan.go
 			StructureDataType hchan_datatype=new StructureDataType(name, 0);
+			hchan_datatype.setPackingEnabled(true);
 			hchan_datatype.setExplicitMinimumAlignment(pointer_size);
 			hchan_datatype.add(get_datatype_by_name("uint"), "qcount", "");
 			hchan_datatype.add(get_datatype_by_name("uint"), "dataqsiz", "");
@@ -174,6 +175,7 @@ public class StructureManager {
 		public DataType get_datatype() {
 			// runtime/iface.go
 			StructureDataType interface_datatype=new StructureDataType(name, 0);
+			interface_datatype.setPackingEnabled(true);
 			interface_datatype.setExplicitMinimumAlignment(go_bin.get_pointer_size());
 			interface_datatype.add(new PointerDataType(get_datatype_by_name("_type"), go_bin.get_pointer_size()), "tab", "");
 			interface_datatype.add(new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()), "data", "");
@@ -192,6 +194,7 @@ public class StructureManager {
 			int pointer_size=go_bin.get_pointer_size();
 			// runtime/map.go
 			StructureDataType hmap_datatype=new StructureDataType(name, 0);
+			hmap_datatype.setPackingEnabled(true);
 			hmap_datatype.setExplicitMinimumAlignment(pointer_size);
 			hmap_datatype.add(get_datatype_by_name("int"), "count", "");
 			hmap_datatype.add(get_datatype_by_name("uint8"), "flags", "");
@@ -247,6 +250,7 @@ public class StructureManager {
 			int pointer_size=go_bin.get_pointer_size();
 			// cmd/cgo/out.go
 			StructureDataType slice_datatype=new StructureDataType(name, 0);
+			slice_datatype.setPackingEnabled(true);
 			slice_datatype.setExplicitMinimumAlignment(pointer_size);
 			slice_datatype.add(new PointerDataType(inner_datatype, pointer_size), "__values", null);
 			slice_datatype.add(get_datatype_by_name("uintptr"), "__count", null);
@@ -256,19 +260,18 @@ public class StructureManager {
 	}
 	class StructTypeInfo extends BasicTypeInfo {
 		String pkg_name="";
-		int field_alignment=0;
 		List<String> field_name_list=null;
 		List<Long> field_type_key_list=null;
-		StructTypeInfo(BasicTypeInfo basic_info, String pkg_name, int field_alignment, List<String> field_name_list, List<Long> field_type_key_list) {
+		StructTypeInfo(BasicTypeInfo basic_info, String pkg_name, List<String> field_name_list, List<Long> field_type_key_list) {
 			super(basic_info);
 			this.pkg_name=pkg_name;
-			this.field_alignment=field_alignment;
 			this.field_name_list=field_name_list;
 			this.field_type_key_list=field_type_key_list;
 		}
 		public DataType get_datatype() {
-			StructureDataType structure_datatype=new StructureDataType(name, 0);
-			structure_datatype.setExplicitMinimumAlignment(field_alignment);
+			StructureDataType structure_datatype=new StructureDataType(name, (int)size);
+			structure_datatype.setPackingEnabled(true);
+			structure_datatype.setExplicitMinimumAlignment(field_align);
 			for(int i=0;i<field_name_list.size();i++) {
 				long field_key=field_type_key_list.get(i);
 				DataType field_datatype=new PointerDataType(new VoidDataType(), go_bin.get_pointer_size());
@@ -358,6 +361,7 @@ public class StructureManager {
 		int pointer_size=go_bin.get_pointer_size();
 		// reflect/type.go
 		StructureDataType _type_datatype=new StructureDataType("_type", 0);
+		_type_datatype.setPackingEnabled(true);
 		_type_datatype.setExplicitMinimumAlignment(pointer_size);
 		_type_datatype.add(new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()), "size", "");
 		_type_datatype.add(new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()), "ptrdata", "");
@@ -374,6 +378,7 @@ public class StructureManager {
 
 		// runtime/chan.go
 		StructureDataType waitq_datatype=new StructureDataType("waitq", 0);
+		waitq_datatype.setPackingEnabled(true);
 		waitq_datatype.setExplicitMinimumAlignment(pointer_size);
 		waitq_datatype.add(new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()), "first", "");
 		waitq_datatype.add(new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()), "last", "");
@@ -381,6 +386,7 @@ public class StructureManager {
 
 		// runtime/runtime2.go
 		StructureDataType mutex_datatype=new StructureDataType("mutex", 0);
+		mutex_datatype.setPackingEnabled(true);
 		mutex_datatype.setExplicitMinimumAlignment(pointer_size);
 		// lockRankStruct
 		mutex_datatype.add(new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()), "key", "");
@@ -646,12 +652,14 @@ public class StructureManager {
 			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, new Float8DataType()));
 		}else if(basic_info.kind==Kind.Complex64) {
 			StructureDataType complex64_datatype=new StructureDataType("complex64", 0);
+			complex64_datatype.setPackingEnabled(true);
 			complex64_datatype.setExplicitMinimumAlignment(basic_info.align);
 			complex64_datatype.add(new Float4DataType(), "re", null);
 			complex64_datatype.add(new Float4DataType(), "im", null);
 			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, complex64_datatype));
 		}else if(basic_info.kind==Kind.Complex128) {
 			StructureDataType complex128_datatype=new StructureDataType("complex128", 0);
+			complex128_datatype.setPackingEnabled(true);
 			complex128_datatype.setExplicitMinimumAlignment(basic_info.align);
 			complex128_datatype.add(new Float8DataType(), "re", null);
 			complex128_datatype.add(new Float8DataType(), "im", null);
@@ -744,6 +752,7 @@ public class StructureManager {
 			basic_type_info_map.replace(offset, new SliceTypeInfo(basic_info, elem_addr_value-type_base_addr.getOffset()));
 		}else if(basic_info.kind==Kind.String) {
 			StructureDataType string_datatype=new StructureDataType("string", 0);
+			string_datatype.setPackingEnabled(true);
 			string_datatype.setExplicitMinimumAlignment(basic_info.align);
 			string_datatype.add(new PointerDataType(new StringDataType(), pointer_size), "__data", null);
 			string_datatype.add(new IntegerDataType(), "__length", null);
@@ -769,7 +778,7 @@ public class StructureManager {
 				field_name_list.add(field_name);
 				field_type_offset_list.add(field_type_addr_value-type_base_addr.getOffset());
 			}
-			basic_type_info_map.replace(offset, new StructTypeInfo(basic_info, pkg_name_string, basic_info.field_align, field_name_list, field_type_offset_list));
+			basic_type_info_map.replace(offset, new StructTypeInfo(basic_info, pkg_name_string, field_name_list, field_type_offset_list));
 		}else if(basic_info.kind==Kind.UnsafePointer) {
 			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, new PointerDataType(new VoidDataType(), go_bin.get_pointer_size())));
 		}else {
