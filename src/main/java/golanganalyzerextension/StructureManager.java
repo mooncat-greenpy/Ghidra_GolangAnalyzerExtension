@@ -138,11 +138,11 @@ public class StructureManager {
 			hchan_datatype.add(get_datatype_by_name("unsafe.Pointer"), "buf", "");
 			hchan_datatype.add(get_datatype_by_name("uint16"), "elemsize", "");
 			hchan_datatype.add(get_datatype_by_name("uint32"), "closed", "");
-			hchan_datatype.add(new PointerDataType(get_datatype_by_name("_type")), "elemtype", "");
+			hchan_datatype.add(new PointerDataType(get_datatype_by_name("_type"), pointer_size), "elemtype", "");
 			hchan_datatype.add(get_datatype_by_name("uint"), "sendx", "");
 			hchan_datatype.add(get_datatype_by_name("uint"), "recvx", "");
-			hchan_datatype.add(new PointerDataType(get_datatype_by_name("waitq")), "recvq", "");
-			hchan_datatype.add(new PointerDataType(get_datatype_by_name("waitq")), "sendq", "");
+			hchan_datatype.add(new PointerDataType(get_datatype_by_name("waitq"), pointer_size), "recvq", "");
+			hchan_datatype.add(new PointerDataType(get_datatype_by_name("waitq"), pointer_size), "sendq", "");
 			hchan_datatype.add(get_datatype_by_name("mutex"), "lock", "");
 			DataType chan_datatype=new PointerDataType(hchan_datatype, pointer_size);
 			return chan_datatype;
@@ -175,8 +175,8 @@ public class StructureManager {
 			// runtime/iface.go
 			StructureDataType interface_datatype=new StructureDataType(name, 0);
 			interface_datatype.setExplicitMinimumAlignment(go_bin.get_pointer_size());
-			interface_datatype.add(new PointerDataType(get_datatype_by_name("_type")), "tab", "");
-			interface_datatype.add(new PointerDataType(), "data", "");
+			interface_datatype.add(new PointerDataType(get_datatype_by_name("_type"), go_bin.get_pointer_size()), "tab", "");
+			interface_datatype.add(new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()), "data", "");
 			return interface_datatype;
 		}
 	}
@@ -201,7 +201,7 @@ public class StructureManager {
 			hmap_datatype.add(get_datatype_by_name("unsafe.Pointer"), "buckets", "");
 			hmap_datatype.add(get_datatype_by_name("unsafe.Pointer"), "oldbuckets", "");
 			hmap_datatype.add(get_datatype_by_name("uintptr"), "nevacuate", "");
-			hmap_datatype.add(new PointerDataType(), "extra", "");
+			hmap_datatype.add(new PointerDataType(new VoidDataType(), pointer_size), "extra", "");
 			DataType map_datatype=new PointerDataType(hmap_datatype, pointer_size);
 			return map_datatype;
 		}
@@ -213,11 +213,11 @@ public class StructureManager {
 			this.elem_type_key=elem_type_key;
 		}
 		public DataType get_datatype() {
-			return new PointerDataType();
+			return new PointerDataType(new VoidDataType(), go_bin.get_pointer_size());
 		}
 		public DataType get_datatype(boolean once) {
 			if(!once) {
-				return new PointerDataType();
+				return new PointerDataType(new VoidDataType(), go_bin.get_pointer_size());
 			}
 			DataType inner_datatype=null;
 			if(basic_type_info_map.containsKey(elem_type_key)) {
@@ -271,7 +271,7 @@ public class StructureManager {
 			structure_datatype.setExplicitMinimumAlignment(field_alignment);
 			for(int i=0;i<field_name_list.size();i++) {
 				long field_key=field_type_key_list.get(i);
-				DataType field_datatype=new PointerDataType(new VoidDataType(), field_alignment);
+				DataType field_datatype=new PointerDataType(new VoidDataType(), go_bin.get_pointer_size());
 				if(basic_type_info_map.containsKey(field_key)) {
 					field_datatype=basic_type_info_map.get(field_key).get_datatype();
 				}
@@ -359,15 +359,15 @@ public class StructureManager {
 		// reflect/type.go
 		StructureDataType _type_datatype=new StructureDataType("_type", 0);
 		_type_datatype.setExplicitMinimumAlignment(pointer_size);
-		_type_datatype.add(new PointerDataType(), "size", "");
-		_type_datatype.add(new PointerDataType(), "ptrdata", "");
+		_type_datatype.add(new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()), "size", "");
+		_type_datatype.add(new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()), "ptrdata", "");
 		_type_datatype.add(new UnsignedIntegerDataType(), "hash", "");
 		_type_datatype.add(new UnsignedCharDataType(), "tflag", "");
 		_type_datatype.add(new UnsignedCharDataType(), "align", "");
 		_type_datatype.add(new UnsignedCharDataType(), "fieldAlign", "");
 		_type_datatype.add(new UnsignedCharDataType(), "kind", "");
-		_type_datatype.add(new PointerDataType(), "equal", "");
-		_type_datatype.add(new PointerDataType(new UnsignedCharDataType()), "gcdata", "");
+		_type_datatype.add(new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()), "equal", "");
+		_type_datatype.add(new PointerDataType(new UnsignedCharDataType(), go_bin.get_pointer_size()), "gcdata", "");
 		_type_datatype.add(new UnsignedIntegerDataType(), "str", "");
 		_type_datatype.add(new UnsignedIntegerDataType(), "ptrToThis", "");
 		hardcode_datatype_map.put("_type", _type_datatype);
@@ -375,15 +375,15 @@ public class StructureManager {
 		// runtime/chan.go
 		StructureDataType waitq_datatype=new StructureDataType("waitq", 0);
 		waitq_datatype.setExplicitMinimumAlignment(pointer_size);
-		waitq_datatype.add(new PointerDataType(), "first", "");
-		waitq_datatype.add(new PointerDataType(), "last", "");
+		waitq_datatype.add(new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()), "first", "");
+		waitq_datatype.add(new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()), "last", "");
 		hardcode_datatype_map.put("waitq", waitq_datatype);
 
 		// runtime/runtime2.go
 		StructureDataType mutex_datatype=new StructureDataType("mutex", 0);
 		mutex_datatype.setExplicitMinimumAlignment(pointer_size);
 		// lockRankStruct
-		mutex_datatype.add(new PointerDataType(), "key", "");
+		mutex_datatype.add(new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()), "key", "");
 		hardcode_datatype_map.put("mutex", mutex_datatype);
 
 
@@ -411,7 +411,7 @@ public class StructureManager {
 		}else {
 			hardcode_datatype_map.put("uintptr", new UnsignedIntegerDataType());
 		}
-		hardcode_datatype_map.put("unsafe.Pointer", new PointerDataType());
+		hardcode_datatype_map.put("unsafe.Pointer", new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()));
 
 		return true;
 	}
@@ -771,7 +771,7 @@ public class StructureManager {
 			}
 			basic_type_info_map.replace(offset, new StructTypeInfo(basic_info, pkg_name_string, basic_info.field_align, field_name_list, field_type_offset_list));
 		}else if(basic_info.kind==Kind.UnsafePointer) {
-			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, new PointerDataType()));
+			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, new PointerDataType(new VoidDataType(), go_bin.get_pointer_size())));
 		}else {
 			name_to_type_map.remove(basic_info.name);
 		}
