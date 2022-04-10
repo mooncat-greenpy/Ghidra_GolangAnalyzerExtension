@@ -129,9 +129,13 @@ public class StructureManager {
 			this.dir=dir;
 		}
 		public DataType get_datatype() {
+			String struct_name=name;
+			if(struct_name.length()>0 && struct_name.endsWith("*")) {
+				struct_name=struct_name.substring(0, struct_name.length()-1);
+			}
 			int pointer_size=go_bin.get_pointer_size();
 			// runtime/chan.go
-			StructureDataType hchan_datatype=new StructureDataType(name, 0);
+			StructureDataType hchan_datatype=new StructureDataType(struct_name, 0);
 			hchan_datatype.setPackingEnabled(true);
 			hchan_datatype.setExplicitMinimumAlignment(pointer_size);
 			hchan_datatype.add(get_datatype_by_name("uint"), "qcount", "");
@@ -145,8 +149,7 @@ public class StructureManager {
 			hchan_datatype.add(new PointerDataType(get_datatype_by_name("waitq"), pointer_size), "recvq", "");
 			hchan_datatype.add(new PointerDataType(get_datatype_by_name("waitq"), pointer_size), "sendq", "");
 			hchan_datatype.add(get_datatype_by_name("mutex"), "lock", "");
-			DataType chan_datatype=new PointerDataType(hchan_datatype, pointer_size);
-			return chan_datatype;
+			return hchan_datatype;
 		}
 	}
 	class FuncTypeInfo extends BasicTypeInfo {
@@ -191,9 +194,13 @@ public class StructureManager {
 			this.elem_type_key=elem_type_key;
 		}
 		public DataType get_datatype() {
+			String struct_name=name;
+			if(struct_name.length()>0 && struct_name.endsWith("*")) {
+				struct_name=struct_name.substring(0, struct_name.length()-1);
+			}
 			int pointer_size=go_bin.get_pointer_size();
 			// runtime/map.go
-			StructureDataType hmap_datatype=new StructureDataType(name, 0);
+			StructureDataType hmap_datatype=new StructureDataType(struct_name, 0);
 			hmap_datatype.setPackingEnabled(true);
 			hmap_datatype.setExplicitMinimumAlignment(pointer_size);
 			hmap_datatype.add(get_datatype_by_name("int"), "count", "");
@@ -205,8 +212,7 @@ public class StructureManager {
 			hmap_datatype.add(get_datatype_by_name("unsafe.Pointer"), "oldbuckets", "");
 			hmap_datatype.add(get_datatype_by_name("uintptr"), "nevacuate", "");
 			hmap_datatype.add(new PointerDataType(new VoidDataType(), pointer_size), "extra", "");
-			DataType map_datatype=new PointerDataType(hmap_datatype, pointer_size);
-			return map_datatype;
+			return hmap_datatype;
 		}
 	}
 	class PtrTypeInfo extends BasicTypeInfo {
