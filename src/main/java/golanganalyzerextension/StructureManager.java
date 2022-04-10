@@ -143,12 +143,12 @@ public class StructureManager {
 			hchan_datatype.add(get_datatype_by_name("unsafe.Pointer"), "buf", "");
 			hchan_datatype.add(get_datatype_by_name("uint16"), "elemsize", "");
 			hchan_datatype.add(get_datatype_by_name("uint32"), "closed", "");
-			hchan_datatype.add(new PointerDataType(get_datatype_by_name("_type"), pointer_size), "elemtype", "");
+			hchan_datatype.add(new PointerDataType(get_datatype_by_name("runtime._type"), pointer_size), "elemtype", "");
 			hchan_datatype.add(get_datatype_by_name("uint"), "sendx", "");
 			hchan_datatype.add(get_datatype_by_name("uint"), "recvx", "");
-			hchan_datatype.add(new PointerDataType(get_datatype_by_name("waitq"), pointer_size), "recvq", "");
-			hchan_datatype.add(new PointerDataType(get_datatype_by_name("waitq"), pointer_size), "sendq", "");
-			hchan_datatype.add(get_datatype_by_name("mutex"), "lock", "");
+			hchan_datatype.add(new PointerDataType(get_datatype_by_name("runtime.waitq"), pointer_size), "recvq", "");
+			hchan_datatype.add(new PointerDataType(get_datatype_by_name("runtime.waitq"), pointer_size), "sendq", "");
+			hchan_datatype.add(get_datatype_by_name("runtime.mutex"), "lock", "");
 			return hchan_datatype;
 		}
 	}
@@ -180,7 +180,7 @@ public class StructureManager {
 			StructureDataType interface_datatype=new StructureDataType(name, 0);
 			interface_datatype.setPackingEnabled(true);
 			interface_datatype.setExplicitMinimumAlignment(go_bin.get_pointer_size());
-			interface_datatype.add(new PointerDataType(get_datatype_by_name("_type"), go_bin.get_pointer_size()), "tab", "");
+			interface_datatype.add(new PointerDataType(get_datatype_by_name("runtime._type"), go_bin.get_pointer_size()), "tab", "");
 			interface_datatype.add(new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()), "data", "");
 			return interface_datatype;
 		}
@@ -366,7 +366,7 @@ public class StructureManager {
 	boolean init_basig_golang_hardcode_datatype() {
 		int pointer_size=go_bin.get_pointer_size();
 		// reflect/type.go
-		StructureDataType _type_datatype=new StructureDataType("_type", 0);
+		StructureDataType _type_datatype=new StructureDataType("hardcord._type", 0);
 		_type_datatype.setPackingEnabled(true);
 		_type_datatype.setExplicitMinimumAlignment(pointer_size);
 		_type_datatype.add(new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()), "size", "");
@@ -380,23 +380,23 @@ public class StructureManager {
 		_type_datatype.add(new PointerDataType(new UnsignedCharDataType(), go_bin.get_pointer_size()), "gcdata", "");
 		_type_datatype.add(new UnsignedIntegerDataType(), "str", "");
 		_type_datatype.add(new UnsignedIntegerDataType(), "ptrToThis", "");
-		hardcode_datatype_map.put("_type", _type_datatype);
+		hardcode_datatype_map.put("runtime._type", _type_datatype);
 
 		// runtime/chan.go
-		StructureDataType waitq_datatype=new StructureDataType("waitq", 0);
+		StructureDataType waitq_datatype=new StructureDataType("hardcord.waitq", 0);
 		waitq_datatype.setPackingEnabled(true);
 		waitq_datatype.setExplicitMinimumAlignment(pointer_size);
 		waitq_datatype.add(new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()), "first", "");
 		waitq_datatype.add(new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()), "last", "");
-		hardcode_datatype_map.put("waitq", waitq_datatype);
+		hardcode_datatype_map.put("runtime.waitq", waitq_datatype);
 
 		// runtime/runtime2.go
-		StructureDataType mutex_datatype=new StructureDataType("mutex", 0);
+		StructureDataType mutex_datatype=new StructureDataType("hardcode.mutex", 0);
 		mutex_datatype.setPackingEnabled(true);
 		mutex_datatype.setExplicitMinimumAlignment(pointer_size);
 		// lockRankStruct
 		mutex_datatype.add(new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()), "key", "");
-		hardcode_datatype_map.put("mutex", mutex_datatype);
+		hardcode_datatype_map.put("runtime.mutex", mutex_datatype);
 
 
 		hardcode_datatype_map.put("bool", new BooleanDataType());
@@ -616,7 +616,7 @@ public class StructureManager {
 
 		go_bin.create_label(go_bin.get_address(type_base_addr, offset), String.format("datatype.%s.%s", basic_info.kind.name(), basic_info.name));
 		try {
-			go_bin.create_data(go_bin.get_address(type_base_addr, offset), get_datatype_by_name("_type"));
+			go_bin.create_data(go_bin.get_address(type_base_addr, offset), get_datatype_by_name("runtime._type"));
 			go_bin.set_comment(go_bin.get_address(type_base_addr, offset+pointer_size*2+4+1*3), ghidra.program.model.listing.CodeUnit.EOL_COMMENT, basic_info.kind.name());
 			go_bin.set_comment(go_bin.get_address(type_base_addr, offset+pointer_size*4+4+1*4), ghidra.program.model.listing.CodeUnit.EOL_COMMENT, basic_info.name);
 			if(basic_info.ptr_to_this_off!=0) {
