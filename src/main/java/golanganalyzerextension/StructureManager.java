@@ -314,7 +314,7 @@ public class StructureManager {
 		this.name_to_type_map=new HashMap<String, Long>();
 		this.basic_type_info_map=new HashMap<Long, BasicTypeInfo>();
 
-		if(!init_basig_golang_hardcode_datatype()) {
+		if(!init_basic_golang_hardcode_datatype()) {
 			return;
 		}
 
@@ -363,7 +363,7 @@ public class StructureManager {
 		return new VoidDataType();
 	}
 
-	boolean init_basig_golang_hardcode_datatype() {
+	boolean init_basic_golang_hardcode_datatype() {
 		int pointer_size=go_bin.get_pointer_size();
 		// reflect/type.go
 		StructureDataType _type_datatype=new StructureDataType("hardcord._type", 0);

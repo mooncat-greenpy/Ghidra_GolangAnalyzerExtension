@@ -74,6 +74,7 @@ public class GolangBinary {
 		}
 		if(!init_gopclntab()) {
 			Logger.append_message("Failed to init gopclntab");
+			return;
 		}
 
 		this.ok=true;
