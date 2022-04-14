@@ -99,15 +99,21 @@ public class FunctionModifier{
 
 	boolean init_functions() {
 		boolean is_go116=false;
+		boolean is_go118=false;
 		if(go_bin.compare_go_version("go1.16beta1")<=0) {
 			is_go116=true;
+		}
+		if(go_bin.compare_go_version("go1.18beta1")<=0) {
+			is_go118=true;
 		}
 
 		int pointer_size=go_bin.get_pointer_size();
 		Address gopclntab_base=go_bin.get_gopclntab_base();
 		gofunc_list=new ArrayList<>();
 		Address func_list_base=null;
-		if(is_go116) {
+		if(is_go118) {
+			func_list_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*7, pointer_size));
+		}else if(is_go116) {
 			func_list_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*6, pointer_size));
 		}else {
 			func_list_base=go_bin.get_address(gopclntab_base, 8+pointer_size);
@@ -115,17 +121,26 @@ public class FunctionModifier{
 		if(func_list_base==null) {
 			return false;
 		}
+
 		for(int i=0; i<func_num; i++) {
-			long func_addr_value=go_bin.get_address_value(func_list_base, i*pointer_size*2, pointer_size);
-			long func_info_offset=go_bin.get_address_value(func_list_base, i*pointer_size*2+pointer_size, pointer_size);
+			long func_addr_value=go_bin.get_address_value(func_list_base, i*(is_go118?4:pointer_size)*2, is_go118?4:pointer_size);
+			if(is_go118) {
+				func_addr_value+=go_bin.get_address_value(gopclntab_base, 8+pointer_size*2, pointer_size);
+			}
+			long func_info_offset=go_bin.get_address_value(func_list_base, i*(is_go118?4:pointer_size)*2+(is_go118?4:pointer_size), is_go118?4:pointer_size);
 			Address func_info_addr=null;
 			if(is_go116) {
 				func_info_addr=go_bin.get_address(func_list_base, func_info_offset);
 			}else {
 				func_info_addr=go_bin.get_address(gopclntab_base, func_info_offset);
 			}
-			long func_entry_value=go_bin.get_address_value(func_info_addr, pointer_size);
-			long func_end_value=go_bin.get_address_value(func_list_base, i*pointer_size*2+pointer_size*2, pointer_size);
+
+			long func_entry_value=go_bin.get_address_value(func_info_addr, is_go118?4:pointer_size);
+			long func_end_value=go_bin.get_address_value(func_list_base, i*(is_go118?4:pointer_size)*2+(is_go118?4:pointer_size)*2, is_go118?4:pointer_size);
+			if(is_go118) {
+				func_entry_value+=go_bin.get_address_value(gopclntab_base, 8+pointer_size*2, pointer_size);
+				func_end_value+=go_bin.get_address_value(gopclntab_base, 8+pointer_size*2, pointer_size);
+			}
 
 			if(func_addr_value==0 || func_info_offset==0 || func_entry_value==0) {
 				return false;

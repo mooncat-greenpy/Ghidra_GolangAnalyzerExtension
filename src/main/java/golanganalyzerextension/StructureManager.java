@@ -430,8 +430,12 @@ public class StructureManager {
 
 	boolean init_basig_golang_datatype() {
 		boolean is_go116=false;
+		boolean is_go118=false;
 		if(go_bin.compare_go_version("go1.16beta1")<=0) {
 			is_go116=true;
+		}
+		if(go_bin.compare_go_version("go1.18beta1")<=0) {
+			is_go118=true;
 		}
 
 		ByteBuffer buffer=ByteBuffer.allocate(Long.BYTES);
@@ -460,7 +464,11 @@ public class StructureManager {
 			long typelink_addr_value=0;
 			long typelink_len=0;
 			boolean is_go16=false;
-			if(is_go116) {
+			if(is_go118) {
+				type_addr_value=go_bin.get_address_value(base_addr, 35*pointer_size, pointer_size);
+				typelink_addr_value=go_bin.get_address_value(base_addr, 42*pointer_size, pointer_size);
+				typelink_len=go_bin.get_address_value(base_addr, 43*pointer_size, pointer_size);
+			}else if(is_go116) {
 				type_addr_value=go_bin.get_address_value(base_addr, 35*pointer_size, pointer_size);
 				typelink_addr_value=go_bin.get_address_value(base_addr, 40*pointer_size, pointer_size);
 				typelink_len=go_bin.get_address_value(base_addr, 41*pointer_size, pointer_size);

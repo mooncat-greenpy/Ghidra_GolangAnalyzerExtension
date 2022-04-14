@@ -391,9 +391,14 @@ public class GolangBinary {
 		// debug/gosym/pclntab.go
 		byte go12_magic[]= {(byte)0xfb,(byte)0xff,(byte)0xff,(byte)0xff};
 		boolean is_go116=false;
+		boolean is_go118=false;
 		if(compare_go_version("go1.16beta1")<=0) {
 			is_go116=true;
 			go12_magic[0]=(byte)0xfa;
+		}
+		if(compare_go_version("go1.18beta1")<=0) {
+			is_go118=true;
+			go12_magic[0]=(byte)0xf0;
 		}
 
 		Address tmp_gopclntab_base=null;
@@ -407,22 +412,26 @@ public class GolangBinary {
 			int tmp_pointer_size=(int)get_address_value(tmp_gopclntab_base, 7, 1);
 
 			Address func_list_base=null;
-			if(is_go116) {
+			if(is_go118) {
+				func_list_base=get_address(tmp_gopclntab_base, get_address_value(tmp_gopclntab_base, 8+tmp_pointer_size*7, tmp_pointer_size));
+			}else if(is_go116) {
 				func_list_base=get_address(tmp_gopclntab_base, get_address_value(tmp_gopclntab_base, 8+tmp_pointer_size*6, tmp_pointer_size));
 			}else {
 				func_list_base=get_address(tmp_gopclntab_base, 8+tmp_pointer_size);
 			}
-			long func_addr_value=get_address_value(func_list_base, 0, tmp_pointer_size);
-			long func_info_offset=get_address_value(func_list_base, tmp_pointer_size, tmp_pointer_size);
+			long func_addr_value=get_address_value(func_list_base, 0, is_go118?4:tmp_pointer_size);
+			long func_info_offset=get_address_value(func_list_base, is_go118?4:tmp_pointer_size, is_go118?4:tmp_pointer_size);
 			long func_entry_value=0;
-			if(is_go116) {
+			if(is_go118) {
+				func_entry_value=get_address_value(func_list_base, func_info_offset, 4);
+			}if(is_go116) {
 				func_entry_value=get_address_value(func_list_base, func_info_offset, tmp_pointer_size);
 			}else {
 				func_entry_value=get_address_value(tmp_gopclntab_base, func_info_offset, tmp_pointer_size);
 			}
 
 			if((tmp_quantum==1 || tmp_quantum==2 || tmp_quantum==4) && (tmp_pointer_size==4 || tmp_pointer_size==8) &&
-					func_addr_value==func_entry_value && func_addr_value!=0) {
+					func_addr_value==func_entry_value && (is_go118 || func_addr_value!=0)) {
 				break;
 			}
 
@@ -474,7 +483,13 @@ public class GolangBinary {
 		}
 
 		byte size=(byte)get_address_value(base_addr, 14, 1);
-		boolean is_big_endian=get_address_value(base_addr, 15, 1)!=0;
+		byte endian=(byte)get_address_value(base_addr, 15, 1);
+		if((endian&2)!=0) {
+			byte str_size=(byte)get_address_value(base_addr, 32, 1);
+			go_version=read_string(get_address(base_addr, 33), str_size);
+			return true;
+		}
+		boolean is_big_endian=endian!=0;
 		if(is_big_endian) {
 			Logger.append_message("Go version is big endian");
 			return false;
