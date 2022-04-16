@@ -106,11 +106,14 @@ public class StructureManager {
 			this.len=(int)len;
 		}
 		public DataType get_datatype() {
+			return get_datatype(false);
+		}
+		public DataType get_datatype(boolean once) {
 			if(len<=0) {
 				return new VoidDataType();
 			}
 			DataType inner_datatype=null;
-			if(basic_type_info_map.containsKey(elem_type_key)) {
+			if(once && basic_type_info_map.containsKey(elem_type_key)) {
 				inner_datatype=basic_type_info_map.get(elem_type_key).get_datatype();
 			}
 			if(inner_datatype==null || inner_datatype.getLength()<=0) {
@@ -244,6 +247,9 @@ public class StructureManager {
 		SliceTypeInfo(BasicTypeInfo basic_info, long elem_type_key) {
 			super(basic_info);
 			this.elem_type_key=elem_type_key;
+		}
+		public DataType get_datatype() {
+			return get_datatype(false);
 		}
 		public DataType get_datatype(boolean once) {
 			DataType inner_datatype=null;
