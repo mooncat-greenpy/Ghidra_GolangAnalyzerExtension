@@ -132,6 +132,10 @@ public class StructureManager {
 			this.dir=dir;
 		}
 		public DataType get_datatype() {
+			DataType chan_datatype=new PointerDataType(get_datatype(true), go_bin.get_pointer_size());
+			return chan_datatype;
+		}
+		public DataType get_datatype(boolean once) {
 			String struct_name=name;
 			if(struct_name.length()>0 && struct_name.endsWith("*")) {
 				struct_name=struct_name.substring(0, struct_name.length()-1);
@@ -197,6 +201,10 @@ public class StructureManager {
 			this.elem_type_key=elem_type_key;
 		}
 		public DataType get_datatype() {
+			DataType map_datatype=new PointerDataType(get_datatype(true), go_bin.get_pointer_size());
+			return map_datatype;
+		}
+		public DataType get_datatype(boolean once) {
 			String struct_name=name;
 			if(struct_name.length()>0 && struct_name.endsWith("*")) {
 				struct_name=struct_name.substring(0, struct_name.length()-1);
