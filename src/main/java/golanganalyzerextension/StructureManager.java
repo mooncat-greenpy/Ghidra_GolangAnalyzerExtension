@@ -352,15 +352,19 @@ public class StructureManager {
 		}
 
 		for(Map.Entry<Long, BasicTypeInfo> entry : basic_type_info_map.entrySet()) {
-			Category category=datatype_manager.createCategory(new CategoryPath(String.format("/Golang_%s", entry.getValue().kind.name())));
-			DataType datatype=null;
-			datatype=entry.getValue().get_datatype(true);
-			if(datatype.getClass().getName()!="ghidra.program.model.data.StructureDataType" && datatype.getClass().getName()!="ghidra.program.model.data.VoidDataType") {
-				StructureDataType structure_datatype=new StructureDataType(entry.getValue().get_name(), 0);
-				structure_datatype.add(datatype);
-				datatype=structure_datatype;
+			try {
+				Category category=datatype_manager.createCategory(new CategoryPath(String.format("/Golang_%s", entry.getValue().kind.name())));
+				DataType datatype=null;
+				datatype=entry.getValue().get_datatype(true);
+				if(datatype.getClass().getName()!="ghidra.program.model.data.StructureDataType" && datatype.getClass().getName()!="ghidra.program.model.data.VoidDataType") {
+					StructureDataType structure_datatype=new StructureDataType(entry.getValue().get_name(), 0);
+					structure_datatype.add(datatype);
+					datatype=structure_datatype;
+				}
+				category.addDataType(datatype, null);
+			}catch(Exception e) {
+				Logger.append_message(String.format("Error: %s", e.getMessage()));
 			}
-			category.addDataType(datatype, null);
 		}
 	}
 

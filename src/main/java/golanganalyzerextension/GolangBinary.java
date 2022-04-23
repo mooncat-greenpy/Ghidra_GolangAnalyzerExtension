@@ -225,7 +225,13 @@ public class GolangBinary {
 		try {
 			byte[] bytes=new byte[size];
 			memory.getBytes(addr, bytes, 0, size);
-			return new String(bytes);
+			String str=new String(bytes);
+			int tmp_len=str.length();
+			str=str.replaceAll("[^\\x20-\\x7e]", "");
+			if(str.length()!=tmp_len) {
+				Logger.append_message(String.format("Invalid char: %x %x %s", addr.getOffset(), size, str));
+			}
+			return str;
 		} catch (MemoryAccessException e) {
 			Logger.append_message(String.format("Failed to read string: %s %x", e.getMessage(), addr.getOffset()));
 		}
