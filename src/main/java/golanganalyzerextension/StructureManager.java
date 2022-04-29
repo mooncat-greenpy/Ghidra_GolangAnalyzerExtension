@@ -481,15 +481,18 @@ public class StructureManager {
 			long type_addr_value=0;
 			long typelink_addr_value=0;
 			long typelink_len=0;
+			Address text_addr=null;
 			boolean is_go16=false;
 			if(is_go118) {
 				type_addr_value=go_bin.get_address_value(base_addr, 35*pointer_size, pointer_size);
 				typelink_addr_value=go_bin.get_address_value(base_addr, 42*pointer_size, pointer_size);
 				typelink_len=go_bin.get_address_value(base_addr, 43*pointer_size, pointer_size);
+				text_addr=go_bin.get_address(go_bin.get_address_value(base_addr, 22*pointer_size, pointer_size));
 			}else if(is_go116) {
 				type_addr_value=go_bin.get_address_value(base_addr, 35*pointer_size, pointer_size);
 				typelink_addr_value=go_bin.get_address_value(base_addr, 40*pointer_size, pointer_size);
 				typelink_len=go_bin.get_address_value(base_addr, 41*pointer_size, pointer_size);
+				text_addr=go_bin.get_address(go_bin.get_address_value(base_addr, 22*pointer_size, pointer_size));
 			}else {
 				type_addr_value=go_bin.get_address_value(base_addr, 25*pointer_size, pointer_size);
 				typelink_addr_value=go_bin.get_address_value(base_addr, 30*pointer_size, pointer_size);
@@ -508,12 +511,14 @@ public class StructureManager {
 					is_go16=true;
 					typelink_len=go_bin.get_address_value(base_addr, 26*pointer_size, pointer_size);
 				}
+				text_addr=go_bin.get_address(go_bin.get_address_value(base_addr, 12*pointer_size, pointer_size));
 			}
+
 
 			Address type_addr=go_bin.get_address(type_addr_value);
 			Address typelink_addr=go_bin.get_address(typelink_addr_value);
 
-			if((!go_bin.is_valid_address(type_addr) || !go_bin.is_valid_address(typelink_addr)) && !is_go16)
+			if(!go_bin.is_valid_address(type_addr) || (!go_bin.is_valid_address(typelink_addr) && !is_go16) || !text_addr.equals(go_bin.get_section(".text")))
 			{
 				base_addr=go_bin.get_address(base_addr, 4);
 				if(base_addr==null) {
