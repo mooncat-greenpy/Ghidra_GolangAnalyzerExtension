@@ -6,6 +6,7 @@ It supports both 32bit and 64bit.
 - Rename functions
 - Modify function arguments
 - Add source file and line number information to comments
+- Add data type
 
 ## Usage
 1. Download the release
