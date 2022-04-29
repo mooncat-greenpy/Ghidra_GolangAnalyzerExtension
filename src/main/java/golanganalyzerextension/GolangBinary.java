@@ -165,6 +165,15 @@ public class GolangBinary {
 		return memory.findBytes(base_addr, target, mask, true, monitor);
 	}
 
+	public Address get_section(String name) {
+		for (MemoryBlock mb : memory.getBlocks()) {
+			if(mb.getName().equals(name)) {
+				return mb.getStart();
+			}
+		}
+		return null;
+	}
+
 	public DataType get_unsigned_number_datatype(int size) {
 		if(size==1) {
 			return new ByteDataType();
