@@ -40,6 +40,7 @@ public class GolangFunction {
 	Address func_addr=null;
 	Function func=null;
 	String func_name="";
+	int arg_size=0;
 	List<Parameter> params=null;
 	Map<Integer, String> file_line_comment_map=null;
 
@@ -184,7 +185,7 @@ public class GolangFunction {
 		}
 
 		int pointer_size=go_bin.get_pointer_size();
-		int arg_size=(int)go_bin.get_address_value(info_addr, (is_go118?4:pointer_size)+4, 4);
+		arg_size=(int)go_bin.get_address_value(info_addr, (is_go118?4:pointer_size)+4, 4);
 		int args_num=arg_size/pointer_size+(arg_size%pointer_size==0?0:1);
 
 		init_frame_map();

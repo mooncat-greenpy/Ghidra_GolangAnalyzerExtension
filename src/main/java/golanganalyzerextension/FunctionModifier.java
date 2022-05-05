@@ -51,6 +51,9 @@ public class FunctionModifier{
 			init_hardcode_functions();
 		}
 
+		AnalyzedInfoContainer container=AnalyzedInfoContainer.getInstance();
+		container.storeFunctionList(gofunc_list);
+
 		this.ok=true;
 	}
 
