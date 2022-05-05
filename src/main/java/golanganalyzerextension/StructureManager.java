@@ -10,310 +10,18 @@ import java.util.Map;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.*;
 import ghidra.program.model.listing.Program;
-import ghidra.program.model.util.CodeUnitInsertionException;
 
 
 public class StructureManager {
 	GolangBinary go_bin=null;
 
 	DataTypeManager datatype_manager=null;
-	Map<String, DataType> hardcode_datatype_map=null;
-	Map<String, Long> name_to_type_map=null;
-	Map<Long, BasicTypeInfo> basic_type_info_map=null;
+	Map<Long, GolangDatatype> datatype_map=null;
 
 	boolean ok=false;
 
-	enum Kind {
-		Invalid,
-		Bool, Int, Int8, Int16, Int32, Int64,
-		Uint, Uint8, Uint16, Uint32, Uint64,
-		Uintptr, Float32, Float64, Complex64, Complex128,
-		Array, Chan, Func, Interface, Map,
-		Ptr, Slice, String, Struct, UnsafePointer, MaxKind
-	}
 	enum Tflag {
 		None, Uncommon, ExtraStar, Named, RegularMemory
-	}
-
-	class BasicTypeInfo {
-		Address addr=null;
-		long key=0;
-		long size=0;
-		long ptrdata=0;
-		int hash=0;
-		int tflag=0;
-		int align=0;
-		int field_align=0;
-		Kind kind=Kind.Invalid;
-		long equal=0;
-		long gcdata=0;
-		String name="";
-		long ptr_to_this_off=0;
-		BasicTypeInfo(Address addr, long key, long size, long ptrdata, int hash, int tflag, int align, int field_align, Kind kind, long equal, long gcdata, String name, long ptr_to_this_off) {
-			this.addr=addr;
-			this.key=key;
-			this.size=size;
-			this.ptrdata=ptrdata;
-			this.hash=hash;
-			this.tflag=tflag;
-			this.align=align;
-			this.field_align=field_align;
-			this.kind=kind;
-			this.equal=equal;
-			this.gcdata=gcdata;
-			this.name=name;
-			if(this.name.length()==0) {
-				this.name=String.format("not_found_%x", this.key);
-			}
-			this.ptr_to_this_off=ptr_to_this_off;
-		}
-		BasicTypeInfo(BasicTypeInfo basic_info) {
-			this.addr=basic_info.addr;
-			this.key=basic_info.key;
-			this.size=basic_info.size;
-			this.ptrdata=basic_info.ptrdata;
-			this.hash=basic_info.hash;
-			this.tflag=basic_info.tflag;
-			this.align=basic_info.align;
-			this.field_align=basic_info.field_align;
-			this.kind=basic_info.kind;
-			this.equal=basic_info.equal;
-			this.gcdata=basic_info.gcdata;
-			this.name=basic_info.name;
-			if(this.name.length()==0) {
-				this.name=String.format("not_found_%x", this.key);
-			}
-			this.ptr_to_this_off=basic_info.ptr_to_this_off;
-		}
-		public String get_name() {
-			return name;
-		}
-		public DataType get_datatype(Map<Long, BasicTypeInfo> datatype_map) {
-			return new VoidDataType();
-		}
-		public DataType get_datatype(Map<Long, BasicTypeInfo> datatype_map, boolean once) {
-			return get_datatype(datatype_map);
-		}
-	}
-	class ArrayTypeInfo extends BasicTypeInfo {
-		long elem_type_key=0;
-		long slice=0;
-		int len=0;
-		ArrayTypeInfo(BasicTypeInfo basic_info, long elem_type_key, long slice, long len) {
-			super(basic_info);
-			this.elem_type_key=elem_type_key;
-			this.slice=slice;
-			this.len=(int)len;
-		}
-		public DataType get_datatype(Map<Long, BasicTypeInfo> datatype_map) {
-			return get_datatype(datatype_map, false);
-		}
-		public DataType get_datatype(Map<Long, BasicTypeInfo> datatype_map, boolean once) {
-			if(len<=0) {
-				return new VoidDataType();
-			}
-			DataType inner_datatype=null;
-			if(once && datatype_map.containsKey(elem_type_key)) {
-				inner_datatype=datatype_map.get(elem_type_key).get_datatype(datatype_map);
-			}
-			if(inner_datatype==null || inner_datatype.getLength()<=0) {
-				inner_datatype=new UnsignedCharDataType();
-			}
-			ArrayDataType array_datatype=new ArrayDataType(inner_datatype, len, inner_datatype.getLength());
-			return array_datatype;
-		}
-	}
-	class ChanTypeInfo extends BasicTypeInfo {
-		long elem_type_key=0;
-		long dir=0;
-		ChanTypeInfo(BasicTypeInfo basic_info, long elem_type_key, long dir) {
-			super(basic_info);
-			this.elem_type_key=elem_type_key;
-			this.dir=dir;
-		}
-		public DataType get_datatype(Map<Long, BasicTypeInfo> datatype_map) {
-			DataType chan_datatype=new PointerDataType(get_datatype(datatype_map, true), go_bin.get_pointer_size());
-			return chan_datatype;
-		}
-		public DataType get_datatype(Map<Long, BasicTypeInfo> datatype_map, boolean once) {
-			String struct_name=name;
-			if(struct_name.length()>0 && struct_name.endsWith("*")) {
-				struct_name=struct_name.substring(0, struct_name.length()-1);
-			}
-			int pointer_size=go_bin.get_pointer_size();
-			// runtime/chan.go
-			StructureDataType hchan_datatype=new StructureDataType(struct_name, 0);
-			hchan_datatype.setPackingEnabled(true);
-			hchan_datatype.setExplicitMinimumAlignment(pointer_size);
-			hchan_datatype.add(get_datatype_by_name("uint"), "qcount", "");
-			hchan_datatype.add(get_datatype_by_name("uint"), "dataqsiz", "");
-			hchan_datatype.add(get_datatype_by_name("unsafe.Pointer"), "buf", "");
-			hchan_datatype.add(get_datatype_by_name("uint16"), "elemsize", "");
-			hchan_datatype.add(get_datatype_by_name("uint32"), "closed", "");
-			hchan_datatype.add(new PointerDataType(get_datatype_by_name("runtime._type"), pointer_size), "elemtype", "");
-			hchan_datatype.add(get_datatype_by_name("uint"), "sendx", "");
-			hchan_datatype.add(get_datatype_by_name("uint"), "recvx", "");
-			hchan_datatype.add(new PointerDataType(get_datatype_by_name("runtime.waitq"), pointer_size), "recvq", "");
-			hchan_datatype.add(new PointerDataType(get_datatype_by_name("runtime.waitq"), pointer_size), "sendq", "");
-			hchan_datatype.add(get_datatype_by_name("runtime.mutex"), "lock", "");
-			return hchan_datatype;
-		}
-	}
-	class FuncTypeInfo extends BasicTypeInfo {
-		List<Long> in_type_key=null;
-		List<Long> out_type_key=null;
-		FuncTypeInfo(BasicTypeInfo basic_info, List<Long> in_type_key, List<Long> out_type_key) {
-			super(basic_info);
-			this.in_type_key=in_type_key;
-			this.out_type_key=out_type_key;
-		}
-		public DataType get_datatype(Map<Long, BasicTypeInfo> datatype_map) {
-			DataType ptr_datatype=new PointerDataType(new VoidDataType(), go_bin.get_pointer_size());
-			return ptr_datatype;
-		}
-	}
-	class InterfaceTypeInfo extends BasicTypeInfo {
-		String pkg_name="";
-		List<String> methods_name_list=null;
-		List<Long> methods_type_key_list=null;
-		InterfaceTypeInfo(BasicTypeInfo basic_info, String pkg_name, List<String> methods_name_list, List<Long> methods_type_key_list) {
-			super(basic_info);
-			this.pkg_name=pkg_name;
-			this.methods_name_list=methods_name_list;
-			this.methods_type_key_list=methods_type_key_list;
-		}
-		public DataType get_datatype(Map<Long, BasicTypeInfo> datatype_map) {
-			// runtime/iface.go
-			StructureDataType interface_datatype=new StructureDataType(name, 0);
-			interface_datatype.setPackingEnabled(true);
-			interface_datatype.setExplicitMinimumAlignment(go_bin.get_pointer_size());
-			interface_datatype.add(new PointerDataType(get_datatype_by_name("runtime._type"), go_bin.get_pointer_size()), "tab", "");
-			interface_datatype.add(new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()), "data", "");
-			return interface_datatype;
-		}
-	}
-	class MapTypeInfo extends BasicTypeInfo {
-		long key_type_key=0;
-		long elem_type_key=0;
-		MapTypeInfo(BasicTypeInfo basic_info, long key_type_key, long elem_type_key) {
-			super(basic_info);
-			this.key_type_key=key_type_key;
-			this.elem_type_key=elem_type_key;
-		}
-		public DataType get_datatype(Map<Long, BasicTypeInfo> datatype_map) {
-			DataType map_datatype=new PointerDataType(get_datatype(datatype_map, true), go_bin.get_pointer_size());
-			return map_datatype;
-		}
-		public DataType get_datatype(Map<Long, BasicTypeInfo> datatype_map, boolean once) {
-			String struct_name=name;
-			if(struct_name.length()>0 && struct_name.endsWith("*")) {
-				struct_name=struct_name.substring(0, struct_name.length()-1);
-			}
-			int pointer_size=go_bin.get_pointer_size();
-			// runtime/map.go
-			StructureDataType hmap_datatype=new StructureDataType(struct_name, 0);
-			hmap_datatype.setPackingEnabled(true);
-			hmap_datatype.setExplicitMinimumAlignment(pointer_size);
-			hmap_datatype.add(get_datatype_by_name("int"), "count", "");
-			hmap_datatype.add(get_datatype_by_name("uint8"), "flags", "");
-			hmap_datatype.add(get_datatype_by_name("uint8"), "B", "");
-			hmap_datatype.add(get_datatype_by_name("uint16"), "noverflow", "");
-			hmap_datatype.add(get_datatype_by_name("uint32"), "hash0", "");
-			hmap_datatype.add(get_datatype_by_name("unsafe.Pointer"), "buckets", "");
-			hmap_datatype.add(get_datatype_by_name("unsafe.Pointer"), "oldbuckets", "");
-			hmap_datatype.add(get_datatype_by_name("uintptr"), "nevacuate", "");
-			hmap_datatype.add(new PointerDataType(new VoidDataType(), pointer_size), "extra", "");
-			return hmap_datatype;
-		}
-	}
-	class PtrTypeInfo extends BasicTypeInfo {
-		long elem_type_key=0;
-		PtrTypeInfo(BasicTypeInfo basic_info, long elem_type_key) {
-			super(basic_info);
-			this.elem_type_key=elem_type_key;
-		}
-		public DataType get_datatype(Map<Long, BasicTypeInfo> datatype_map) {
-			return new PointerDataType(new VoidDataType(), go_bin.get_pointer_size());
-		}
-		public DataType get_datatype(Map<Long, BasicTypeInfo> datatype_map, boolean once) {
-			if(!once) {
-				return new PointerDataType(new VoidDataType(), go_bin.get_pointer_size());
-			}
-			DataType inner_datatype=null;
-			if(datatype_map.containsKey(elem_type_key)) {
-				inner_datatype=datatype_map.get(elem_type_key).get_datatype(datatype_map);
-			}
-			if(inner_datatype==null || inner_datatype.getLength()<=0) {
-				inner_datatype=new VoidDataType();
-			}
-			DataType ptr_datatype=new PointerDataType(inner_datatype, go_bin.get_pointer_size());
-			return ptr_datatype;
-		}
-	}
-	class SliceTypeInfo extends BasicTypeInfo {
-		long elem_type_key=0;
-		SliceTypeInfo(BasicTypeInfo basic_info, long elem_type_key) {
-			super(basic_info);
-			this.elem_type_key=elem_type_key;
-		}
-		public DataType get_datatype(Map<Long, BasicTypeInfo> datatype_map) {
-			return get_datatype(datatype_map, false);
-		}
-		public DataType get_datatype(Map<Long, BasicTypeInfo> datatype_map, boolean once) {
-			DataType inner_datatype=null;
-			if(once && datatype_map.containsKey(elem_type_key)) {
-				inner_datatype=datatype_map.get(elem_type_key).get_datatype(datatype_map);
-			}
-			if(inner_datatype==null || inner_datatype.getLength()<=0) {
-				inner_datatype=new VoidDataType();
-			}
-			int pointer_size=go_bin.get_pointer_size();
-			// cmd/cgo/out.go
-			StructureDataType slice_datatype=new StructureDataType(name, 0);
-			slice_datatype.setPackingEnabled(true);
-			slice_datatype.setExplicitMinimumAlignment(pointer_size);
-			slice_datatype.add(new PointerDataType(inner_datatype, pointer_size), "__values", null);
-			slice_datatype.add(get_datatype_by_name("uintptr"), "__count", null);
-			slice_datatype.add(get_datatype_by_name("uintptr"), "__capacity", null);
-			return slice_datatype;
-		}
-	}
-	class StructTypeInfo extends BasicTypeInfo {
-		String pkg_name="";
-		List<String> field_name_list=null;
-		List<Long> field_type_key_list=null;
-		StructTypeInfo(BasicTypeInfo basic_info, String pkg_name, List<String> field_name_list, List<Long> field_type_key_list) {
-			super(basic_info);
-			this.pkg_name=pkg_name;
-			this.field_name_list=field_name_list;
-			this.field_type_key_list=field_type_key_list;
-		}
-		public DataType get_datatype(Map<Long, BasicTypeInfo> datatype_map) {
-			StructureDataType structure_datatype=new StructureDataType(name, (int)size);
-			structure_datatype.setPackingEnabled(true);
-			structure_datatype.setExplicitMinimumAlignment(field_align);
-			for(int i=0;i<field_name_list.size();i++) {
-				long field_key=field_type_key_list.get(i);
-				DataType field_datatype=new PointerDataType(new VoidDataType(), go_bin.get_pointer_size());
-				if(datatype_map.containsKey(field_key)) {
-					field_datatype=datatype_map.get(field_key).get_datatype(datatype_map);
-				}
-				if(field_datatype.getLength()>0){
-					structure_datatype.add(field_datatype, field_name_list.get(i), null);
-				}
-			}
-			return structure_datatype;
-		}
-	}
-	class OtherTypeInfo extends BasicTypeInfo {
-		DataType datatype=null;
-		OtherTypeInfo(BasicTypeInfo basic_info, DataType datatype){
-			super(basic_info);
-			this.datatype=datatype;
-		}
-		public DataType get_datatype(Map<Long, BasicTypeInfo> datatype_map) {
-			return datatype;
-		}
 	}
 
 	public StructureManager(GolangBinary go_bin, Program program, boolean datatype_option) {
@@ -324,13 +32,7 @@ public class StructureManager {
 		}
 
 		this.datatype_manager=program.getDataTypeManager();
-		this.hardcode_datatype_map=new HashMap<String, DataType>();
-		this.name_to_type_map=new HashMap<String, Long>();
-		this.basic_type_info_map=new HashMap<Long, BasicTypeInfo>();
-
-		if(!init_basic_golang_hardcode_datatype()) {
-			return;
-		}
+		this.datatype_map=new HashMap<Long, GolangDatatype>();
 
 		if(!init_basig_golang_datatype()) {
 			Logger.append_message("Failed to init datatype");
@@ -351,11 +53,11 @@ public class StructureManager {
 			return;
 		}
 
-		for(Map.Entry<Long, BasicTypeInfo> entry : basic_type_info_map.entrySet()) {
+		for(Map.Entry<Long, GolangDatatype> entry : datatype_map.entrySet()) {
 			try {
 				Category category=datatype_manager.createCategory(new CategoryPath(String.format("/Golang_%s", entry.getValue().kind.name())));
 				DataType datatype=null;
-				datatype=entry.getValue().get_datatype(basic_type_info_map, true);
+				datatype=entry.getValue().get_datatype(datatype_map, true);
 				if(datatype.getClass().getName()!="ghidra.program.model.data.StructureDataType" && datatype.getClass().getName()!="ghidra.program.model.data.VoidDataType") {
 					StructureDataType structure_datatype=new StructureDataType(entry.getValue().get_name(), 0);
 					structure_datatype.add(datatype);
@@ -366,84 +68,6 @@ public class StructureManager {
 				Logger.append_message(String.format("Error: %s", e.getMessage()));
 			}
 		}
-	}
-
-	DataType get_datatype_by_name(String name) {
-		if(name_to_type_map.containsKey(name) && basic_type_info_map.containsKey(name_to_type_map.get(name))) {
-			DataType tmp=basic_type_info_map.get(name_to_type_map.get(name)).get_datatype(basic_type_info_map);
-			if(tmp.getLength()>0) {
-				return tmp;
-			}
-		}
-		if(hardcode_datatype_map.containsKey(name)) {
-			return hardcode_datatype_map.get(name);
-		}
-		return new VoidDataType();
-	}
-
-	boolean init_basic_golang_hardcode_datatype() {
-		int pointer_size=go_bin.get_pointer_size();
-		// reflect/type.go
-		StructureDataType _type_datatype=new StructureDataType("hardcord._type", 0);
-		_type_datatype.setPackingEnabled(true);
-		_type_datatype.setExplicitMinimumAlignment(pointer_size);
-		_type_datatype.add(new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()), "size", "");
-		_type_datatype.add(new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()), "ptrdata", "");
-		_type_datatype.add(new UnsignedIntegerDataType(), "hash", "");
-		_type_datatype.add(new UnsignedCharDataType(), "tflag", "");
-		_type_datatype.add(new UnsignedCharDataType(), "align", "");
-		_type_datatype.add(new UnsignedCharDataType(), "fieldAlign", "");
-		_type_datatype.add(new UnsignedCharDataType(), "kind", "");
-		_type_datatype.add(new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()), "equal", "");
-		_type_datatype.add(new PointerDataType(new UnsignedCharDataType(), go_bin.get_pointer_size()), "gcdata", "");
-		_type_datatype.add(new UnsignedIntegerDataType(), "str", "");
-		_type_datatype.add(new UnsignedIntegerDataType(), "ptrToThis", "");
-		hardcode_datatype_map.put("runtime._type", _type_datatype);
-
-		// runtime/chan.go
-		StructureDataType waitq_datatype=new StructureDataType("hardcord.waitq", 0);
-		waitq_datatype.setPackingEnabled(true);
-		waitq_datatype.setExplicitMinimumAlignment(pointer_size);
-		waitq_datatype.add(new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()), "first", "");
-		waitq_datatype.add(new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()), "last", "");
-		hardcode_datatype_map.put("runtime.waitq", waitq_datatype);
-
-		// runtime/runtime2.go
-		StructureDataType mutex_datatype=new StructureDataType("hardcode.mutex", 0);
-		mutex_datatype.setPackingEnabled(true);
-		mutex_datatype.setExplicitMinimumAlignment(pointer_size);
-		// lockRankStruct
-		mutex_datatype.add(new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()), "key", "");
-		hardcode_datatype_map.put("runtime.mutex", mutex_datatype);
-
-
-		hardcode_datatype_map.put("bool", new BooleanDataType());
-		if(pointer_size==8) {
-			hardcode_datatype_map.put("int", new LongLongDataType());
-		}else {
-			hardcode_datatype_map.put("int", new IntegerDataType());
-		}
-		hardcode_datatype_map.put("int8", new SignedByteDataType());
-		hardcode_datatype_map.put("int16", new ShortDataType());
-		hardcode_datatype_map.put("int32", new IntegerDataType());
-		hardcode_datatype_map.put("int64", new LongLongDataType());
-		if(pointer_size==8) {
-			hardcode_datatype_map.put("uint", new UnsignedLongLongDataType());
-		}else {
-			hardcode_datatype_map.put("uint", new UnsignedIntegerDataType());
-		}
-		hardcode_datatype_map.put("uint8", new ByteDataType());
-		hardcode_datatype_map.put("uint16", new UnsignedShortDataType());
-		hardcode_datatype_map.put("uint32", new UnsignedIntegerDataType());
-		hardcode_datatype_map.put("uint64", new UnsignedLongLongDataType());
-		if(pointer_size==8) {
-			hardcode_datatype_map.put("uintptr", new UnsignedLongLongDataType());
-		}else {
-			hardcode_datatype_map.put("uintptr", new UnsignedIntegerDataType());
-		}
-		hardcode_datatype_map.put("unsafe.Pointer", new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()));
-
-		return true;
 	}
 
 	boolean init_basig_golang_datatype() {
@@ -544,7 +168,7 @@ public class StructureManager {
 			}
 		}
 
-		if(basic_type_info_map.size()==0)
+		if(datatype_map.size()==0)
 		{
 			return false;
 		}
@@ -587,7 +211,7 @@ public class StructureManager {
 		return false;
 	}
 
-	BasicTypeInfo get_basic_type_info(Address type_base_addr, long offset, boolean is_go16) {
+	GolangDatatype get_basic_type_info(Address type_base_addr, long offset, boolean is_go16) {
 		int pointer_size=go_bin.get_pointer_size();
 		// runtime/type.go
 		long size=go_bin.get_address_value(type_base_addr, offset, pointer_size);
@@ -627,96 +251,82 @@ public class StructureManager {
 			return null;
 		}
 
-		BasicTypeInfo basic_info=new BasicTypeInfo(go_bin.get_address(type_base_addr, offset), offset, size, ptrdata, hash, tflag, align, field_align, Kind.values()[kind], equal, gcdata, name, ptr_to_this_off);
+		GolangDatatype basic_info=new GolangDatatype(go_bin, type_base_addr, offset, offset, size, ptrdata, hash, tflag, align, field_align, Kind.values()[kind], equal, gcdata, name, ptr_to_this_off);
 		return basic_info;
 	}
 	boolean analyze_type(Address type_base_addr, long offset, boolean is_go16) {
-		if(basic_type_info_map.containsKey(offset)) {
+		if(datatype_map.containsKey(offset)) {
 			return true;
 		}
 
 		int pointer_size=go_bin.get_pointer_size();
 
 		// reflect/type.go
-		BasicTypeInfo basic_info=get_basic_type_info(type_base_addr, offset, is_go16);
-		if(basic_info==null) {
+		GolangDatatype go_datatype=get_basic_type_info(type_base_addr, offset, is_go16);
+		if(go_datatype==null) {
 			return false;
 		}
-		basic_type_info_map.put(offset, basic_info);
-		name_to_type_map.put(basic_info.name, offset);
-
-		go_bin.create_label(go_bin.get_address(type_base_addr, offset), String.format("datatype.%s.%s", basic_info.kind.name(), basic_info.name));
-		try {
-			go_bin.create_data(go_bin.get_address(type_base_addr, offset), get_datatype_by_name("runtime._type"));
-			go_bin.set_comment(go_bin.get_address(type_base_addr, offset+pointer_size*2+4+1*3), ghidra.program.model.listing.CodeUnit.EOL_COMMENT, basic_info.kind.name());
-			go_bin.set_comment(go_bin.get_address(type_base_addr, offset+pointer_size*4+4+1*4), ghidra.program.model.listing.CodeUnit.EOL_COMMENT, basic_info.name);
-			if(basic_info.ptr_to_this_off!=0) {
-				go_bin.set_comment(go_bin.get_address(type_base_addr, offset+pointer_size*4+4*2+1*4), ghidra.program.model.listing.CodeUnit.EOL_COMMENT,
-						String.format("%x", type_base_addr.getOffset()+basic_info.ptr_to_this_off));
-			}
-		} catch (CodeUnitInsertionException | DataTypeConflictException e) {
-			Logger.append_message(String.format("Failed to create data: %s %x %s", e.getMessage(), go_bin.get_address(type_base_addr, offset).getOffset(), basic_info.name));
-		}
+		datatype_map.put(offset, go_datatype);
 
 		Address ext_base_addr=go_bin.get_address(type_base_addr, offset+pointer_size*4+16);
-		if(basic_info.kind==Kind.Bool) {
-			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, new BooleanDataType()));
-		}else if(basic_info.kind==Kind.Int) {
-			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, go_bin.get_signed_number_datatype(pointer_size)));
-		}else if(basic_info.kind==Kind.Int8) {
-			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, go_bin.get_signed_number_datatype(1)));
-		}else if(basic_info.kind==Kind.Int16) {
-			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, go_bin.get_signed_number_datatype(2)));
-		}else if(basic_info.kind==Kind.Int32) {
-			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, go_bin.get_signed_number_datatype(4)));
-		}else if(basic_info.kind==Kind.Int64) {
-			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, go_bin.get_signed_number_datatype(8)));
-		}else if(basic_info.kind==Kind.Uint) {
-			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, go_bin.get_unsigned_number_datatype(pointer_size)));
-		}else if(basic_info.kind==Kind.Uint8) {
-			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, go_bin.get_unsigned_number_datatype(1)));
-		}else if(basic_info.kind==Kind.Uint16) {
-			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, go_bin.get_unsigned_number_datatype(2)));
-		}else if(basic_info.kind==Kind.Uint32) {
-			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, go_bin.get_unsigned_number_datatype(4)));
-		}else if(basic_info.kind==Kind.Uint64) {
-			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, go_bin.get_unsigned_number_datatype(8)));
-		}else if(basic_info.kind==Kind.Uintptr) {
-			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, go_bin.get_unsigned_number_datatype(pointer_size)));
-		}else if(basic_info.kind==Kind.Float32) {
-			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, new Float4DataType()));
-		}else if(basic_info.kind==Kind.Float64) {
-			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, new Float8DataType()));
-		}else if(basic_info.kind==Kind.Complex64) {
+		if(go_datatype.kind==Kind.Bool) {
+			datatype_map.replace(offset, new OtherGolangDatatype(go_datatype, new BooleanDataType()));
+		}else if(go_datatype.kind==Kind.Int) {
+			datatype_map.replace(offset, new OtherGolangDatatype(go_datatype, go_bin.get_signed_number_datatype(pointer_size)));
+		}else if(go_datatype.kind==Kind.Int8) {
+			datatype_map.replace(offset, new OtherGolangDatatype(go_datatype, go_bin.get_signed_number_datatype(1)));
+		}else if(go_datatype.kind==Kind.Int16) {
+			datatype_map.replace(offset, new OtherGolangDatatype(go_datatype, go_bin.get_signed_number_datatype(2)));
+		}else if(go_datatype.kind==Kind.Int32) {
+			datatype_map.replace(offset, new OtherGolangDatatype(go_datatype, go_bin.get_signed_number_datatype(4)));
+		}else if(go_datatype.kind==Kind.Int64) {
+			datatype_map.replace(offset, new OtherGolangDatatype(go_datatype, go_bin.get_signed_number_datatype(8)));
+		}else if(go_datatype.kind==Kind.Uint) {
+			datatype_map.replace(offset, new OtherGolangDatatype(go_datatype, go_bin.get_unsigned_number_datatype(pointer_size)));
+		}else if(go_datatype.kind==Kind.Uint8) {
+			datatype_map.replace(offset, new OtherGolangDatatype(go_datatype, go_bin.get_unsigned_number_datatype(1)));
+		}else if(go_datatype.kind==Kind.Uint16) {
+			datatype_map.replace(offset, new OtherGolangDatatype(go_datatype, go_bin.get_unsigned_number_datatype(2)));
+		}else if(go_datatype.kind==Kind.Uint32) {
+			datatype_map.replace(offset, new OtherGolangDatatype(go_datatype, go_bin.get_unsigned_number_datatype(4)));
+		}else if(go_datatype.kind==Kind.Uint64) {
+			datatype_map.replace(offset, new OtherGolangDatatype(go_datatype, go_bin.get_unsigned_number_datatype(8)));
+		}else if(go_datatype.kind==Kind.Uintptr) {
+			datatype_map.replace(offset, new OtherGolangDatatype(go_datatype, go_bin.get_unsigned_number_datatype(pointer_size)));
+		}else if(go_datatype.kind==Kind.Float32) {
+			datatype_map.replace(offset, new OtherGolangDatatype(go_datatype, new Float4DataType()));
+		}else if(go_datatype.kind==Kind.Float64) {
+			datatype_map.replace(offset, new OtherGolangDatatype(go_datatype, new Float8DataType()));
+		}else if(go_datatype.kind==Kind.Complex64) {
 			StructureDataType complex64_datatype=new StructureDataType("complex64", 0);
 			complex64_datatype.setPackingEnabled(true);
-			complex64_datatype.setExplicitMinimumAlignment(basic_info.align);
+			complex64_datatype.setExplicitMinimumAlignment(go_datatype.align);
 			complex64_datatype.add(new Float4DataType(), "re", null);
 			complex64_datatype.add(new Float4DataType(), "im", null);
-			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, complex64_datatype));
-		}else if(basic_info.kind==Kind.Complex128) {
+			datatype_map.replace(offset, new OtherGolangDatatype(go_datatype, complex64_datatype));
+		}else if(go_datatype.kind==Kind.Complex128) {
 			StructureDataType complex128_datatype=new StructureDataType("complex128", 0);
 			complex128_datatype.setPackingEnabled(true);
-			complex128_datatype.setExplicitMinimumAlignment(basic_info.align);
+			complex128_datatype.setExplicitMinimumAlignment(go_datatype.align);
 			complex128_datatype.add(new Float8DataType(), "re", null);
 			complex128_datatype.add(new Float8DataType(), "im", null);
-			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, complex128_datatype));
-		}else if(basic_info.kind==Kind.Array) {
+			datatype_map.replace(offset, new OtherGolangDatatype(go_datatype, complex128_datatype));
+		}else if(go_datatype.kind==Kind.Array) {
 			long elem_addr_value=go_bin.get_address_value(ext_base_addr, pointer_size);
 			long slice=go_bin.get_address_value(ext_base_addr, pointer_size, pointer_size);
 			long len=go_bin.get_address_value(ext_base_addr, pointer_size*2, pointer_size);
 			if(elem_addr_value!=0) {
 				analyze_type(type_base_addr, elem_addr_value-type_base_addr.getOffset(), is_go16);
 			}
-			basic_type_info_map.replace(offset, new ArrayTypeInfo(basic_info, elem_addr_value-type_base_addr.getOffset(), slice, len));
-		}else if(basic_info.kind==Kind.Chan) {
+			datatype_map.replace(offset, new ArrayGolangDatatype(go_datatype, elem_addr_value-type_base_addr.getOffset(), slice, len));
+		}else if(go_datatype.kind==Kind.Chan) {
 			long elem_addr_value=go_bin.get_address_value(ext_base_addr, pointer_size);
 			long dir=go_bin.get_address_value(ext_base_addr, pointer_size, pointer_size);
 			if(elem_addr_value!=0) {
 				analyze_type(type_base_addr, elem_addr_value-type_base_addr.getOffset(), is_go16);
 			}
-			basic_type_info_map.replace(offset, new ChanTypeInfo(basic_info, elem_addr_value-type_base_addr.getOffset(), dir));
-		}else if(basic_info.kind==Kind.Func) {
+			datatype_map.replace(offset, new ChanGolangDatatype(go_datatype, elem_addr_value-type_base_addr.getOffset(), dir));
+		}else if(go_datatype.kind==Kind.Func) {
 			int in_len=(short)go_bin.get_address_value(ext_base_addr, 2);
 			int out_len=(short)go_bin.get_address_value(ext_base_addr, 2, 2);
 			out_len=(short)(out_len&0x1f);
@@ -736,8 +346,8 @@ public class StructureManager {
 				}
 				out_type_offset_list.add(out_type_addr_value-type_base_addr.getOffset());
 			}
-			basic_type_info_map.replace(offset, new FuncTypeInfo(basic_info, in_type_offset_list, out_type_offset_list));
-		}else if(basic_info.kind==Kind.Interface) {
+			datatype_map.replace(offset, new FuncGolangDatatype(go_datatype, in_type_offset_list, out_type_offset_list));
+		}else if(go_datatype.kind==Kind.Interface) {
 			long pkg_path_addr_value=go_bin.get_address_value(ext_base_addr, pointer_size);
 			long methods_addr_value=go_bin.get_address_value(ext_base_addr, pointer_size, pointer_size);
 			long methods_len=go_bin.get_address_value(ext_base_addr, pointer_size*2, pointer_size);
@@ -763,8 +373,8 @@ public class StructureManager {
 				method_name_list.add(method_name);
 				method_type_offset_list.add(method_type_offset);
 			}
-			basic_type_info_map.replace(offset, new InterfaceTypeInfo(basic_info, pkg_name, method_name_list, method_type_offset_list));
-		}else if(basic_info.kind==Kind.Map) {
+			datatype_map.replace(offset, new InterfaceGolangDatatype(go_datatype, pkg_name, method_name_list, method_type_offset_list));
+		}else if(go_datatype.kind==Kind.Map) {
 			long key_addr_value=go_bin.get_address_value(ext_base_addr, pointer_size);
 			long elem_addr_value=go_bin.get_address_value(ext_base_addr, pointer_size, pointer_size);
 			// ...
@@ -774,27 +384,27 @@ public class StructureManager {
 			if(elem_addr_value!=0) {
 				analyze_type(type_base_addr, elem_addr_value-type_base_addr.getOffset(), is_go16);
 			}
-			basic_type_info_map.replace(offset, new MapTypeInfo(basic_info, key_addr_value-type_base_addr.getOffset(), elem_addr_value));
-		}else if(basic_info.kind==Kind.Ptr) {
+			datatype_map.replace(offset, new MapGolangDatatype(go_datatype, key_addr_value-type_base_addr.getOffset(), elem_addr_value));
+		}else if(go_datatype.kind==Kind.Ptr) {
 			long elem_addr_value=go_bin.get_address_value(ext_base_addr, pointer_size);
 			if(elem_addr_value!=0) {
 				analyze_type(type_base_addr, elem_addr_value-type_base_addr.getOffset(), is_go16);
 			}
-			basic_type_info_map.replace(offset, new PtrTypeInfo(basic_info, elem_addr_value-type_base_addr.getOffset()));
-		}else if(basic_info.kind==Kind.Slice) {
+			datatype_map.replace(offset, new PtrGolangDatatype(go_datatype, elem_addr_value-type_base_addr.getOffset()));
+		}else if(go_datatype.kind==Kind.Slice) {
 			long elem_addr_value=go_bin.get_address_value(ext_base_addr, pointer_size);
 			if(elem_addr_value!=0) {
 				analyze_type(type_base_addr, elem_addr_value-type_base_addr.getOffset(), is_go16);
 			}
-			basic_type_info_map.replace(offset, new SliceTypeInfo(basic_info, elem_addr_value-type_base_addr.getOffset()));
-		}else if(basic_info.kind==Kind.String) {
+			datatype_map.replace(offset, new SliceGolangDatatype(go_datatype, elem_addr_value-type_base_addr.getOffset()));
+		}else if(go_datatype.kind==Kind.String) {
 			StructureDataType string_datatype=new StructureDataType("string", 0);
 			string_datatype.setPackingEnabled(true);
-			string_datatype.setExplicitMinimumAlignment(basic_info.align);
+			string_datatype.setExplicitMinimumAlignment(go_datatype.align);
 			string_datatype.add(new PointerDataType(new StringDataType(), pointer_size), "__data", null);
 			string_datatype.add(new IntegerDataType(), "__length", null);
-			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, string_datatype));
-		}else if(basic_info.kind==Kind.Struct) {
+			datatype_map.replace(offset, new OtherGolangDatatype(go_datatype, string_datatype));
+		}else if(go_datatype.kind==Kind.Struct) {
 			long pkg_path_addr_value=go_bin.get_address_value(ext_base_addr, pointer_size);
 			long fields_addr_value=go_bin.get_address_value(ext_base_addr, pointer_size, pointer_size);
 			long field_len=go_bin.get_address_value(ext_base_addr, pointer_size*2, pointer_size);
@@ -815,14 +425,13 @@ public class StructureManager {
 				field_name_list.add(field_name);
 				field_type_offset_list.add(field_type_addr_value-type_base_addr.getOffset());
 			}
-			basic_type_info_map.replace(offset, new StructTypeInfo(basic_info, pkg_name_string, field_name_list, field_type_offset_list));
-		}else if(basic_info.kind==Kind.UnsafePointer) {
-			basic_type_info_map.replace(offset, new OtherTypeInfo(basic_info, new PointerDataType(new VoidDataType(), go_bin.get_pointer_size())));
-		}else {
-			name_to_type_map.remove(basic_info.name);
+			datatype_map.replace(offset, new StructGolangDatatype(go_datatype, pkg_name_string, field_name_list, field_type_offset_list));
+		}else if(go_datatype.kind==Kind.UnsafePointer) {
+			datatype_map.replace(offset, new OtherGolangDatatype(go_datatype, new PointerDataType(new VoidDataType(), go_bin.get_pointer_size())));
 		}
-		if(basic_info.ptr_to_this_off!=0) {
-			analyze_type(type_base_addr, basic_info.ptr_to_this_off, is_go16);
+
+		if(go_datatype.ptr_to_this_off!=0) {
+			analyze_type(type_base_addr, go_datatype.ptr_to_this_off, is_go16);
 		}
 		return true;
 	}
