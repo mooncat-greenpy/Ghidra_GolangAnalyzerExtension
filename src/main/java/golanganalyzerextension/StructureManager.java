@@ -88,11 +88,11 @@ public class StructureManager {
 		public String get_name() {
 			return name;
 		}
-		public DataType get_datatype() {
+		public DataType get_datatype(Map<Long, BasicTypeInfo> datatype_map) {
 			return new VoidDataType();
 		}
-		public DataType get_datatype(boolean once) {
-			return get_datatype();
+		public DataType get_datatype(Map<Long, BasicTypeInfo> datatype_map, boolean once) {
+			return get_datatype(datatype_map);
 		}
 	}
 	class ArrayTypeInfo extends BasicTypeInfo {
@@ -105,16 +105,16 @@ public class StructureManager {
 			this.slice=slice;
 			this.len=(int)len;
 		}
-		public DataType get_datatype() {
-			return get_datatype(false);
+		public DataType get_datatype(Map<Long, BasicTypeInfo> datatype_map) {
+			return get_datatype(datatype_map, false);
 		}
-		public DataType get_datatype(boolean once) {
+		public DataType get_datatype(Map<Long, BasicTypeInfo> datatype_map, boolean once) {
 			if(len<=0) {
 				return new VoidDataType();
 			}
 			DataType inner_datatype=null;
-			if(once && basic_type_info_map.containsKey(elem_type_key)) {
-				inner_datatype=basic_type_info_map.get(elem_type_key).get_datatype();
+			if(once && datatype_map.containsKey(elem_type_key)) {
+				inner_datatype=datatype_map.get(elem_type_key).get_datatype(datatype_map);
 			}
 			if(inner_datatype==null || inner_datatype.getLength()<=0) {
 				inner_datatype=new UnsignedCharDataType();
@@ -131,11 +131,11 @@ public class StructureManager {
 			this.elem_type_key=elem_type_key;
 			this.dir=dir;
 		}
-		public DataType get_datatype() {
-			DataType chan_datatype=new PointerDataType(get_datatype(true), go_bin.get_pointer_size());
+		public DataType get_datatype(Map<Long, BasicTypeInfo> datatype_map) {
+			DataType chan_datatype=new PointerDataType(get_datatype(datatype_map, true), go_bin.get_pointer_size());
 			return chan_datatype;
 		}
-		public DataType get_datatype(boolean once) {
+		public DataType get_datatype(Map<Long, BasicTypeInfo> datatype_map, boolean once) {
 			String struct_name=name;
 			if(struct_name.length()>0 && struct_name.endsWith("*")) {
 				struct_name=struct_name.substring(0, struct_name.length()-1);
@@ -167,7 +167,7 @@ public class StructureManager {
 			this.in_type_key=in_type_key;
 			this.out_type_key=out_type_key;
 		}
-		public DataType get_datatype() {
+		public DataType get_datatype(Map<Long, BasicTypeInfo> datatype_map) {
 			DataType ptr_datatype=new PointerDataType(new VoidDataType(), go_bin.get_pointer_size());
 			return ptr_datatype;
 		}
@@ -182,7 +182,7 @@ public class StructureManager {
 			this.methods_name_list=methods_name_list;
 			this.methods_type_key_list=methods_type_key_list;
 		}
-		public DataType get_datatype() {
+		public DataType get_datatype(Map<Long, BasicTypeInfo> datatype_map) {
 			// runtime/iface.go
 			StructureDataType interface_datatype=new StructureDataType(name, 0);
 			interface_datatype.setPackingEnabled(true);
@@ -200,11 +200,11 @@ public class StructureManager {
 			this.key_type_key=key_type_key;
 			this.elem_type_key=elem_type_key;
 		}
-		public DataType get_datatype() {
-			DataType map_datatype=new PointerDataType(get_datatype(true), go_bin.get_pointer_size());
+		public DataType get_datatype(Map<Long, BasicTypeInfo> datatype_map) {
+			DataType map_datatype=new PointerDataType(get_datatype(datatype_map, true), go_bin.get_pointer_size());
 			return map_datatype;
 		}
-		public DataType get_datatype(boolean once) {
+		public DataType get_datatype(Map<Long, BasicTypeInfo> datatype_map, boolean once) {
 			String struct_name=name;
 			if(struct_name.length()>0 && struct_name.endsWith("*")) {
 				struct_name=struct_name.substring(0, struct_name.length()-1);
@@ -232,16 +232,16 @@ public class StructureManager {
 			super(basic_info);
 			this.elem_type_key=elem_type_key;
 		}
-		public DataType get_datatype() {
+		public DataType get_datatype(Map<Long, BasicTypeInfo> datatype_map) {
 			return new PointerDataType(new VoidDataType(), go_bin.get_pointer_size());
 		}
-		public DataType get_datatype(boolean once) {
+		public DataType get_datatype(Map<Long, BasicTypeInfo> datatype_map, boolean once) {
 			if(!once) {
 				return new PointerDataType(new VoidDataType(), go_bin.get_pointer_size());
 			}
 			DataType inner_datatype=null;
-			if(basic_type_info_map.containsKey(elem_type_key)) {
-				inner_datatype=basic_type_info_map.get(elem_type_key).get_datatype();
+			if(datatype_map.containsKey(elem_type_key)) {
+				inner_datatype=datatype_map.get(elem_type_key).get_datatype(datatype_map);
 			}
 			if(inner_datatype==null || inner_datatype.getLength()<=0) {
 				inner_datatype=new VoidDataType();
@@ -256,13 +256,13 @@ public class StructureManager {
 			super(basic_info);
 			this.elem_type_key=elem_type_key;
 		}
-		public DataType get_datatype() {
-			return get_datatype(false);
+		public DataType get_datatype(Map<Long, BasicTypeInfo> datatype_map) {
+			return get_datatype(datatype_map, false);
 		}
-		public DataType get_datatype(boolean once) {
+		public DataType get_datatype(Map<Long, BasicTypeInfo> datatype_map, boolean once) {
 			DataType inner_datatype=null;
-			if(once && basic_type_info_map.containsKey(elem_type_key)) {
-				inner_datatype=basic_type_info_map.get(elem_type_key).get_datatype();
+			if(once && datatype_map.containsKey(elem_type_key)) {
+				inner_datatype=datatype_map.get(elem_type_key).get_datatype(datatype_map);
 			}
 			if(inner_datatype==null || inner_datatype.getLength()<=0) {
 				inner_datatype=new VoidDataType();
@@ -288,15 +288,15 @@ public class StructureManager {
 			this.field_name_list=field_name_list;
 			this.field_type_key_list=field_type_key_list;
 		}
-		public DataType get_datatype() {
+		public DataType get_datatype(Map<Long, BasicTypeInfo> datatype_map) {
 			StructureDataType structure_datatype=new StructureDataType(name, (int)size);
 			structure_datatype.setPackingEnabled(true);
 			structure_datatype.setExplicitMinimumAlignment(field_align);
 			for(int i=0;i<field_name_list.size();i++) {
 				long field_key=field_type_key_list.get(i);
 				DataType field_datatype=new PointerDataType(new VoidDataType(), go_bin.get_pointer_size());
-				if(basic_type_info_map.containsKey(field_key)) {
-					field_datatype=basic_type_info_map.get(field_key).get_datatype();
+				if(datatype_map.containsKey(field_key)) {
+					field_datatype=datatype_map.get(field_key).get_datatype(datatype_map);
 				}
 				if(field_datatype.getLength()>0){
 					structure_datatype.add(field_datatype, field_name_list.get(i), null);
@@ -311,7 +311,7 @@ public class StructureManager {
 			super(basic_info);
 			this.datatype=datatype;
 		}
-		public DataType get_datatype() {
+		public DataType get_datatype(Map<Long, BasicTypeInfo> datatype_map) {
 			return datatype;
 		}
 	}
@@ -355,7 +355,7 @@ public class StructureManager {
 			try {
 				Category category=datatype_manager.createCategory(new CategoryPath(String.format("/Golang_%s", entry.getValue().kind.name())));
 				DataType datatype=null;
-				datatype=entry.getValue().get_datatype(true);
+				datatype=entry.getValue().get_datatype(basic_type_info_map, true);
 				if(datatype.getClass().getName()!="ghidra.program.model.data.StructureDataType" && datatype.getClass().getName()!="ghidra.program.model.data.VoidDataType") {
 					StructureDataType structure_datatype=new StructureDataType(entry.getValue().get_name(), 0);
 					structure_datatype.add(datatype);
@@ -370,7 +370,7 @@ public class StructureManager {
 
 	DataType get_datatype_by_name(String name) {
 		if(name_to_type_map.containsKey(name) && basic_type_info_map.containsKey(name_to_type_map.get(name))) {
-			DataType tmp=basic_type_info_map.get(name_to_type_map.get(name)).get_datatype();
+			DataType tmp=basic_type_info_map.get(name_to_type_map.get(name)).get_datatype(basic_type_info_map);
 			if(tmp.getLength()>0) {
 				return tmp;
 			}
