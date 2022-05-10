@@ -39,6 +39,9 @@ public class StructureManager {
 			return;
 		}
 
+		AnalyzedInfoContainer container=AnalyzedInfoContainer.getInstance();
+		container.storeDatatypeMap(datatype_map);
+
 		this.ok=true;
 		return;
 	}
