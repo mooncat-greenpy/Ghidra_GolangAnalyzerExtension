@@ -1,6 +1,7 @@
 package golanganalyzerextension;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -12,6 +13,7 @@ public class AnalyzedInfoContainer {
 
 	private AnalyzedInfoContainer() {
 		func_list=new ArrayList<>();
+		datatype_map=new HashMap<>();
 	}
 
 	public static AnalyzedInfoContainer getInstance() {
