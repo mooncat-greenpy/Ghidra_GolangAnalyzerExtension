@@ -8,7 +8,6 @@ import ghidra.framework.plugintool.PluginInfo;
 import ghidra.framework.plugintool.PluginTool;
 import ghidra.framework.plugintool.util.PluginStatus;
 import ghidra.program.model.listing.Program;
-import ghidra.program.util.ProgramSelection;
 
 //@formatter:off
 @PluginInfo(
@@ -27,22 +26,12 @@ public class GolangAnalyzerExtensionPlugin extends ProgramPlugin {
 		super(tool, false, true);
 	}
 
-	/**
-	 * @see ghidra.framework.plugintool.Plugin#init()
-	 */
 	@Override
 	protected void init() {
 		super.init();
 		create_GolangAnalyzerExtension_provider();
 	}
 
-	public void setSelection(ProgramSelection selection) {
-		currentSelection = selection;
-	}
-
-	/**
-	 * @see ghidra.framework.plugintool.Plugin#dispose()
-	 */
 	@Override
 	public void dispose() {
 		gae_provider.closeComponent();
