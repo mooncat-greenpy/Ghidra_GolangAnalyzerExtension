@@ -8,6 +8,7 @@ import java.util.Map;
 
 public class AnalyzedInfoContainer {
 	private static AnalyzedInfoContainer instance=new AnalyzedInfoContainer();
+	GolangBinary go_bin=null;
 	List<GolangFunction> func_list=null;
 	Map<Long, GolangDatatype> datatype_map=null;
 
@@ -18,6 +19,14 @@ public class AnalyzedInfoContainer {
 
 	public static AnalyzedInfoContainer getInstance() {
 		return instance;
+	}
+
+	public void storeBinary(GolangBinary bin) {
+		go_bin=bin;
+	}
+
+	public GolangBinary getBinary() {
+		return go_bin;
 	}
 
 	public void storeFunctionList(List<GolangFunction> list) {

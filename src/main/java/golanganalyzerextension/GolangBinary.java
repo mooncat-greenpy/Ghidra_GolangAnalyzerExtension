@@ -77,6 +77,8 @@ public class GolangBinary {
 			return;
 		}
 
+		AnalyzedInfoContainer.getInstance().storeBinary(this);
+
 		this.ok=true;
 	}
 
@@ -529,6 +531,10 @@ public class GolangBinary {
 			go_version_mod="";
 		}
 		return true;
+	}
+
+	public String get_go_version() {
+		return go_version;
 	}
 
 	public int compare_go_version(String cmp_go_version) {

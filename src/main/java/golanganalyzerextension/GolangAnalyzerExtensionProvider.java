@@ -74,11 +74,29 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 		JPanel panel = new JPanel(new VerticalLayout(0));
 		panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-		panel.add(new JLabel("Refresh"));
+		GolangBinary go_bin=AnalyzedInfoContainer.getInstance().getBinary();
+		if(go_bin!=null) {
+			JLabel go_version_panel=new JLabel(String.format("Go version: %s", go_bin.get_go_version()));
+			go_version_panel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
+			panel.add(go_version_panel);
+			JLabel pointer_size_panel=new JLabel(String.format("Pointer size: %d", go_bin.get_pointer_size()));
+			pointer_size_panel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
+			panel.add(pointer_size_panel);
+			JLabel func_num_panel=new JLabel(String.format("Number of functions: %d", AnalyzedInfoContainer.getInstance().getFunctionList().size()));
+			func_num_panel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
+			panel.add(func_num_panel);
+			JLabel datatype_num_panel=new JLabel(String.format("Number of datatyeps: %d", AnalyzedInfoContainer.getInstance().getDatatypeMap().size()));
+			datatype_num_panel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
+			panel.add(datatype_num_panel);
+		}
+
 		refresh_button = new JButton(Icons.REFRESH_ICON);
+		refresh_button.setText("Refresh");
 		refresh_button.addActionListener(e -> {
 			function_model.update_table(current_program);
 			datatype_model.update_table(current_program);
+			toggle_show_info_panel();
+			toggle_show_info_panel();
 		});
 		panel.add(refresh_button);
 
@@ -161,6 +179,7 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 		if (is_info_panel_showing) {
 			function_toggle_show_info_panel_button.setIcon(COLLAPSE_ICON);
 			datatype_toggle_show_info_panel_button.setIcon(COLLAPSE_ICON);
+			info_panel=create_info_panel();
 			main_panel.add(info_panel, BorderLayout.WEST);
 		}
 		else {
