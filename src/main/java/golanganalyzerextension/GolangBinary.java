@@ -77,8 +77,6 @@ public class GolangBinary {
 			return;
 		}
 
-		AnalyzedInfoContainer.getInstance().storeBinary(this);
-
 		this.ok=true;
 	}
 
@@ -100,6 +98,10 @@ public class GolangBinary {
 
 	public boolean is_ok() {
 		return ok;
+	}
+
+	public String get_name() {
+		return program.getName();
 	}
 
 	public Address get_address(Address base, long offset) {

@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import ghidra.framework.plugintool.PluginTool;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.*;
 import ghidra.program.model.listing.Program;
@@ -39,8 +40,13 @@ public class StructureManager {
 			return;
 		}
 
-		AnalyzedInfoContainer container=AnalyzedInfoContainer.getInstance();
-		container.storeDatatypeMap(datatype_map);
+		for(Object obj : program.getConsumerList()) {
+			if(obj instanceof PluginTool) {
+				PluginTool plugin_tool=(PluginTool)obj;
+				GolangAnalyzerExtensionService service=plugin_tool.getService(GolangAnalyzerExtensionService.class);
+				service.store_datatype_map(datatype_map);
+			}
+		}
 
 		this.ok=true;
 		return;

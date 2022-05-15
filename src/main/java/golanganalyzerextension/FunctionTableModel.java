@@ -1,5 +1,7 @@
 package golanganalyzerextension;
 
+import java.util.List;
+
 import docking.widgets.table.TableColumnDescriptor;
 import ghidra.docking.settings.Settings;
 import ghidra.framework.plugintool.PluginTool;
@@ -50,8 +52,24 @@ public class FunctionTableModel extends AddressBasedTableModel<GolangFunction> {
 	@Override
 	protected void doLoad(Accumulator<GolangFunction> accumulator, TaskMonitor monitor)
 			throws CancelledException {
-		AnalyzedInfoContainer container=AnalyzedInfoContainer.getInstance();
-		for(GolangFunction gofunc : container.getFunctionList()) {
+		if(program==null) {
+			return;
+		}
+		List<GolangFunction> func_list=null;
+		for(Object obj: program.getConsumerList()) {
+			if(!(obj instanceof PluginTool)) {
+				continue;
+			}
+			PluginTool plugin_tool=(PluginTool)obj;
+			GolangAnalyzerExtensionService service=plugin_tool.getService(GolangAnalyzerExtensionService.class);
+			func_list=service.get_function_list();
+			break;
+		}
+
+		if(func_list==null) {
+			return;
+		}
+		for(GolangFunction gofunc : func_list) {
 			accumulator.add(gofunc);
 		}
 	}

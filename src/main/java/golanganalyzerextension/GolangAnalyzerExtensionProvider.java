@@ -10,6 +10,7 @@ import ghidra.app.services.GoToService;
 import ghidra.framework.model.DomainObjectChangedEvent;
 import ghidra.framework.model.DomainObjectListener;
 import ghidra.framework.plugintool.ComponentProviderAdapter;
+import ghidra.framework.plugintool.PluginTool;
 import ghidra.program.model.listing.Program;
 import ghidra.util.layout.VerticalLayout;
 import ghidra.util.table.*;
@@ -74,18 +75,36 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 		JPanel panel = new JPanel(new VerticalLayout(0));
 		panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-		GolangBinary go_bin=AnalyzedInfoContainer.getInstance().getBinary();
+		GolangBinary go_bin=null;
+		int func_list_size=0;
+		int datatype_map_size=0;
+		if(current_program!=null) {
+			for(Object obj: current_program.getConsumerList()) {
+				if(!(obj instanceof PluginTool)) {
+					continue;
+				}
+				PluginTool plugin_tool=(PluginTool)obj;
+				GolangAnalyzerExtensionService service=plugin_tool.getService(GolangAnalyzerExtensionService.class);
+				go_bin=service.get_binary();
+				func_list_size=service.get_function_list().size();
+				datatype_map_size=service.get_datatype_map().size();
+				break;
+			}
+		}
 		if(go_bin!=null) {
+			JLabel name_panel=new JLabel(String.format("Name: %s", go_bin.get_name()));
+			name_panel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
+			panel.add(name_panel);
 			JLabel go_version_panel=new JLabel(String.format("Go version: %s", go_bin.get_go_version()));
 			go_version_panel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
 			panel.add(go_version_panel);
 			JLabel pointer_size_panel=new JLabel(String.format("Pointer size: %d", go_bin.get_pointer_size()));
 			pointer_size_panel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
 			panel.add(pointer_size_panel);
-			JLabel func_num_panel=new JLabel(String.format("Number of functions: %d", AnalyzedInfoContainer.getInstance().getFunctionList().size()));
+			JLabel func_num_panel=new JLabel(String.format("Number of functions: %d", func_list_size));
 			func_num_panel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
 			panel.add(func_num_panel);
-			JLabel datatype_num_panel=new JLabel(String.format("Number of datatyeps: %d", AnalyzedInfoContainer.getInstance().getDatatypeMap().size()));
+			JLabel datatype_num_panel=new JLabel(String.format("Number of datatyeps: %d", datatype_map_size));
 			datatype_num_panel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
 			panel.add(datatype_num_panel);
 		}

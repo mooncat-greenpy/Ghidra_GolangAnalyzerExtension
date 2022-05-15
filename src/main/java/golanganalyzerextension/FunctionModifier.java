@@ -4,11 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import ghidra.framework.plugintool.PluginTool;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.VoidDataType;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Function.FunctionUpdateType;
 import ghidra.program.model.listing.Parameter;
+import ghidra.program.model.listing.Program;
 import ghidra.program.model.symbol.SourceType;
 
 
@@ -27,7 +29,7 @@ public class FunctionModifier{
 
 	boolean ok=false;
 
-	public FunctionModifier(GolangBinary go_bin, boolean rename_option, boolean param_option, boolean comment_option, boolean disasm_option, boolean extended_option) {
+	public FunctionModifier(GolangBinary go_bin, Program program, boolean rename_option, boolean param_option, boolean comment_option, boolean disasm_option, boolean extended_option) {
 		this.go_bin=go_bin;
 
 		this.rename_option=rename_option;
@@ -51,8 +53,14 @@ public class FunctionModifier{
 			init_hardcode_functions();
 		}
 
-		AnalyzedInfoContainer container=AnalyzedInfoContainer.getInstance();
-		container.storeFunctionList(gofunc_list);
+		for(Object obj : program.getConsumerList()) {
+			if(obj instanceof PluginTool) {
+				PluginTool plugin_tool=(PluginTool)obj;
+				GolangAnalyzerExtensionService service=plugin_tool.getService(GolangAnalyzerExtensionService.class);
+				service.store_function_list(gofunc_list);
+				break;
+			}
+		}
 
 		this.ok=true;
 	}

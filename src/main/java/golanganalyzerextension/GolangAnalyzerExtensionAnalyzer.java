@@ -5,6 +5,7 @@ import ghidra.app.services.AnalysisPriority;
 import ghidra.app.services.AnalyzerType;
 import ghidra.app.util.importer.MessageLog;
 import ghidra.framework.options.Options;
+import ghidra.framework.plugintool.PluginTool;
 import ghidra.program.model.address.AddressSetView;
 import ghidra.program.model.listing.Program;
 import ghidra.util.exception.CancelledException;
@@ -74,15 +75,25 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 				return false;
 			}
 
-			FunctionModifier func_modifier=new FunctionModifier(go_bin, rename_option, param_option, comment_option, disasm_option, extended_option);
+			FunctionModifier func_modifier=new FunctionModifier(go_bin, program, rename_option, param_option, comment_option, disasm_option, extended_option);
 			func_modifier.modify();
 
 			StructureManager struct_manager=new StructureManager(go_bin, program, datatype_option);
 			struct_manager.modify();
+
+			for(Object obj: program.getConsumerList()) {
+				if(obj instanceof PluginTool) {
+					PluginTool plugin_tool=(PluginTool)obj;
+					GolangAnalyzerExtensionService service=plugin_tool.getService(GolangAnalyzerExtensionService.class);
+					service.store_binary(go_bin);
+					break;
+				}
+			}
 		}catch(Exception e) {
 			log.appendMsg(String.format("Error: %s", e.getMessage()));
+			return false;
 		}
 
-		return false;
+		return true;
 	}
 }
