@@ -25,7 +25,7 @@ public class StructureManager {
 		None, Uncommon, ExtraStar, Named, RegularMemory
 	}
 
-	public StructureManager(GolangBinary go_bin, Program program, boolean datatype_option) {
+	public StructureManager(GolangBinary go_bin, Program program, GolangAnalyzerExtensionService service, boolean datatype_option) {
 		this.go_bin=go_bin;
 
 		if(!datatype_option) {
@@ -40,13 +40,7 @@ public class StructureManager {
 			return;
 		}
 
-		for(Object obj : program.getConsumerList()) {
-			if(obj instanceof PluginTool) {
-				PluginTool plugin_tool=(PluginTool)obj;
-				GolangAnalyzerExtensionService service=plugin_tool.getService(GolangAnalyzerExtensionService.class);
-				service.store_datatype_map(datatype_map);
-			}
-		}
+		service.store_datatype_map(datatype_map);
 
 		this.ok=true;
 		return;

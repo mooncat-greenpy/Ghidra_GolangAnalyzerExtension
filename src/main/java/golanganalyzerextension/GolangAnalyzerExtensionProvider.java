@@ -10,7 +10,6 @@ import ghidra.app.services.GoToService;
 import ghidra.framework.model.DomainObjectChangedEvent;
 import ghidra.framework.model.DomainObjectListener;
 import ghidra.framework.plugintool.ComponentProviderAdapter;
-import ghidra.framework.plugintool.PluginTool;
 import ghidra.program.model.listing.Program;
 import ghidra.util.layout.VerticalLayout;
 import ghidra.util.table.*;
@@ -20,6 +19,8 @@ import resources.ResourceManager;
 public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter implements DomainObjectListener {
 	private static final Icon EXPAND_ICON = ResourceManager.loadImage("images/expand.gif");
 	private static final Icon COLLAPSE_ICON = ResourceManager.loadImage("images/collapse.gif");
+
+	GolangAnalyzerExtensionPlugin gae_plugin;
 
 	private JPanel main_panel;
 	private Program current_program;
@@ -43,6 +44,7 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 	public GolangAnalyzerExtensionProvider(GolangAnalyzerExtensionPlugin plugin) {
 		super(plugin.getTool(), "GolangAnalyzerExtension", plugin.getName());
 
+		gae_plugin=plugin;
 		main_panel = create_main_panel();
 		setTitle("GolangAnalyzerExtension");
 		setWindowMenuGroup("GolangAnalyzerExtension");
@@ -75,22 +77,9 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 		JPanel panel = new JPanel(new VerticalLayout(0));
 		panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-		GolangBinary go_bin=null;
-		int func_list_size=0;
-		int datatype_map_size=0;
-		if(current_program!=null) {
-			for(Object obj: current_program.getConsumerList()) {
-				if(!(obj instanceof PluginTool)) {
-					continue;
-				}
-				PluginTool plugin_tool=(PluginTool)obj;
-				GolangAnalyzerExtensionService service=plugin_tool.getService(GolangAnalyzerExtensionService.class);
-				go_bin=service.get_binary();
-				func_list_size=service.get_function_list().size();
-				datatype_map_size=service.get_datatype_map().size();
-				break;
-			}
-		}
+		GolangBinary go_bin=gae_plugin.get_binary();
+		int func_list_size=gae_plugin.get_function_list().size();
+		int datatype_map_size=gae_plugin.get_datatype_map().size();
 		if(go_bin!=null) {
 			JLabel name_panel=new JLabel(String.format("Name: %s", go_bin.get_name()));
 			name_panel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));

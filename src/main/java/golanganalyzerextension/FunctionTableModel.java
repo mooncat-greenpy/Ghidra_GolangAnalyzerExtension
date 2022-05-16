@@ -18,10 +18,12 @@ import ghidra.util.table.field.AddressBasedLocation;
 import ghidra.util.task.TaskMonitor;
 
 public class FunctionTableModel extends AddressBasedTableModel<GolangFunction> {
+	PluginTool plugin_tool;
+
 	FunctionTableModel(PluginTool tool, Program program, TaskMonitor monitor) {
 		super("Functions Table", tool, program, monitor, true);
 
-		addTableColumn(new ConfidenceWordTableColumn());
+		plugin_tool=tool;
 	}
 
 	@Override
@@ -32,7 +34,7 @@ public class FunctionTableModel extends AddressBasedTableModel<GolangFunction> {
 			GolangFunction gofunc = getRowObject(row);
 			Address addr = gofunc.get_func_addr();
 			if (addr != null) {
-				address_set.addRange(addr, addr.add(gofunc.func_size - 1));
+				address_set.addRange(addr, addr.add(gofunc.func_size));
 			}
 		}
 		return new ProgramSelection(address_set);
@@ -52,20 +54,9 @@ public class FunctionTableModel extends AddressBasedTableModel<GolangFunction> {
 	@Override
 	protected void doLoad(Accumulator<GolangFunction> accumulator, TaskMonitor monitor)
 			throws CancelledException {
-		if(program==null) {
-			return;
-		}
 		List<GolangFunction> func_list=null;
-		for(Object obj: program.getConsumerList()) {
-			if(!(obj instanceof PluginTool)) {
-				continue;
-			}
-			PluginTool plugin_tool=(PluginTool)obj;
-			GolangAnalyzerExtensionService service=plugin_tool.getService(GolangAnalyzerExtensionService.class);
-			func_list=service.get_function_list();
-			break;
-		}
-
+		GolangAnalyzerExtensionService service=plugin_tool.getService(GolangAnalyzerExtensionService.class);
+		func_list=service.get_function_list();
 		if(func_list==null) {
 			return;
 		}
@@ -164,26 +155,6 @@ public class FunctionTableModel extends AddressBasedTableModel<GolangFunction> {
 		@Override
 		public int getColumnPreferredWidth() {
 			return 80;
-		}
-	}
-
-	private class ConfidenceWordTableColumn
-			extends AbstractProgramBasedDynamicTableColumn<GolangFunction, String> {
-
-		@Override
-		public String getColumnName() {
-			return "Is Word";
-		}
-
-		@Override
-		public String getColumnDescription() {
-			return "Functions parsed by GolangAnalyzerExtension.";
-		}
-
-		@Override
-		public String getValue(GolangFunction rowObject, Settings settings, Program p,
-				ServiceProvider services) throws IllegalArgumentException {
-			return "N/A";
 		}
 	}
 }

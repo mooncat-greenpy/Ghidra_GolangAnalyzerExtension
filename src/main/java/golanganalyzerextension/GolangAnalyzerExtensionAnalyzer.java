@@ -75,20 +75,27 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 				return false;
 			}
 
-			FunctionModifier func_modifier=new FunctionModifier(go_bin, program, rename_option, param_option, comment_option, disasm_option, extended_option);
+			GolangAnalyzerExtensionService service=null;
+			for(Object obj : program.getConsumerList()) {
+				if(!(obj instanceof PluginTool)) {
+					continue;
+				}
+				PluginTool plugin_tool=(PluginTool)obj;
+				service=plugin_tool.getService(GolangAnalyzerExtensionService.class);
+				break;
+			}
+			if(service==null) {
+				log.appendMsg(String.format("Failed to get service"));
+				return false;
+			}
+
+			FunctionModifier func_modifier=new FunctionModifier(go_bin, service, rename_option, param_option, comment_option, disasm_option, extended_option);
 			func_modifier.modify();
 
-			StructureManager struct_manager=new StructureManager(go_bin, program, datatype_option);
+			StructureManager struct_manager=new StructureManager(go_bin, program, service, datatype_option);
 			struct_manager.modify();
 
-			for(Object obj: program.getConsumerList()) {
-				if(obj instanceof PluginTool) {
-					PluginTool plugin_tool=(PluginTool)obj;
-					GolangAnalyzerExtensionService service=plugin_tool.getService(GolangAnalyzerExtensionService.class);
-					service.store_binary(go_bin);
-					break;
-				}
-			}
+			service.store_binary(go_bin);
 		}catch(Exception e) {
 			log.appendMsg(String.format("Error: %s", e.getMessage()));
 			return false;

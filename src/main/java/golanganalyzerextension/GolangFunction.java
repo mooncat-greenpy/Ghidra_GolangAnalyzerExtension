@@ -215,7 +215,7 @@ public class GolangFunction {
 			params=new ArrayList<>();
 			int stack_count=0;
 			for(int i=0;i<args_num && i<50;i++) {
-				DataType data_type=null;
+				DataType datatype=null;
 				int size=pointer_size;
 				if(i==args_num-1 && arg_size%pointer_size>0) {
 					size=arg_size%pointer_size;
@@ -223,25 +223,25 @@ public class GolangFunction {
 					size=builtin_reg_arg.get(i).getBitLength()/8;
 				}
 				if(size==8) {
-					data_type=new Undefined8DataType();
+					datatype=new Undefined8DataType();
 				}else if(size==7) {
-					data_type=new Undefined7DataType();
+					datatype=new Undefined7DataType();
 				}else if(size==6) {
-					data_type=new Undefined6DataType();
+					datatype=new Undefined6DataType();
 				}else if(size==5) {
-					data_type=new Undefined5DataType();
+					datatype=new Undefined5DataType();
 				}else if(size==4) {
-					data_type=new Undefined4DataType();
+					datatype=new Undefined4DataType();
 				}else if(size==3) {
-					data_type=new Undefined3DataType();
+					datatype=new Undefined3DataType();
 				}else if(size==2) {
-					data_type=new Undefined2DataType();
+					datatype=new Undefined2DataType();
 				}else if(size==1) {
-					data_type=new Undefined1DataType();
+					datatype=new Undefined1DataType();
 				}else if(size==16) {
-					data_type=new UnsignedInteger16DataType();
+					datatype=new UnsignedInteger16DataType();
 				}else {
-					data_type=new Undefined8DataType();
+					datatype=new Undefined8DataType();
 				}
 				Register reg=null;
 				if(is_reg_arg) {
@@ -251,10 +251,10 @@ public class GolangFunction {
 				}
 				Parameter add_param=null;
 				if(reg==null) {
-					add_param=new ParameterImpl(String.format("param_%d", i+1), data_type, (stack_count+1)*pointer_size, func.getProgram(), SourceType.USER_DEFINED);
+					add_param=new ParameterImpl(String.format("param_%d", i+1), datatype, (stack_count+1)*pointer_size, func.getProgram(), SourceType.USER_DEFINED);
 					stack_count++;
 				}else {
-					add_param=new ParameterImpl(String.format("param_%d", i+1), data_type, reg, func.getProgram(), SourceType.USER_DEFINED);
+					add_param=new ParameterImpl(String.format("param_%d", i+1), datatype, reg, func.getProgram(), SourceType.USER_DEFINED);
 				}
 				params.add(add_param);
 			}
