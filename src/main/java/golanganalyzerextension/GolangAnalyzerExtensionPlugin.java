@@ -59,6 +59,7 @@ public class GolangAnalyzerExtensionPlugin extends ProgramPlugin implements Gola
 
 	GolangBinary go_bin=null;
 	List<GolangFunction> func_list=new ArrayList<>();
+	List<String> filename_list=new ArrayList<>();
 	Map<Long, GolangDatatype> datatype_map=new HashMap<>();
 
 	@Override
@@ -81,6 +82,23 @@ public class GolangAnalyzerExtensionPlugin extends ProgramPlugin implements Gola
 		func_list=list;
 	}
 
+	@Override
+	public List<String> get_filename_list() {
+		return filename_list;
+	}
+
+	@Override
+	public void store_filename_list(List<String> list) {
+		filename_list=list;
+	}
+
+	@Override
+	public void add_filename(String filename) {
+		if(filename_list.contains(filename)) {
+			return;
+		}
+		filename_list.add(filename);
+	}
 	@Override
 	public Map<Long, GolangDatatype> get_datatype_map() {
 		return datatype_map;

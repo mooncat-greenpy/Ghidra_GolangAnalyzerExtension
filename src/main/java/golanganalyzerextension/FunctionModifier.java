@@ -15,6 +15,7 @@ import ghidra.program.model.symbol.SourceType;
 // debug/gosym/pclntab.go
 public class FunctionModifier{
 	GolangBinary go_bin=null;
+	GolangAnalyzerExtensionService service=null;
 
 	long func_num=0;
 	List<GolangFunction> gofunc_list=null;
@@ -29,6 +30,7 @@ public class FunctionModifier{
 
 	public FunctionModifier(GolangBinary go_bin, GolangAnalyzerExtensionService service, boolean rename_option, boolean param_option, boolean comment_option, boolean disasm_option, boolean extended_option) {
 		this.go_bin=go_bin;
+		this.service=service;
 
 		this.rename_option=rename_option;
 		this.param_option=param_option;
@@ -96,6 +98,9 @@ public class FunctionModifier{
 			}
 			file_name_list.add(go_bin.create_string_data(file_name_addr));
 		}
+
+		service.store_filename_list(file_name_list);
+
 		return true;
 	}
 
@@ -155,11 +160,11 @@ public class FunctionModifier{
 
 			GolangFunction gofunc=null;
 			if(go_bin.is_x86()) {
-				gofunc=new GolangFunctionX86(go_bin, func_info_addr, func_end_value-func_entry_value, file_name_list, disasm_option, extended_option);
+				gofunc=new GolangFunctionX86(go_bin, service, func_info_addr, func_end_value-func_entry_value, disasm_option, extended_option);
 			}else if(go_bin.is_arm()) {
-				gofunc=new GolangFunctionArm(go_bin, func_info_addr, func_end_value-func_entry_value, file_name_list, disasm_option, extended_option);
+				gofunc=new GolangFunctionArm(go_bin, service, func_info_addr, func_end_value-func_entry_value, disasm_option, extended_option);
 			}else {
-				gofunc=new GolangFunction(go_bin, func_info_addr, func_end_value-func_entry_value, file_name_list, disasm_option, extended_option);
+				gofunc=new GolangFunction(go_bin, service, func_info_addr, func_end_value-func_entry_value, disasm_option, extended_option);
 			}
 			gofunc_list.add(gofunc);
 		}

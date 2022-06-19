@@ -28,6 +28,7 @@ import ghidra.program.model.symbol.SourceType;
 // debug/gosym/pclntab.go
 public class GolangFunction {
 	GolangBinary go_bin=null;
+	GolangAnalyzerExtensionService service=null;
 
 	List<String> file_name_list=null;
 	boolean disasm_option=false;
@@ -46,10 +47,11 @@ public class GolangFunction {
 
 	boolean ok=false;
 
-	public GolangFunction(GolangBinary go_bin, Address func_info_addr, long func_size, List<String> file_name_list, boolean disasm_option, boolean extended_option) {
+	public GolangFunction(GolangBinary go_bin, GolangAnalyzerExtensionService service, Address func_info_addr, long func_size, boolean disasm_option, boolean extended_option) {
 		this.go_bin=go_bin;
+		this.service=service;
 
-		this.file_name_list=file_name_list;
+		this.file_name_list=service.get_filename_list();
 		this.disasm_option=disasm_option;
 		this.extended_option=extended_option;
 		this.info_addr=func_info_addr;
@@ -449,7 +451,9 @@ public class GolangFunction {
 					if(file_name_addr==null) {
 						return null;
 					}
-					return go_bin.create_string_data(file_name_addr);
+					String file_name=go_bin.create_string_data(file_name_addr);
+					service.add_filename(file_name);
+					return file_name;
 				}
 				if((int)file_no-1<0 || file_name_list.size()<=(int)file_no-1) {
 					Logger.append_message(String.format("File name list index out of range: %x", (int)file_no-1));

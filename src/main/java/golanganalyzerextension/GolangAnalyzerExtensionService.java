@@ -18,6 +18,10 @@ public interface GolangAnalyzerExtensionService {
 	public List<GolangFunction> get_function_list();
 	public void store_function_list(List<GolangFunction> list);
 
+	public List<String> get_filename_list();
+	public void store_filename_list(List<String> list);
+	public void add_filename(String filename);
+
 	public Map<Long, GolangDatatype> get_datatype_map();
 	public void store_datatype_map(Map<Long, GolangDatatype> map);
 }

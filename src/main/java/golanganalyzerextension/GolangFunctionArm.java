@@ -20,8 +20,8 @@ import ghidra.util.exception.InvalidInputException;
 
 public class GolangFunctionArm extends GolangFunction {
 
-	public GolangFunctionArm(GolangBinary go_bin, Address func_info_addr, long func_size, List<String> file_name_list, boolean disasm_option, boolean extended_option) {
-		super(go_bin, func_info_addr, func_size, file_name_list, disasm_option, extended_option);
+	public GolangFunctionArm(GolangBinary go_bin, GolangAnalyzerExtensionService service, Address func_info_addr, long func_size, boolean disasm_option, boolean extended_option) {
+		super(go_bin, service, func_info_addr, func_size, disasm_option, extended_option);
 	}
 
 	public GolangFunctionArm(GolangBinary go_bin, Function func, boolean disasm_option, boolean extended_option) {
