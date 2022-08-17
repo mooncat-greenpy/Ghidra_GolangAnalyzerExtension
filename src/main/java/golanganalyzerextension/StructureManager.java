@@ -416,8 +416,7 @@ public class StructureManager {
 			if(pkg_path_addr_value!=0) {
 				pkg_name_string=get_type_string(go_bin.get_address(type_base_addr, pkg_path_addr_value-type_base_addr.getOffset()), 0);
 			}
-			List<String> field_name_list = new ArrayList<String>();
-			List<Long> field_type_offset_list = new ArrayList<Long>();
+			List<StructField> field_list=new ArrayList<StructField>();
 			for(int i=0;i<field_len;i++) {
 				long field_name_addr_value=go_bin.get_address_value(type_base_addr, fields_addr_value+i*3*pointer_size-type_base_addr.getOffset(), pointer_size);
 				long field_type_addr_value=go_bin.get_address_value(type_base_addr, fields_addr_value+i*3*pointer_size-type_base_addr.getOffset()+pointer_size, pointer_size);
@@ -425,10 +424,9 @@ public class StructureManager {
 
 				String field_name=get_type_string(go_bin.get_address(type_base_addr, field_name_addr_value-type_base_addr.getOffset()), 0);
 				analyze_type(type_base_addr, field_type_addr_value-type_base_addr.getOffset(), is_go16);
-				field_name_list.add(field_name);
-				field_type_offset_list.add(field_type_addr_value-type_base_addr.getOffset());
+				field_list.add(new StructField(field_name, field_type_addr_value-type_base_addr.getOffset(), (int)offset_embed));
 			}
-			datatype_map.replace(offset, new StructGolangDatatype(go_datatype, pkg_name_string, field_name_list, field_type_offset_list));
+			datatype_map.replace(offset, new StructGolangDatatype(go_datatype, pkg_name_string, field_list));
 		}else if(go_datatype.kind==Kind.UnsafePointer) {
 			datatype_map.replace(offset, new OtherGolangDatatype(go_datatype, new PointerDataType(new VoidDataType(), go_bin.get_pointer_size())));
 		}
