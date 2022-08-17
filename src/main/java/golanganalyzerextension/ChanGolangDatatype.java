@@ -2,6 +2,7 @@ package golanganalyzerextension;
 
 import java.util.Map;
 
+import ghidra.program.model.address.Address;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.PointerDataType;
 import ghidra.program.model.data.StructureDataType;
@@ -11,10 +12,8 @@ class ChanGolangDatatype extends GolangDatatype {
 	long elem_type_key=0;
 	long dir=0;
 
-	ChanGolangDatatype(GolangDatatype basic_info, long elem_type_key, long dir) {
-		super(basic_info);
-		this.elem_type_key=elem_type_key;
-		this.dir=dir;
+	ChanGolangDatatype(GolangBinary go_bin, Address type_base_addr, long offset, boolean is_go16, boolean fix_label) {
+		super(go_bin, type_base_addr, offset, is_go16, fix_label);
 	}
 
 	public DataType get_datatype(Map<Long, GolangDatatype> datatype_map) {
@@ -27,7 +26,7 @@ class ChanGolangDatatype extends GolangDatatype {
 		if(struct_name.length()>0 && struct_name.endsWith("*")) {
 			struct_name=struct_name.substring(0, struct_name.length()-1);
 		}
-		int pointer_size=go_bin.get_pointer_size();
+
 		// runtime/chan.go
 		StructureDataType hchan_datatype=new StructureDataType(struct_name, 0);
 		hchan_datatype.setPackingEnabled(true);
@@ -44,5 +43,14 @@ class ChanGolangDatatype extends GolangDatatype {
 		hchan_datatype.add(new PointerDataType(get_datatype_by_name("runtime.waitq", datatype_map), pointer_size), "sendq", "");
 		hchan_datatype.add(get_datatype_by_name("runtime.mutex", datatype_map), "lock", "");
 		return hchan_datatype;
+	}
+
+	@Override
+	protected void parse_datatype() {
+		long elem_addr_value=go_bin.get_address_value(ext_base_addr, pointer_size);
+		elem_type_key=elem_addr_value-type_base_addr.getOffset();
+		dir=go_bin.get_address_value(ext_base_addr, pointer_size, pointer_size);
+
+		dependence_type_key_list.add(elem_type_key);
 	}
 }

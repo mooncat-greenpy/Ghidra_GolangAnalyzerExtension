@@ -2,6 +2,7 @@ package golanganalyzerextension;
 
 import java.util.Map;
 
+import ghidra.program.model.address.Address;
 import ghidra.program.model.data.ArrayDataType;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.UnsignedCharDataType;
@@ -13,11 +14,8 @@ class ArrayGolangDatatype extends GolangDatatype {
 	long slice=0;
 	int len=0;
 
-	ArrayGolangDatatype(GolangDatatype basic_info, long elem_type_key, long slice, long len) {
-		super(basic_info);
-		this.elem_type_key=elem_type_key;
-		this.slice=slice;
-		this.len=(int)len;
+	ArrayGolangDatatype(GolangBinary go_bin, Address type_base_addr, long offset, boolean is_go16, boolean fix_label) {
+		super(go_bin, type_base_addr, offset, is_go16, fix_label);
 	}
 
 	public DataType get_datatype(Map<Long, GolangDatatype> datatype_map) {
@@ -37,5 +35,15 @@ class ArrayGolangDatatype extends GolangDatatype {
 		}
 		ArrayDataType array_datatype=new ArrayDataType(inner_datatype, len, inner_datatype.getLength());
 		return array_datatype;
+	}
+
+	@Override
+	protected void parse_datatype() {
+		long elem_addr_value=go_bin.get_address_value(ext_base_addr, pointer_size);
+		elem_type_key=elem_addr_value-type_base_addr.getOffset();
+		slice=go_bin.get_address_value(ext_base_addr, pointer_size, pointer_size);
+		len=(int)go_bin.get_address_value(ext_base_addr, pointer_size*2, pointer_size);
+
+		dependence_type_key_list.add(elem_type_key);
 	}
 }

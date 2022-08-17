@@ -2,6 +2,7 @@ package golanganalyzerextension;
 
 import java.util.Map;
 
+import ghidra.program.model.address.Address;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.PointerDataType;
 import ghidra.program.model.data.StructureDataType;
@@ -12,10 +13,8 @@ class MapGolangDatatype extends GolangDatatype {
 	long key_type_key=0;
 	long elem_type_key=0;
 
-	MapGolangDatatype(GolangDatatype basic_info, long key_type_key, long elem_type_key) {
-		super(basic_info);
-		this.key_type_key=key_type_key;
-		this.elem_type_key=elem_type_key;
+	MapGolangDatatype(GolangBinary go_bin, Address type_base_addr, long offset, boolean is_go16, boolean fix_label) {
+		super(go_bin, type_base_addr, offset, is_go16, fix_label);
 	}
 
 	public DataType get_datatype(Map<Long, GolangDatatype> datatype_map) {
@@ -28,7 +27,7 @@ class MapGolangDatatype extends GolangDatatype {
 		if(struct_name.length()>0 && struct_name.endsWith("*")) {
 			struct_name=struct_name.substring(0, struct_name.length()-1);
 		}
-		int pointer_size=go_bin.get_pointer_size();
+
 		// runtime/map.go
 		StructureDataType hmap_datatype=new StructureDataType(struct_name, 0);
 		hmap_datatype.setPackingEnabled(true);
@@ -44,4 +43,19 @@ class MapGolangDatatype extends GolangDatatype {
 		hmap_datatype.add(new PointerDataType(new VoidDataType(), pointer_size), "extra", "");
 		return hmap_datatype;
 	}
+
+	@Override
+	protected void parse_datatype() {
+		long key_addr_value=go_bin.get_address_value(ext_base_addr, pointer_size);
+		key_type_key=key_addr_value-type_base_addr.getOffset();
+		long elem_addr_value=go_bin.get_address_value(ext_base_addr, pointer_size, pointer_size);
+		elem_type_key=elem_addr_value-type_base_addr.getOffset();
+		// ...
+		if(key_type_key>0) {
+			dependence_type_key_list.add(key_type_key);
+		}
+		if(elem_type_key>0) {
+			dependence_type_key_list.add(elem_type_key);
+		}
+    }
 }
