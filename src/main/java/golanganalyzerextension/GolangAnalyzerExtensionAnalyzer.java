@@ -67,11 +67,11 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 	@Override
 	public boolean added(Program program, AddressSetView set, TaskMonitor monitor, MessageLog log)
 			throws CancelledException {
+		Logger.set_logger(log, debugmode_option);
 		try {
-			Logger.set_logger(log, debugmode_option);
 			GolangBinary go_bin=new GolangBinary(program, monitor);
 			if(!go_bin.is_ok()) {
-				log.appendMsg(String.format("Failed to init GolangBinary"));
+				Logger.append_message(String.format("Failed to init GolangBinary"));
 				return false;
 			}
 
@@ -85,7 +85,7 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 				break;
 			}
 			if(service==null) {
-				log.appendMsg(String.format("Failed to get service"));
+				Logger.append_message(String.format("Failed to get service"));
 				return false;
 			}
 
@@ -97,7 +97,7 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 
 			service.store_binary(go_bin);
 		}catch(Exception e) {
-			log.appendMsg(String.format("Error: %s", e.getMessage()));
+			Logger.append_message(String.format("Error: %s", e.getMessage()));
 			return false;
 		}
 
