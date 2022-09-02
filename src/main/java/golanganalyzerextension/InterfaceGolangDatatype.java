@@ -2,7 +2,6 @@ package golanganalyzerextension;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.DataType;
@@ -16,16 +15,17 @@ class InterfaceGolangDatatype extends GolangDatatype {
 	List<String> method_name_list=null;
 	List<Long> method_type_key_list=null;
 
-	InterfaceGolangDatatype(GolangBinary go_bin, Address type_base_addr, long offset, boolean is_go16, boolean fix_label) {
-		super(go_bin, type_base_addr, offset, is_go16, fix_label);
+	InterfaceGolangDatatype(GolangBinary go_bin, Address type_base_addr, long offset, boolean is_go16) {
+		super(go_bin, type_base_addr, offset, is_go16);
 	}
 
-	public DataType get_datatype(Map<Long, GolangDatatype> datatype_map) {
+	@Override
+	public DataType get_datatype(DatatypeSearcher datatype_searcher) {
 		// runtime/iface.go
 		StructureDataType interface_datatype=new StructureDataType(name, 0);
 		interface_datatype.setPackingEnabled(true);
 		interface_datatype.setExplicitMinimumAlignment(go_bin.get_pointer_size());
-		interface_datatype.add(new PointerDataType(get_datatype_by_name("runtime._type", datatype_map), go_bin.get_pointer_size()), "tab", "");
+		interface_datatype.add(new PointerDataType(datatype_searcher.get_datatype_by_name("runtime._type"), go_bin.get_pointer_size()), "tab", "");
 		interface_datatype.add(new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()), "data", "");
 		return interface_datatype;
 	}

@@ -2,7 +2,6 @@ package golanganalyzerextension;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.DataType;
@@ -14,11 +13,12 @@ class FuncGolangDatatype extends GolangDatatype {
 	List<Long> in_type_key_list=null;
 	List<Long> out_type_key_list=null;
 
-	FuncGolangDatatype(GolangBinary go_bin, Address type_base_addr, long offset, boolean is_go16, boolean fix_label) {
-		super(go_bin, type_base_addr, offset, is_go16, fix_label);
+	FuncGolangDatatype(GolangBinary go_bin, Address type_base_addr, long offset, boolean is_go16) {
+		super(go_bin, type_base_addr, offset, is_go16);
 	}
 
-	public DataType get_datatype(Map<Long, GolangDatatype> datatype_map) {
+	@Override
+	public DataType get_datatype(DatatypeSearcher datatype_searcher) {
 		DataType ptr_datatype=new PointerDataType(new VoidDataType(), go_bin.get_pointer_size());
 		return ptr_datatype;
 	}

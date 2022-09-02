@@ -1,7 +1,5 @@
 package golanganalyzerextension;
 
-import java.util.Map;
-
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.PointerDataType;
@@ -12,18 +10,20 @@ import ghidra.program.model.data.VoidDataType;
 class SliceGolangDatatype extends GolangDatatype {
 	long elem_type_key=0;
 
-	SliceGolangDatatype(GolangBinary go_bin, Address type_base_addr, long offset, boolean is_go16, boolean fix_label) {
-		super(go_bin, type_base_addr, offset, is_go16, fix_label);
+	SliceGolangDatatype(GolangBinary go_bin, Address type_base_addr, long offset, boolean is_go16) {
+		super(go_bin, type_base_addr, offset, is_go16);
 	}
 
-	public DataType get_datatype(Map<Long, GolangDatatype> datatype_map) {
-		return get_datatype(datatype_map, false);
+	@Override
+	public DataType get_datatype(DatatypeSearcher datatype_searcher) {
+		return get_datatype(datatype_searcher, false);
 	}
 
-	public DataType get_datatype(Map<Long, GolangDatatype> datatype_map, boolean once) {
+	@Override
+	public DataType get_datatype(DatatypeSearcher datatype_searcher, boolean once) {
 		DataType inner_datatype=null;
-		if(once && datatype_map.containsKey(elem_type_key)) {
-			inner_datatype=datatype_map.get(elem_type_key).get_datatype(datatype_map);
+		if(once) {
+			inner_datatype=datatype_searcher.get_datatype_by_key(elem_type_key);
 		}
 		if(inner_datatype==null || inner_datatype.getLength()<=0) {
 			inner_datatype=new VoidDataType();
@@ -34,8 +34,8 @@ class SliceGolangDatatype extends GolangDatatype {
 		slice_datatype.setPackingEnabled(true);
 		slice_datatype.setExplicitMinimumAlignment(pointer_size);
 		slice_datatype.add(new PointerDataType(inner_datatype, pointer_size), "__values", null);
-		slice_datatype.add(get_datatype_by_name("uintptr", datatype_map), "__count", null);
-		slice_datatype.add(get_datatype_by_name("uintptr", datatype_map), "__capacity", null);
+		slice_datatype.add(datatype_searcher.get_datatype_by_name("uintptr"), "__count", null);
+		slice_datatype.add(datatype_searcher.get_datatype_by_name("uintptr"), "__capacity", null);
 		return slice_datatype;
 	}
 

@@ -1,7 +1,5 @@
 package golanganalyzerextension;
 
-import java.util.Map;
-
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.PointerDataType;
@@ -13,16 +11,18 @@ class MapGolangDatatype extends GolangDatatype {
 	long key_type_key=0;
 	long elem_type_key=0;
 
-	MapGolangDatatype(GolangBinary go_bin, Address type_base_addr, long offset, boolean is_go16, boolean fix_label) {
-		super(go_bin, type_base_addr, offset, is_go16, fix_label);
+	MapGolangDatatype(GolangBinary go_bin, Address type_base_addr, long offset, boolean is_go16) {
+		super(go_bin, type_base_addr, offset, is_go16);
 	}
 
-	public DataType get_datatype(Map<Long, GolangDatatype> datatype_map) {
-		DataType map_datatype=new PointerDataType(get_datatype(datatype_map, true), go_bin.get_pointer_size());
+	@Override
+	public DataType get_datatype(DatatypeSearcher datatype_searcher) {
+		DataType map_datatype=new PointerDataType(get_datatype(datatype_searcher, true), go_bin.get_pointer_size());
 		return map_datatype;
 	}
 
-	public DataType get_datatype(Map<Long, GolangDatatype> datatype_map, boolean once) {
+	@Override
+	public DataType get_datatype(DatatypeSearcher datatype_searcher, boolean once) {
 		String struct_name=name;
 		if(struct_name.length()>0 && struct_name.endsWith("*")) {
 			struct_name=struct_name.substring(0, struct_name.length()-1);
@@ -32,14 +32,14 @@ class MapGolangDatatype extends GolangDatatype {
 		StructureDataType hmap_datatype=new StructureDataType(struct_name, 0);
 		hmap_datatype.setPackingEnabled(true);
 		hmap_datatype.setExplicitMinimumAlignment(pointer_size);
-		hmap_datatype.add(get_datatype_by_name("int", datatype_map), "count", "");
-		hmap_datatype.add(get_datatype_by_name("uint8", datatype_map), "flags", "");
-		hmap_datatype.add(get_datatype_by_name("uint8", datatype_map), "B", "");
-		hmap_datatype.add(get_datatype_by_name("uint16", datatype_map), "noverflow", "");
-		hmap_datatype.add(get_datatype_by_name("uint32", datatype_map), "hash0", "");
-		hmap_datatype.add(get_datatype_by_name("unsafe.Pointer", datatype_map), "buckets", "");
-		hmap_datatype.add(get_datatype_by_name("unsafe.Pointer", datatype_map), "oldbuckets", "");
-		hmap_datatype.add(get_datatype_by_name("uintptr", datatype_map), "nevacuate", "");
+		hmap_datatype.add(datatype_searcher.get_datatype_by_name("int"), "count", "");
+		hmap_datatype.add(datatype_searcher.get_datatype_by_name("uint8"), "flags", "");
+		hmap_datatype.add(datatype_searcher.get_datatype_by_name("uint8"), "B", "");
+		hmap_datatype.add(datatype_searcher.get_datatype_by_name("uint16"), "noverflow", "");
+		hmap_datatype.add(datatype_searcher.get_datatype_by_name("uint32"), "hash0", "");
+		hmap_datatype.add(datatype_searcher.get_datatype_by_name("unsafe.Pointer"), "buckets", "");
+		hmap_datatype.add(datatype_searcher.get_datatype_by_name("unsafe.Pointer"), "oldbuckets", "");
+		hmap_datatype.add(datatype_searcher.get_datatype_by_name("uintptr"), "nevacuate", "");
 		hmap_datatype.add(new PointerDataType(new VoidDataType(), pointer_size), "extra", "");
 		return hmap_datatype;
 	}

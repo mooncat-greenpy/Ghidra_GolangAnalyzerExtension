@@ -1,25 +1,12 @@
 package golanganalyzerextension;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import ghidra.program.model.address.Address;
-import ghidra.program.model.data.BooleanDataType;
-import ghidra.program.model.data.ByteDataType;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.DataTypeConflictException;
-import ghidra.program.model.data.IntegerDataType;
-import ghidra.program.model.data.LongLongDataType;
-import ghidra.program.model.data.PointerDataType;
-import ghidra.program.model.data.ShortDataType;
-import ghidra.program.model.data.SignedByteDataType;
-import ghidra.program.model.data.StructureDataType;
-import ghidra.program.model.data.UnsignedCharDataType;
-import ghidra.program.model.data.UnsignedIntegerDataType;
-import ghidra.program.model.data.UnsignedLongLongDataType;
-import ghidra.program.model.data.UnsignedShortDataType;
 import ghidra.program.model.data.VoidDataType;
 import ghidra.program.model.util.CodeUnitInsertionException;
 import golanganalyzerextension.StructureManager.Tflag;
@@ -38,6 +25,7 @@ class GolangDatatype {
 	static Map<String, DataType> hardcode_datatype_map=null;
 
 	GolangBinary go_bin=null;
+	boolean is_go16=false;
 	Address type_base_addr=null;
 	Address addr=null;
 	long key=0;
@@ -59,77 +47,12 @@ class GolangDatatype {
 	String name="";
 	long ptr_to_this_off=0;
 
-	private boolean init_basic_golang_hardcode_datatype() {
-		hardcode_datatype_map=new HashMap<String, DataType>();
-
-		// reflect/type.go
-		StructureDataType _type_datatype=new StructureDataType("hardcord._type", 0);
-		_type_datatype.setPackingEnabled(true);
-		_type_datatype.setExplicitMinimumAlignment(pointer_size);
-		_type_datatype.add(new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()), "size", "");
-		_type_datatype.add(new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()), "ptrdata", "");
-		_type_datatype.add(new UnsignedIntegerDataType(), "hash", "");
-		_type_datatype.add(new UnsignedCharDataType(), "tflag", "");
-		_type_datatype.add(new UnsignedCharDataType(), "align", "");
-		_type_datatype.add(new UnsignedCharDataType(), "fieldAlign", "");
-		_type_datatype.add(new UnsignedCharDataType(), "kind", "");
-		_type_datatype.add(new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()), "equal", "");
-		_type_datatype.add(new PointerDataType(new UnsignedCharDataType(), go_bin.get_pointer_size()), "gcdata", "");
-		_type_datatype.add(new UnsignedIntegerDataType(), "str", "");
-		_type_datatype.add(new UnsignedIntegerDataType(), "ptrToThis", "");
-		hardcode_datatype_map.put("runtime._type", _type_datatype);
-
-		// runtime/chan.go
-		StructureDataType waitq_datatype=new StructureDataType("hardcord.waitq", 0);
-		waitq_datatype.setPackingEnabled(true);
-		waitq_datatype.setExplicitMinimumAlignment(pointer_size);
-		waitq_datatype.add(new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()), "first", "");
-		waitq_datatype.add(new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()), "last", "");
-		hardcode_datatype_map.put("runtime.waitq", waitq_datatype);
-
-		// runtime/runtime2.go
-		StructureDataType mutex_datatype=new StructureDataType("hardcode.mutex", 0);
-		mutex_datatype.setPackingEnabled(true);
-		mutex_datatype.setExplicitMinimumAlignment(pointer_size);
-		// lockRankStruct
-		mutex_datatype.add(new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()), "key", "");
-		hardcode_datatype_map.put("runtime.mutex", mutex_datatype);
-
-
-		hardcode_datatype_map.put("bool", new BooleanDataType());
-		if(pointer_size==8) {
-			hardcode_datatype_map.put("int", new LongLongDataType());
-		}else {
-			hardcode_datatype_map.put("int", new IntegerDataType());
-		}
-		hardcode_datatype_map.put("int8", new SignedByteDataType());
-		hardcode_datatype_map.put("int16", new ShortDataType());
-		hardcode_datatype_map.put("int32", new IntegerDataType());
-		hardcode_datatype_map.put("int64", new LongLongDataType());
-		if(pointer_size==8) {
-			hardcode_datatype_map.put("uint", new UnsignedLongLongDataType());
-		}else {
-			hardcode_datatype_map.put("uint", new UnsignedIntegerDataType());
-		}
-		hardcode_datatype_map.put("uint8", new ByteDataType());
-		hardcode_datatype_map.put("uint16", new UnsignedShortDataType());
-		hardcode_datatype_map.put("uint32", new UnsignedIntegerDataType());
-		hardcode_datatype_map.put("uint64", new UnsignedLongLongDataType());
-		if(pointer_size==8) {
-			hardcode_datatype_map.put("uintptr", new UnsignedLongLongDataType());
-		}else {
-			hardcode_datatype_map.put("uintptr", new UnsignedIntegerDataType());
-		}
-		hardcode_datatype_map.put("unsafe.Pointer", new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()));
-
-		return true;
-	}
-
-	GolangDatatype(GolangBinary go_bin, Address type_base_addr, long offset, boolean is_go16, boolean fix_label) {
+	GolangDatatype(GolangBinary go_bin, Address type_base_addr, long offset, boolean is_go16) {
 		this.crashed=true;
 		kind=Kind.Invalid;
 
 		this.go_bin=go_bin;
+		this.is_go16=is_go16;
 		this.type_base_addr=type_base_addr;
 		this.addr=go_bin.get_address(type_base_addr, offset);
 		this.key=offset;
@@ -137,16 +60,8 @@ class GolangDatatype {
 		this.ext_base_addr=go_bin.get_address(this.addr, this.pointer_size*4+16);
 		this.dependence_type_key_list=new ArrayList<Long>();
 
-		if(hardcode_datatype_map==null) {
-			init_basic_golang_hardcode_datatype();
-		}
-
-		if (!parse_basic_info(offset, is_go16)) {
+		if (!parse_basic_info(offset)) {
 			return;
-		}
-
-		if(fix_label) {
-			create_type_label_and_struct();
 		}
 
 		this.crashed=false;
@@ -160,35 +75,18 @@ class GolangDatatype {
 		return name;
 	}
 
-	public DataType get_datatype(Map<Long, GolangDatatype> datatype_map) {
+	public DataType get_datatype(DatatypeSearcher datatype_searcher) {
 		return new VoidDataType();
 	}
 
-	public DataType get_datatype(Map<Long, GolangDatatype> datatype_map, boolean once) {
-		return get_datatype(datatype_map);
+	public DataType get_datatype(DatatypeSearcher datatype_searcher, boolean once) {
+		return get_datatype(datatype_searcher);
 	}
 
-	protected DataType get_datatype_by_name(String datatype_name, Map<Long, GolangDatatype> datatype_map) {
-		for(Map.Entry<Long, GolangDatatype> entry : datatype_map.entrySet()) {
-			GolangDatatype tmp_go_datatype=entry.getValue();
-			if(!tmp_go_datatype.get_name().equals(datatype_name)) {
-				continue;
-			}
-			DataType tmp_datatype=entry.getValue().get_datatype(datatype_map);
-			if(tmp_datatype.getLength()>0) {
-				return tmp_datatype;
-			}
-		}
-		if(hardcode_datatype_map.containsKey(datatype_name)) {
-			return hardcode_datatype_map.get(datatype_name);
-		}
-		return new VoidDataType();
-	}
-
-	private void create_type_label_and_struct() {
+	void modify(DatatypeSearcher datatype_searcher) {
 		go_bin.create_label(addr, String.format("datatype.%s.%s", get_kind().name(), get_name()));
 		try {
-			go_bin.create_data(addr, get_datatype_by_name("runtime._type", new HashMap<Long, GolangDatatype>()));
+			go_bin.create_data(addr, datatype_searcher.get_datatype_by_name("runtime._type"));
 			go_bin.set_comment(go_bin.get_address(addr, go_bin.get_pointer_size()*2+4+1*3), ghidra.program.model.listing.CodeUnit.EOL_COMMENT, get_kind().name());
 			go_bin.set_comment(go_bin.get_address(addr, go_bin.get_pointer_size()*4+4+1*4), ghidra.program.model.listing.CodeUnit.EOL_COMMENT, get_name());
 			if(ptr_to_this_off!=0) {
@@ -236,7 +134,7 @@ class GolangDatatype {
 		return false;
 	}
 
-	private boolean parse_basic_info(long offset, boolean is_go16) {
+	private boolean parse_basic_info(long offset) {
 		// runtime/type.go, reflect/type.go
 		size=go_bin.get_address_value(type_base_addr, offset, pointer_size);
 		ptrdata=go_bin.get_address_value(type_base_addr, offset+pointer_size, pointer_size);

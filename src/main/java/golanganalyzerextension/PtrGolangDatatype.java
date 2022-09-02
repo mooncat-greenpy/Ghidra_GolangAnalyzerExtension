@@ -1,7 +1,5 @@
 package golanganalyzerextension;
 
-import java.util.Map;
-
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.PointerDataType;
@@ -11,22 +9,21 @@ import ghidra.program.model.data.VoidDataType;
 class PtrGolangDatatype extends GolangDatatype {
 	long elem_type_key=0;
 
-	PtrGolangDatatype(GolangBinary go_bin, Address type_base_addr, long offset, boolean is_go16, boolean fix_label) {
-		super(go_bin, type_base_addr, offset, is_go16, fix_label);
+	PtrGolangDatatype(GolangBinary go_bin, Address type_base_addr, long offset, boolean is_go16) {
+		super(go_bin, type_base_addr, offset, is_go16);
 	}
 
-	public DataType get_datatype(Map<Long, GolangDatatype> datatype_map) {
+	@Override
+	public DataType get_datatype(DatatypeSearcher datatype_searcher) {
 		return new PointerDataType(new VoidDataType(), go_bin.get_pointer_size());
 	}
 
-	public DataType get_datatype(Map<Long, GolangDatatype> datatype_map, boolean once) {
+	@Override
+	public DataType get_datatype(DatatypeSearcher datatype_searcher, boolean once) {
 		if(!once) {
 			return new PointerDataType(new VoidDataType(), go_bin.get_pointer_size());
 		}
-		DataType inner_datatype=null;
-		if(datatype_map.containsKey(elem_type_key)) {
-			inner_datatype=datatype_map.get(elem_type_key).get_datatype(datatype_map);
-		}
+		DataType inner_datatype=datatype_searcher.get_datatype_by_key(elem_type_key);
 		if(inner_datatype==null || inner_datatype.getLength()<=0) {
 			inner_datatype=new VoidDataType();
 		}
