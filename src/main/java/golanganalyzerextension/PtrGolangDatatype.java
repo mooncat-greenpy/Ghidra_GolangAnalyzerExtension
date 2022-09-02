@@ -24,7 +24,7 @@ class PtrGolangDatatype extends GolangDatatype {
 			return new PointerDataType(new VoidDataType(), go_bin.get_pointer_size());
 		}
 		DataType inner_datatype=datatype_searcher.get_datatype_by_key(elem_type_key);
-		if(inner_datatype==null || inner_datatype.getLength()<=0) {
+		if(inner_datatype==null) {
 			inner_datatype=new VoidDataType();
 		}
 		DataType ptr_datatype=new PointerDataType(inner_datatype, go_bin.get_pointer_size());

@@ -3,7 +3,7 @@ package golanganalyzerextension;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.ArrayDataType;
 import ghidra.program.model.data.DataType;
-import ghidra.program.model.data.UnsignedCharDataType;
+import ghidra.program.model.data.StructureDataType;
 import ghidra.program.model.data.VoidDataType;
 
 
@@ -30,8 +30,9 @@ class ArrayGolangDatatype extends GolangDatatype {
 		if(once) {
 			inner_datatype=datatype_searcher.get_datatype_by_key(elem_type_key);
 		}
-		if(inner_datatype==null || inner_datatype.getLength()<=0) {
-			inner_datatype=new UnsignedCharDataType();
+		if(inner_datatype==null) {
+			String[] name_split=name.split("]");
+			inner_datatype=new StructureDataType(name_split[name_split.length-1]+"_data", (int)size/len);
 		}
 		ArrayDataType array_datatype=new ArrayDataType(inner_datatype, len, inner_datatype.getLength());
 		return array_datatype;

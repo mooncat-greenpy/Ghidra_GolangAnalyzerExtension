@@ -5,9 +5,7 @@ import java.util.List;
 
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.DataType;
-import ghidra.program.model.data.PointerDataType;
 import ghidra.program.model.data.StructureDataType;
-import ghidra.program.model.data.VoidDataType;
 
 
 class StructField {
@@ -18,7 +16,7 @@ class StructField {
 	StructField(String name, long type_key, int offset){
 		this.name=name;
 		this.type_key=type_key;
-		this.offset=offset;
+		this.offset=offset>>1;
 	}
 }
 
@@ -32,17 +30,15 @@ class StructGolangDatatype extends GolangDatatype {
 
 	@Override
 	public DataType get_datatype(DatatypeSearcher datatype_searcher) {
-		StructureDataType structure_datatype=new StructureDataType(name, (int)size);
-		structure_datatype.setPackingEnabled(true);
-		structure_datatype.setExplicitMinimumAlignment(field_align);
+		StructureDataType structure_datatype=new StructureDataType(name, 0);
 		for(StructField field : field_list) {
 			DataType field_datatype=datatype_searcher.get_datatype_by_key(field.type_key);
-			if(field_datatype==null) {
-				field_datatype=new PointerDataType(new VoidDataType(), go_bin.get_pointer_size());
-			}
-			if(field_datatype.getLength()>0){
+			if(field_datatype!=null){
 				structure_datatype.insertAtOffset(field.offset, field_datatype, field_datatype.getLength(), field.name, null);
 			}
+		}
+		for(int i=structure_datatype.getLength(); i<size; i++) {
+			structure_datatype.add(DataType.DEFAULT, 1);
 		}
 		return structure_datatype;
 	}

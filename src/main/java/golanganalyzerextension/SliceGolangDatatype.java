@@ -25,7 +25,7 @@ class SliceGolangDatatype extends GolangDatatype {
 		if(once) {
 			inner_datatype=datatype_searcher.get_datatype_by_key(elem_type_key);
 		}
-		if(inner_datatype==null || inner_datatype.getLength()<=0) {
+		if(inner_datatype==null) {
 			inner_datatype=new VoidDataType();
 		}
 
