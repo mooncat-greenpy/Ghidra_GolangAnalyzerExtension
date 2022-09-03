@@ -149,7 +149,7 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 	}
 
 	private JComponent create_tab_panel() {
-		function_model = new FunctionTableModel(tool, current_program, null);
+		function_model = new FunctionTableModel(tool, current_program, null, gae_plugin);
 		function_threaded_table_panel = new GhidraThreadedTablePanel<>(function_model, 1000) {
 			@Override
 			protected GTable createTable(ThreadedTableModel<GolangFunction, ?> model) {
