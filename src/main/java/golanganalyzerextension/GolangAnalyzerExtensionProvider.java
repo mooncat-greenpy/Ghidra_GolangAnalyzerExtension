@@ -84,29 +84,37 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 		panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
 		GolangBinary go_bin=gae_plugin.get_binary();
+
+		String name="Not Analyzed";
+		String go_version="";
+		int pointer_size=0;
+		if(go_bin!=null) {
+			name=go_bin.get_name();
+			go_version=go_bin.get_go_version();
+			pointer_size=go_bin.get_pointer_size();
+		}
 		int func_list_size=gae_plugin.get_function_list().size();
 		int filename_list_size=gae_plugin.get_filename_list().size();
 		int datatype_map_size=gae_plugin.get_datatype_map().size();
-		if(go_bin!=null) {
-			JLabel name_panel=new JLabel(String.format("Name: %s", go_bin.get_name()));
-			name_panel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
-			panel.add(name_panel);
-			JLabel go_version_panel=new JLabel(String.format("Go version: %s", go_bin.get_go_version()));
-			go_version_panel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
-			panel.add(go_version_panel);
-			JLabel pointer_size_panel=new JLabel(String.format("Pointer size: %d", go_bin.get_pointer_size()));
-			pointer_size_panel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
-			panel.add(pointer_size_panel);
-			JLabel func_num_panel=new JLabel(String.format("Number of functions: %d", func_list_size));
-			func_num_panel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
-			panel.add(func_num_panel);
-			JLabel filename_num_panel=new JLabel(String.format("Number of filenames: %d", filename_list_size));
-			filename_num_panel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
-			panel.add(filename_num_panel);
-			JLabel datatype_num_panel=new JLabel(String.format("Number of datatyeps: %d", datatype_map_size));
-			datatype_num_panel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
-			panel.add(datatype_num_panel);
-		}
+
+		JLabel name_panel=new JLabel(String.format("Name: %s", name));
+		name_panel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
+		panel.add(name_panel);
+		JLabel go_version_panel=new JLabel(String.format("Go version: %s", go_version));
+		go_version_panel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
+		panel.add(go_version_panel);
+		JLabel pointer_size_panel=new JLabel(String.format("Pointer size: %d", pointer_size));
+		pointer_size_panel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
+		panel.add(pointer_size_panel);
+		JLabel func_num_panel=new JLabel(String.format("Number of functions: %d", func_list_size));
+		func_num_panel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
+		panel.add(func_num_panel);
+		JLabel filename_num_panel=new JLabel(String.format("Number of filenames: %d", filename_list_size));
+		filename_num_panel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
+		panel.add(filename_num_panel);
+		JLabel datatype_num_panel=new JLabel(String.format("Number of datatyeps: %d", datatype_map_size));
+		datatype_num_panel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
+		panel.add(datatype_num_panel);
 
 		refresh_button = new JButton(Icons.REFRESH_ICON);
 		refresh_button.setText("Refresh");
