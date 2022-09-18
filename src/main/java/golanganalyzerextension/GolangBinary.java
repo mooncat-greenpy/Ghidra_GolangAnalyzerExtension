@@ -60,8 +60,7 @@ public class GolangBinary {
 	private int quantum=0;
 	private int pointer_size=0;
 
-	private String go_version="";
-	private String go_version_mod="";
+	private GolangBuildInfo go_build_info;
 
 	public GolangBinary(Program program, TaskMonitor monitor) {
 		this.program=program;
@@ -69,9 +68,8 @@ public class GolangBinary {
 		this.program_listing=program.getListing();
 		this.memory=program.getMemory();
 
-		if(!init_go_version()) {
-			Logger.append_message("Failed to init go version");
-		}
+		go_build_info=new GolangBuildInfo(this);
+
 		if(!init_gopclntab()) {
 			Logger.append_message("Failed to init gopclntab");
 			return;
@@ -90,8 +88,7 @@ public class GolangBinary {
 		this.magic=obj.magic;
 		this.quantum=obj.quantum;
 		this.pointer_size=obj.pointer_size;
-		this.go_version=obj.go_version;
-		this.go_version_mod=obj.go_version_mod;
+		this.go_build_info=obj.go_build_info;
 
 		this.ok=true;
 	}
@@ -488,145 +485,11 @@ public class GolangBinary {
 		return true;
 	}
 
-	private boolean init_go_version()
-	{
-		go_version="";
-		// cmd/go/internal/version/version.go
-		// "\xff Go buildinf:"
-		byte build_info_magic[]= {(byte)0xff,(byte)0x20,(byte)0x47,(byte)0x6f,(byte)0x20,(byte)0x62,(byte)0x75,(byte)0x69,(byte)0x6c,(byte)0x64,(byte)0x69,(byte)0x6e,(byte)0x66,(byte)0x3a};
-		Address base_addr=null;
-		base_addr=memory.findBytes(base_addr, build_info_magic, new byte[] {(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff}, true, monitor);
-		if(base_addr==null) {
-			Logger.append_message("Failed to find \"\\xff Go buildinf:\"");
-			return false;
-		}
-
-		byte size=(byte)get_address_value(base_addr, 14, 1);
-		byte endian=(byte)get_address_value(base_addr, 15, 1);
-		if((endian&2)!=0) {
-			byte str_size=(byte)get_address_value(base_addr, 32, 1);
-			go_version=read_string(get_address(base_addr, 33), str_size);
-			return true;
-		}
-		boolean is_big_endian=endian!=0;
-		if(is_big_endian) {
-			Logger.append_message("Go version is big endian");
-			return false;
-		}
-
-		go_version=read_string_struct(get_address_value(base_addr, 16, size), size);
-		if(go_version==null)
-		{
-			go_version="";
-			return false;
-		}
-
-		go_version_mod=read_string_struct(get_address_value(base_addr, 16+size, size), size);
-		if(go_version_mod==null) {
-			go_version_mod="";
-		}
-		else if(go_version_mod.length()>=33 && go_version_mod.charAt(go_version_mod.length()-17)=='\n')
-		{
-			go_version_mod=go_version_mod.substring(16, go_version_mod.length()-16);
-		}
-		else {
-			go_version_mod="";
-		}
-		return true;
-	}
-
 	public String get_go_version() {
-		return go_version;
+		return go_build_info.get_go_version();
 	}
 
 	public int compare_go_version(String cmp_go_version) {
-		String cmp1=cmp_go_version.substring(2);
-		String cmp2=go_version.length()>2?go_version.substring(2):"0.0.0";
-		String[] sp_cmp1=cmp1.split("\\.");
-		String[] sp_cmp2=cmp2.split("\\.");
-
-		int cmp1_major=0;
-		int cmp2_major=0;
-		if(sp_cmp1.length!=0) {
-			cmp1_major=Integer.valueOf(sp_cmp1[0]);
-		}
-		if(sp_cmp2.length!=0) {
-			cmp2_major=Integer.valueOf(sp_cmp2[0]);
-		}
-		if(cmp1_major>cmp2_major) {
-			return 1;
-		}else if(cmp1_major<cmp2_major) {
-			return -1;
-		}
-
-		int cmp1_minor=0;
-		int cmp1_patch=0;
-		boolean cmp1_beta=false;
-		boolean cmp1_rc=false;
-		if(sp_cmp1.length>1 && sp_cmp1[1].contains("beta")) {
-			cmp1_beta=true;
-			String[] tmp=sp_cmp1[1].split("beta");
-			if(tmp.length>1) {
-				cmp1_minor=Integer.valueOf(tmp[0]);
-				cmp1_patch=Integer.valueOf(tmp[1]);
-			}
-		}else if(sp_cmp1.length>1 && sp_cmp1[1].contains("rc")) {
-			cmp1_rc=true;
-			String[] tmp=sp_cmp1[1].split("rc");
-			if(tmp.length>1) {
-				cmp1_minor=Integer.valueOf(tmp[0]);
-				cmp1_patch=Integer.valueOf(tmp[1]);
-			}
-		}else if(sp_cmp1.length>1) {
-			cmp1_minor=Integer.valueOf(sp_cmp1[1]);
-			if(sp_cmp1.length>2) {
-				cmp1_patch=Integer.valueOf(sp_cmp1[2]);
-			}
-		}
-		int cmp2_minor=0;
-		int cmp2_patch=0;
-		boolean cmp2_beta=false;
-		boolean cmp2_rc=false;
-		if(sp_cmp2.length>1 && sp_cmp2[1].contains("beta")) {
-			cmp2_beta=true;
-			String[] tmp=sp_cmp2[1].split("beta");
-			if(tmp.length>1) {
-				cmp2_minor=Integer.valueOf(tmp[0]);
-				cmp2_patch=Integer.valueOf(tmp[1]);
-			}
-		}else if(sp_cmp2.length>1 && sp_cmp2[1].contains("rc")) {
-			cmp2_rc=true;
-			String[] tmp=sp_cmp2[1].split("rc");
-			if(tmp.length>1) {
-				cmp2_minor=Integer.valueOf(tmp[0]);
-				cmp2_patch=Integer.valueOf(tmp[1]);
-			}
-		}else if(sp_cmp2.length>1) {
-			cmp2_minor=Integer.valueOf(sp_cmp2[1]);
-			if(sp_cmp2.length>2) {
-				cmp2_patch=Integer.valueOf(sp_cmp2[2]);
-			}
-		}
-		if(cmp1_minor>cmp2_minor) {
-			return 1;
-		}else if(cmp1_minor<cmp2_minor) {
-			return -1;
-		}
-		if(!cmp1_beta && cmp2_beta) {
-			return 1;
-		}else if(cmp1_beta && !cmp2_beta) {
-			return -1;
-		}
-		if(!cmp1_rc && cmp2_rc) {
-			return 1;
-		}else if(cmp1_rc && !cmp2_rc) {
-			return -1;
-		}
-		if(cmp1_patch>cmp2_patch) {
-			return 1;
-		}else if(cmp1_patch<cmp2_patch) {
-			return -1;
-		}
-		return 0;
+		return go_build_info.compare_go_version(cmp_go_version);
 	}
 }
