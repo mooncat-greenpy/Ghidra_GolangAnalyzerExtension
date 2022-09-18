@@ -10,8 +10,13 @@ public class UncommonType {
 	public UncommonType(GolangBinary go_bin, Address base_addr, Address type_base_addr, boolean is_go16) {
 		this.go_bin=go_bin;
 
-		long pkg_path_offset=go_bin.get_address_value(base_addr, 0, 4);
-		pkg_path=get_type_string(type_base_addr.add(pkg_path_offset));			
+		if(is_go16) {
+			long pkgpath_addr_value=go_bin.get_address_value(base_addr, go_bin.get_pointer_size(), go_bin.get_pointer_size());
+			pkg_path=go_bin.read_string_struct(go_bin.get_address(pkgpath_addr_value), go_bin.get_pointer_size());
+		} else {
+			long pkg_path_offset=go_bin.get_address_value(base_addr, 0, 4);
+			pkg_path=get_type_string(type_base_addr.add(pkg_path_offset));
+		}
 	}
 
 	private String get_type_string(Address address) {

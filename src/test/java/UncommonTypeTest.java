@@ -1,5 +1,6 @@
 import static org.junit.Assert.assertEquals;
 
+import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -28,9 +29,12 @@ public class UncommonTypeTest extends AbstractGhidraHeadlessIntegrationTest {
 
 	@ParameterizedTest
 	@MethodSource("test_get_pkg_path_params")
-	public void test_get_pkg_path(String expected, boolean is_go16, Map<String, String> bytes_map) throws Exception {
+	public void test_get_pkg_path(String expected, int pointer_size, boolean is_go16, Map<String, String> bytes_map) throws Exception {
 		initialize(bytes_map);
 		GolangBinary go_bin=new GolangBinary(program, TaskMonitor.DUMMY);
+		Field field=GolangBinary.class.getDeclaredField("pointer_size");
+		field.setAccessible(true);
+		field.set(go_bin, pointer_size);
 
 		UncommonType go_uncommon_type=new UncommonType(go_bin, go_bin.get_address(0x004a94b0), go_bin.get_address(0x00492000), is_go16);
 
@@ -39,11 +43,15 @@ public class UncommonTypeTest extends AbstractGhidraHeadlessIntegrationTest {
 
 	static Stream<Arguments> test_get_pkg_path_params() throws Throwable {
 		return Stream.of(
-				Arguments.of("reflect", false, new HashMap<String, String>(){{
+				Arguments.of("reflect", 4, false, new HashMap<String, String>(){{
 					put("0x004a94b0", "3a110000 0700 0000 1c000000 00000000f8294900a0a3490000000000");
 					put("0x0049313a", "0000077265666c656374");
 				}}),
-				Arguments.of("reflect", false, new HashMap<String, String>(){{
+				Arguments.of("reflect", 8, false, new HashMap<String, String>(){{
+					put("0x004a94b0", "3a110000 0700 0000 1c000000 00000000f8294900a0a3490000000000");
+					put("0x0049313a", "0000077265666c656374");
+				}}),
+				Arguments.of("reflect", 8, false, new HashMap<String, String>(){{
 					put("0x004a94b0", "3a110000 0700 0000 1c000000 00000000f8294900a0a3490000000000");
 					put("0x0049313a", "00077265666c656374");
 					// go version 1.17
@@ -51,6 +59,16 @@ public class UncommonTypeTest extends AbstractGhidraHeadlessIntegrationTest {
 					put("0x537278", "d5f64a0000000000 0600000000000000");
 					put("0x4af6d5", "676f312e3137");
 
+				}}),
+				Arguments.of("reflect", 4, true, new HashMap<String, String>(){{
+					put("0x004a94b0", "00000000 90725300 cc944a00 07000000 07000000");
+					put("0x00537290", "3a314900 07000000");
+					put("0x0049313a", "7265666c656374");
+				}}),
+				Arguments.of("reflect", 8, true, new HashMap<String, String>(){{
+					put("0x004a94b0", "0000000000000000 9072530000000000 cc944a0000000000 0700000000000000 0700000000000000");
+					put("0x00537290", "3a31490000000000 0700000000000000");
+					put("0x0049313a", "7265666c656374");
 				}})
 			);
 	}
