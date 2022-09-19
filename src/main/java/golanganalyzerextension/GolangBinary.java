@@ -2,6 +2,7 @@ package golanganalyzerextension;
 
 
 import java.math.BigInteger;
+import java.util.Optional;
 
 import ghidra.app.cmd.function.CreateFunctionCmd;
 import ghidra.program.disassemble.Disassembler;
@@ -379,6 +380,31 @@ public class GolangBinary {
 
 	public void set_comment(Address addr, int type, String comment) {
 		program.getListing().setComment(addr, type, comment);
+	}
+
+	public Optional<Address> get_text_base() {
+		MemoryBlock text_section=null;
+		MemoryBlock func_section=null;
+		Address first_func_addr=null;
+		FunctionIterator func_iter=program.getFunctionManager().getFunctions(true);
+		if(func_iter.hasNext()) {
+			first_func_addr=func_iter.next().getEntryPoint();
+		}
+		for (MemoryBlock mb : memory.getBlocks()) {
+			if(mb.getName().equals(".text")) {
+				text_section=mb;
+			}
+			if(first_func_addr!=null && mb.getStart().getOffset()<=first_func_addr.getOffset() && first_func_addr.getOffset()<mb.getEnd().getOffset()) {
+				func_section=mb;
+			}
+		}
+		if(text_section!=null) {
+			return Optional.ofNullable(text_section.getStart());
+		}
+		if(func_section!=null) {
+			return Optional.ofNullable(func_section.getStart());
+		}
+		return Optional.empty();
 	}
 
 	public Address get_gopclntab_base() {
