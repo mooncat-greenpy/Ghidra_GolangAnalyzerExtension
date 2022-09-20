@@ -4,6 +4,7 @@ import ghidra.program.model.address.Address;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.PointerDataType;
 import ghidra.program.model.data.VoidDataType;
+import golanganalyzerextension.StructureManager.Tflag;
 
 
 class PtrGolangDatatype extends GolangDatatype {
@@ -37,6 +38,10 @@ class PtrGolangDatatype extends GolangDatatype {
 		elem_type_key=elem_addr_value-type_base_addr.getOffset();
 		if(elem_type_key>0) {
 			dependence_type_key_list.add(elem_type_key);
+		}
+
+		if(check_tflag(tflag, Tflag.Uncommon)) {
+			uncommon_base_addr=go_bin.get_address(ext_base_addr, pointer_size);
 		}
 	}
 }

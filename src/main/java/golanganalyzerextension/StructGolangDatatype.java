@@ -6,6 +6,7 @@ import java.util.List;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.StructureDataType;
+import golanganalyzerextension.StructureManager.Tflag;
 
 
 class StructField {
@@ -63,6 +64,10 @@ class StructGolangDatatype extends GolangDatatype {
 			String field_name=get_type_string(go_bin.get_address(type_base_addr, field_name_addr_value-type_base_addr.getOffset()), 0);
 			dependence_type_key_list.add(field_type_key);
 			field_list.add(new StructField(field_name, field_type_key, (int)offset_embed));
+		}
+
+		if(check_tflag(tflag, Tflag.Uncommon)) {
+			uncommon_base_addr=go_bin.get_address(ext_base_addr, pointer_size*4);
 		}
 	}
 }

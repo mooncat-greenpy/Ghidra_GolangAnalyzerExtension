@@ -5,6 +5,7 @@ import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.PointerDataType;
 import ghidra.program.model.data.StructureDataType;
 import ghidra.program.model.data.VoidDataType;
+import golanganalyzerextension.StructureManager.Tflag;
 
 
 class MapGolangDatatype extends GolangDatatype {
@@ -56,6 +57,10 @@ class MapGolangDatatype extends GolangDatatype {
 		}
 		if(elem_type_key>0) {
 			dependence_type_key_list.add(elem_type_key);
+		}
+
+		if(check_tflag(tflag, Tflag.Uncommon)) {
+			uncommon_base_addr=go_bin.get_address(ext_base_addr, pointer_size*4+1*2+2+4);
 		}
     }
 }

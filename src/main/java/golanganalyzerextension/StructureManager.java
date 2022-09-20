@@ -299,7 +299,7 @@ public class StructureManager {
 		}else if(go_datatype.kind==Kind.UnsafePointer) {
 			go_datatype=new OtherGolangDatatype(go_bin, type_base_addr, offset, is_go16, new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()));
 		}
-		go_datatype.parse_datatype();
+		go_datatype.parse();
 		for(long dependence_type_key : go_datatype.dependence_type_key_list) {
 			analyze_type(type_base_addr, dependence_type_key);
 		}

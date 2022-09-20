@@ -178,7 +178,7 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 		filename_table.installNavigation(go_to_service, go_to_service.getDefaultNavigatable());
 		filename_filter_panel = new GhidraTableFilterPanel<>(filename_table, filename_model);
 
-		datatype_model = new DatatypeTableModel(tool, current_program, null);
+		datatype_model = new DatatypeTableModel(tool, current_program, null, gae_plugin);
 		datatype_threaded_table_panel = new GhidraThreadedTablePanel<>(datatype_model, 1000) {
 			@Override
 			protected GTable createTable(ThreadedTableModel<GolangDatatype, ?> model) {

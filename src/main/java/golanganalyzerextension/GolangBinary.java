@@ -156,6 +156,10 @@ public class GolangBinary {
 		return 0;
 	}
 
+	public long get_address_value(long addr_value, int size) {
+		return get_address_value(get_address(addr_value), size);
+	}
+
 	public long get_address_value(Address addr, long offset, int size) {
 		if(addr==null) {
 			return 0;

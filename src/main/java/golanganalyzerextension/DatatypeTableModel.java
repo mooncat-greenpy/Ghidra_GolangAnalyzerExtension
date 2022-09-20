@@ -18,11 +18,14 @@ import ghidra.util.task.TaskMonitor;
 
 public class DatatypeTableModel extends AddressBasedTableModel<GolangDatatype> {
 	PluginTool plugin_tool;
+	GolangAnalyzerExtensionPlugin gae_plugin;
+	DatatypeDetailProvider datatype_detail_provider;
 
-	DatatypeTableModel(PluginTool tool, Program program, TaskMonitor monitor) {
+	DatatypeTableModel(PluginTool tool, Program program, TaskMonitor monitor, GolangAnalyzerExtensionPlugin gae_plugin) {
 		super("Datatypes Table", tool, program, monitor, true);
 
 		plugin_tool=tool;
+		this.gae_plugin=gae_plugin;
 	}
 
 	@Override
@@ -41,6 +44,9 @@ public class DatatypeTableModel extends AddressBasedTableModel<GolangDatatype> {
 	@Override
 	public Address getAddress(int row) {
 		GolangDatatype go_datatype = getRowObject(row);
+		datatype_detail_provider=new DatatypeDetailProvider(gae_plugin, go_datatype);
+		datatype_detail_provider.getTool().showComponentProvider(datatype_detail_provider, true);
+		datatype_detail_provider.toFront();
 		return go_datatype.addr;
 	}
 

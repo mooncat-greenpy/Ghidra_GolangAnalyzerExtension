@@ -8,6 +8,7 @@ import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.PointerDataType;
 import ghidra.program.model.data.StructureDataType;
 import ghidra.program.model.data.VoidDataType;
+import golanganalyzerextension.StructureManager.Tflag;
 
 
 class InterfaceGolangDatatype extends GolangDatatype {
@@ -56,6 +57,10 @@ class InterfaceGolangDatatype extends GolangDatatype {
 			}
 			method_name_list.add(method_name);
 			method_type_key_list.add(method_type_offset);
+		}
+
+		if(check_tflag(tflag, Tflag.Uncommon)) {
+			uncommon_base_addr=go_bin.get_address(ext_base_addr, pointer_size*4);
 		}
 	}
 }

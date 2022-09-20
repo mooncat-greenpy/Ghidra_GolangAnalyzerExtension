@@ -3,6 +3,7 @@ package golanganalyzerextension;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.DataType;
@@ -47,6 +48,9 @@ class GolangDatatype {
 	String name="";
 	long ptr_to_this_off=0;
 
+	Address uncommon_base_addr=null;
+	Optional<UncommonType> uncommon_type_opt;
+
 	GolangDatatype(GolangBinary go_bin, Address type_base_addr, long offset, boolean is_go16) {
 		this.crashed=true;
 		kind=Kind.Invalid;
@@ -59,6 +63,8 @@ class GolangDatatype {
 		this.pointer_size=go_bin.get_pointer_size();
 		this.ext_base_addr=go_bin.get_address(this.addr, this.pointer_size*4+16);
 		this.dependence_type_key_list=new ArrayList<Long>();
+
+		uncommon_type_opt=Optional.empty();
 
 		if (!parse_basic_info(offset)) {
 			return;
@@ -75,6 +81,10 @@ class GolangDatatype {
 		return name;
 	}
 
+	public Optional<UncommonType> get_uncommon_type() {
+		return uncommon_type_opt;
+	}
+
 	public DataType get_datatype(DatatypeSearcher datatype_searcher) {
 		return new VoidDataType();
 	}
@@ -83,7 +93,7 @@ class GolangDatatype {
 		return get_datatype(datatype_searcher);
 	}
 
-	void modify(DatatypeSearcher datatype_searcher) {
+	public void modify(DatatypeSearcher datatype_searcher) {
 		go_bin.create_label(addr, String.format("datatype.%s.%s", get_kind().name(), get_name()));
 		try {
 			go_bin.create_data(addr, datatype_searcher.get_datatype_by_name("runtime._type"));
@@ -153,6 +163,9 @@ class GolangDatatype {
 				return false;
 			}
 			long x=go_bin.get_address_value(type_base_addr, offset+pointer_size*5+4+1*4, pointer_size);
+			if(x!=0) {
+				uncommon_base_addr=go_bin.get_address(x);
+			}
 			ptr_to_this_off=go_bin.get_address_value(type_base_addr, offset+pointer_size*6+4+1*4, pointer_size);
 			if(ptr_to_this_off!=0) {
 				ptr_to_this_off-=type_base_addr.getOffset();
@@ -183,5 +196,17 @@ class GolangDatatype {
 		return true;
 	}
 
+	public void parse() {
+		parse_datatype();
+		parse_uncommon();
+	}
+
 	protected void parse_datatype() {}
+
+	private void parse_uncommon() {
+		if(uncommon_base_addr==null) {
+			return;
+		}
+		uncommon_type_opt=Optional.ofNullable(new UncommonType(go_bin, uncommon_base_addr, type_base_addr, is_go16));
+	}
 }
