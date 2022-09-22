@@ -29,14 +29,13 @@ import ghidra.program.model.symbol.SourceType;
 public class GolangFunction {
 	GolangBinary go_bin=null;
 	GolangAnalyzerExtensionService service=null;
-
 	List<String> file_name_list=null;
+
 	boolean disasm_option=false;
 	boolean extended_option=false;
 
 	Address info_addr=null;
 	long func_size=0;
-	Map<Integer, Long> frame_map=null;
 
 	Address func_addr=null;
 	Function func=null;
@@ -44,18 +43,23 @@ public class GolangFunction {
 	int arg_size=0;
 	List<Parameter> params=null;
 	Map<Integer, String> file_line_comment_map=null;
+	Map<Integer, Long> frame_map=null;
 
 	boolean ok=false;
 
 	public GolangFunction(GolangBinary go_bin, GolangAnalyzerExtensionService service, Address func_info_addr, long func_size, boolean disasm_option, boolean extended_option) {
 		this.go_bin=go_bin;
 		this.service=service;
-
 		this.file_name_list=service.get_filename_list();
+
 		this.disasm_option=disasm_option;
 		this.extended_option=extended_option;
+
 		this.info_addr=func_info_addr;
 		this.func_size=func_size;
+
+		this.params=new ArrayList<>();
+		this.file_line_comment_map=new HashMap<>();
 		this.frame_map = new TreeMap<>();
 
 		if(!init_func()) {
@@ -65,13 +69,17 @@ public class GolangFunction {
 		this.ok=true;
 	}
 
-	public GolangFunction(GolangBinary go_bin, Function func, boolean disasm_option, boolean extended_option) {
+	public GolangFunction(GolangBinary go_bin, GolangAnalyzerExtensionService service, Function func, boolean disasm_option, boolean extended_option) {
 		this.go_bin=go_bin;
+		this.service=service;
+		this.file_name_list=new ArrayList<>();
+
 		this.disasm_option=disasm_option;
 		this.extended_option=extended_option;
 
 		this.func_addr=func.getEntryPoint();
 		this.func=func;
+		this.params=new ArrayList<>();
 		this.file_line_comment_map=new HashMap<>();
 		this.frame_map = new TreeMap<>();
 
@@ -451,6 +459,7 @@ public class GolangFunction {
 					if(file_name_addr==null) {
 						return null;
 					}
+					//Logger.append_message(String.format("%x %x %x %x", cutab_base.getOffset(), file_base.getOffset(), cu_offset, file_no));
 					String file_name=go_bin.create_string_data(file_name_addr);
 					service.add_filename(file_name);
 					return file_name;

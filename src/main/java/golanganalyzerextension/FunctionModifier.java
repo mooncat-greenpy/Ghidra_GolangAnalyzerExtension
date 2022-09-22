@@ -180,11 +180,11 @@ public class FunctionModifier{
 			}
 			GolangFunction gofunc=null;
 			if(go_bin.is_x86()) {
-				gofunc=new GolangFunctionX86(go_bin, func, disasm_option, extended_option);
+				gofunc=new GolangFunctionX86(go_bin, service, func, disasm_option, extended_option);
 			}else if(go_bin.is_arm()) {
-				gofunc=new GolangFunctionArm(go_bin, func, disasm_option, extended_option);
+				gofunc=new GolangFunctionArm(go_bin, service, func, disasm_option, extended_option);
 			}else {
-				gofunc=new GolangFunction(go_bin, func, disasm_option, extended_option);
+				gofunc=new GolangFunction(go_bin, service, func, disasm_option, extended_option);
 			}
 			if(gofunc.is_ok()) {
 				gofunc_list.add(gofunc);
