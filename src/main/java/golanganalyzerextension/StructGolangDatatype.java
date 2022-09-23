@@ -14,10 +14,14 @@ class StructField {
 	long type_key;
 	int offset;
 
-	StructField(String name, long type_key, int offset){
+	StructField(GolangBinary go_bin, String name, long type_key, int offset){
 		this.name=name;
 		this.type_key=type_key;
-		this.offset=offset>>1;
+		if(go_bin.compare_go_version("go1.19beta1")<=0) {
+			this.offset=offset;
+		} else {
+			this.offset=offset>>1;
+		}
 	}
 }
 
@@ -63,7 +67,7 @@ class StructGolangDatatype extends GolangDatatype {
 
 			String field_name=get_type_string(go_bin.get_address(type_base_addr, field_name_addr_value-type_base_addr.getOffset()), 0);
 			dependence_type_key_list.add(field_type_key);
-			field_list.add(new StructField(field_name, field_type_key, (int)offset_embed));
+			field_list.add(new StructField(go_bin, field_name, field_type_key, (int)offset_embed));
 		}
 
 		if(check_tflag(tflag, Tflag.Uncommon)) {
