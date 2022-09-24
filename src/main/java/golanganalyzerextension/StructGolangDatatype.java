@@ -6,6 +6,7 @@ import java.util.List;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.StructureDataType;
+import ghidra.program.model.data.VoidDataType;
 import golanganalyzerextension.StructureManager.Tflag;
 
 
@@ -38,7 +39,7 @@ class StructGolangDatatype extends GolangDatatype {
 		StructureDataType structure_datatype=new StructureDataType(name, 0);
 		for(StructField field : field_list) {
 			DataType field_datatype=datatype_searcher.get_datatype_by_key(field.type_key);
-			if(field_datatype!=null){
+			if(field_datatype!=null && !field_datatype.isZeroLength() && !(field_datatype instanceof VoidDataType)) {
 				structure_datatype.insertAtOffset(field.offset, field_datatype, field_datatype.getLength(), field.name, null);
 			}
 		}
