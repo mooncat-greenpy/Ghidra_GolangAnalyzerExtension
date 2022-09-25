@@ -27,6 +27,7 @@ public class GolangBuildInfo {
 	}
 
 	private Optional<Address> get_build_info_addr() {
+		// ver > go1.12.*
 		// cmd/go/internal/version/version.go
 		// "\xff Go buildinf:"
 		byte build_info_magic[]={(byte)0xff,(byte)0x20,(byte)0x47,(byte)0x6f,(byte)0x20,(byte)0x62,(byte)0x75,(byte)0x69,(byte)0x6c,(byte)0x64,(byte)0x69,(byte)0x6e,(byte)0x66,(byte)0x3a};

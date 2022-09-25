@@ -18,7 +18,7 @@ class StructField {
 	StructField(GolangBinary go_bin, String name, long type_key, int offset){
 		this.name=name;
 		this.type_key=type_key;
-		if(go_bin.compare_go_version("go1.19beta1")<=0) {
+		if(go_bin.compare_go_version("go1.19beta1")<=0/* || go_bin.compare_go_version("go1.9beta1")>0*/) {
 			this.offset=offset;
 		} else {
 			this.offset=offset>>1;
@@ -37,10 +37,19 @@ class StructGolangDatatype extends GolangDatatype {
 	@Override
 	public DataType get_datatype(DatatypeSearcher datatype_searcher) {
 		StructureDataType structure_datatype=new StructureDataType(name, 0);
+
+		// ver <= go1.8.*
+		int pre_field_end=0;
+
 		for(StructField field : field_list) {
 			DataType field_datatype=datatype_searcher.get_datatype_by_key(field.type_key);
 			if(field_datatype!=null && !field_datatype.isZeroLength() && !(field_datatype instanceof VoidDataType)) {
-				structure_datatype.insertAtOffset(field.offset, field_datatype, field_datatype.getLength(), field.name, null);
+				int offset=field.offset;
+				if(offset<pre_field_end) {
+					offset<<=1;
+				}
+				structure_datatype.insertAtOffset(offset, field_datatype, field_datatype.getLength(), field.name, null);
+				pre_field_end=offset+field_datatype.getLength();
 			}
 		}
 		for(int i=structure_datatype.getLength(); i<size; i++) {

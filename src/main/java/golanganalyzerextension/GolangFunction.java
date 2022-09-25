@@ -459,7 +459,7 @@ public class GolangFunction {
 					if(file_name_addr==null) {
 						return null;
 					}
-					//Logger.append_message(String.format("%x %x %x %x", cutab_base.getOffset(), file_base.getOffset(), cu_offset, file_no));
+
 					String file_name=go_bin.create_string_data(file_name_addr);
 					service.add_filename(file_name);
 					return file_name;
