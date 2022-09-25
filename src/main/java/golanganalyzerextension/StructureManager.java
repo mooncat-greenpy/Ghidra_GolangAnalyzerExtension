@@ -98,6 +98,8 @@ public class StructureManager {
 		int pointer_size=go_bin.get_pointer_size();
 		Address base_addr=null;
 		while(true) {
+			is_go16=false;
+
 			if(pointer_size==4) {
 				base_addr=go_bin.find_memory(base_addr, gopclntab_base_bytes, new byte[] {(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x00});
 			}else {
