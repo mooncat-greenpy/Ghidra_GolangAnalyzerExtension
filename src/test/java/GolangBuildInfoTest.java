@@ -140,65 +140,6 @@ public class GolangBuildInfoTest extends AbstractGhidraHeadlessIntegrationTest {
 	}
 
 	@ParameterizedTest
-	@MethodSource("test_is_go_version_params")
-	public void test_is_go_version(boolean expected, String go_version) throws Exception {
-		initialize(new HashMap<>());
-		GolangBinary go_bin=new GolangBinary(program, TaskMonitor.DUMMY);
-
-		GolangBuildInfo go_build_info=new GolangBuildInfo(go_bin);
-
-		assertEquals(go_build_info.is_go_version(go_version), expected);
-	}
-
-	static Stream<Arguments> test_is_go_version_params() throws Throwable {
-		return Stream.of(
-				Arguments.of(true, "go1"),
-				Arguments.of(true, "go1.1beta1"),
-				Arguments.of(true, "go1.1beta2"),
-				Arguments.of(true, "go1.15rc1"),
-				Arguments.of(true, "go1.15rc2"),
-				Arguments.of(true, "go1.16"),
-				Arguments.of(true, "go1.16.7"),
-				Arguments.of(false, ""),
-				Arguments.of(false, "go1beta1"),
-				Arguments.of(false, "go1.16.rc1"),
-				Arguments.of(false, "go1.16.7.8")
-			);
-	}
-
-	@ParameterizedTest
-	@MethodSource("test_compare_go_version_params")
-	public void test_compare_go_version(int expected, String cmp1, String cmp2) throws Exception {
-		initialize(new HashMap<>());
-		GolangBinary go_bin=new GolangBinary(program, TaskMonitor.DUMMY);
-
-		GolangBuildInfo go_build_info=new GolangBuildInfo(go_bin);
-
-		assertEquals(go_build_info.compare_go_version(cmp1, cmp2), expected);
-	}
-
-	static Stream<Arguments> test_compare_go_version_params() throws Throwable {
-		return Stream.of(
-				Arguments.of(0, "go1.16.7", "go1.16.7"),
-				Arguments.of(1, "go1.16.7", "go1.16.6"),
-				Arguments.of(-1, "go1.16.7", "go1.16.8"),
-				Arguments.of(1, "go1.17.7", "go1.16.8"),
-				Arguments.of(-1, "go1.16.7", "go1.17.6"),
-				Arguments.of(1, "go2.16.7", "go1.17.6"),
-				Arguments.of(-1, "go0.17.7", "go1.16.8"),
-				Arguments.of(1, "go1.16.7", "go1.16"),
-				Arguments.of(1, "go1.16", "go0.16rc1"),
-				Arguments.of(1, "go1.16", "go0.16beta1"),
-				Arguments.of(1, "go1.16.1", "go1.16rc1"),
-				Arguments.of(1, "go1.16.1", "go1.16beta1"),
-				Arguments.of(1, "go1.16rc1", "go1.16beta1"),
-				Arguments.of(1, "go1.16rc2", "go1.16rc1"),
-				Arguments.of(1, "go1.16beta2", "go1.16beta1"),
-				Arguments.of(-1, "go1", "go1.1")
-			);
-	}
-
-	@ParameterizedTest
 	@MethodSource("test_golang_build_info_params")
 	public void test_golang_build_info(String expected_go_version, String expected_module_version, Map<String, String> bytes_map) throws Exception {
 		initialize(bytes_map);
@@ -206,8 +147,8 @@ public class GolangBuildInfoTest extends AbstractGhidraHeadlessIntegrationTest {
 
 		GolangBuildInfo go_build_info=new GolangBuildInfo(go_bin);
 
-		assertEquals(go_build_info.get_go_version(), expected_go_version);
-		assertEquals(go_build_info.get_module_version(), expected_module_version);
+		assertEquals(go_build_info.get_go_version(), Optional.ofNullable(expected_go_version));
+		assertEquals(go_build_info.get_module_version(), Optional.ofNullable(expected_module_version));
 	}
 
 	static Stream<Arguments> test_golang_build_info_params() throws Throwable {
@@ -226,7 +167,7 @@ public class GolangBuildInfoTest extends AbstractGhidraHeadlessIntegrationTest {
 					put("0x00537298", "bb834b0000000000 6000000000000000");
 					put("0x004b83bb", "3077af0c9274080241e1c107e6d618e6 7061746809636f6d6d616e642d6c696e652d617267756d656e74730a6d6f6409636f6d6d616e642d6c696e652d617267756d656e74730928646576656c29090a f932433186182072008242104116d8f2");
 				}}),
-				Arguments.of("go1.16.7", "", new HashMap<String, String>(){{
+				Arguments.of("go1.16.7", null, new HashMap<String, String>(){{
 					put("0x529000", "ff20476f206275696c64696e663a 04 02 0000000000000000 0000000000000000 08 676f312e31362e37");
 				}})
 			);

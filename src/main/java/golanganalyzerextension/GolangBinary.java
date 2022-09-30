@@ -61,7 +61,7 @@ public class GolangBinary {
 	private int quantum=0;
 	private int pointer_size=0;
 
-	private GolangBuildInfo go_build_info;
+	private GolangVersion go_version;
 
 	public GolangBinary(Program program, TaskMonitor monitor) {
 		this.program=program;
@@ -69,7 +69,8 @@ public class GolangBinary {
 		this.program_listing=program.getListing();
 		this.memory=program.getMemory();
 
-		go_build_info=new GolangBuildInfo(this);
+		go_version=new GolangVersion(this);
+		go_version.scan();
 
 		if(!init_gopclntab()) {
 			Logger.append_message("Failed to init gopclntab");
@@ -89,7 +90,7 @@ public class GolangBinary {
 		this.magic=obj.magic;
 		this.quantum=obj.quantum;
 		this.pointer_size=obj.pointer_size;
-		this.go_build_info=obj.go_build_info;
+		this.go_version=obj.go_version;
 
 		this.ok=true;
 	}
@@ -516,10 +517,10 @@ public class GolangBinary {
 	}
 
 	public String get_go_version() {
-		return go_build_info.get_go_version();
+		return go_version.get_go_version();
 	}
 
 	public int compare_go_version(String cmp_go_version) {
-		return go_build_info.compare_go_version(cmp_go_version);
+		return go_version.compare_go_version(cmp_go_version);
 	}
 }
