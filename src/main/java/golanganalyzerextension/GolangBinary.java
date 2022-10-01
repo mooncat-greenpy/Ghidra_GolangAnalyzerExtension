@@ -95,6 +95,57 @@ public class GolangBinary {
 		this.ok=true;
 	}
 
+	public GolangBinary(GolangBinary obj, Program program, TaskMonitor monitor, Listing program_listing, Memory memory, Address gopclntab_base, int magic, int quantum, int pointer_size, GolangVersion go_version) {
+		if(program==null) {
+			this.program=obj.program;
+		} else {
+			this.program=program;
+		}
+		if(monitor==null) {
+			this.monitor=obj.monitor;
+		} else {
+			this.monitor=monitor;
+		}
+		if(program_listing==null) {
+			this.program_listing=obj.program_listing;
+		} else {
+			this.program_listing=program_listing;
+		}
+		if(memory==null) {
+			this.memory=obj.memory;
+		} else {
+			this.memory=memory;
+		}
+
+		if(gopclntab_base==null) {
+			this.gopclntab_base=obj.gopclntab_base;
+		} else {
+			this.gopclntab_base=gopclntab_base;
+		}
+		if(magic==0) {
+			this.magic=obj.magic;
+		} else {
+			this.magic=magic;
+		}
+		if(quantum==0) {
+			this.quantum=obj.quantum;
+		} else {
+			this.quantum=quantum;
+		}
+		if(pointer_size==0) {
+			this.pointer_size=obj.pointer_size;
+		} else {
+			this.pointer_size=pointer_size;
+		}
+		if(go_version==null) {
+			this.go_version=obj.go_version;
+		} else {
+			this.go_version=go_version;
+		}
+
+		this.ok=true;
+	}
+
 	public boolean is_ok() {
 		return ok;
 	}

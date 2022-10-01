@@ -1,6 +1,5 @@
 import static org.junit.Assert.assertEquals;
 
-import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -34,10 +33,7 @@ public class SysTheVersionTest extends AbstractGhidraHeadlessIntegrationTest {
 	@MethodSource("test_sys_the_version_params")
 	public void test_sys_the_version(String expected, int pointer_size, Map<String, String> bytes_map) throws Exception {
 		initialize(bytes_map);
-		GolangBinary go_bin=new GolangBinary(program, TaskMonitor.DUMMY);
-		Field field=GolangBinary.class.getDeclaredField("pointer_size");
-		field.setAccessible(true);
-		field.set(go_bin, pointer_size);
+		GolangBinary go_bin=new GolangBinary(new GolangBinary(program, TaskMonitor.DUMMY), null, null, null, null, null, 0, 0, pointer_size, null);
 
 		SysTheVersion sys_the_version=new SysTheVersion(go_bin);
 

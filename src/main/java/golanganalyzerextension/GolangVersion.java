@@ -22,14 +22,21 @@ public class GolangVersion {
 	}
 
 	public void scan() {
-		GolangBuildInfo go_build_info=new GolangBuildInfo(go_bin);
-		go_build_info.get_go_version().ifPresent(s -> {if(is_go_version(s)) {go_version=s;}});;
-		if(!go_version.equals(DEFAULT_GO_VERSION)) {
-			return;
-		}
+		int pointer_size_list[]= {4, 8};
+		for(int pointer_size : pointer_size_list) {
+			GolangBinary tmp_go_bin=new GolangBinary(go_bin, null, null, null, null, null, 0, 0, pointer_size, null);
+			GolangBuildInfo go_build_info=new GolangBuildInfo(tmp_go_bin);
+			go_build_info.get_go_version().ifPresent(s -> {if(is_go_version(s)) {go_version=s;}});;
+			if(!go_version.equals(DEFAULT_GO_VERSION)) {
+				return;
+			}
 
-		SysTheVersion sys_the_version=new SysTheVersion(go_bin);
-		sys_the_version.get_go_version().ifPresent(s -> {if(is_go_version(s)) {go_version=s;}});
+			SysTheVersion sys_the_version=new SysTheVersion(tmp_go_bin);
+			sys_the_version.get_go_version().ifPresent(s -> {if(is_go_version(s)) {go_version=s;}});
+			if(!go_version.equals(DEFAULT_GO_VERSION)) {
+				return;
+			}
+		}
 	}
 
 	public static boolean is_go_version(String str) {
