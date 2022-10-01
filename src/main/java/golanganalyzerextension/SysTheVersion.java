@@ -52,8 +52,7 @@ public class SysTheVersion {
 				if(string_struct_addr==null) {
 					break;
 				}
-				long size=go_bin.get_address_value(string_struct_addr.add(go_bin.get_pointer_size()), go_bin.get_pointer_size());
-				if(size==sys_the_version_opt.get().length()) {
+				if(check_string_struct(string_struct_addr, sys_the_version_opt.get())) {
 					return sys_the_version_opt;
 				}
 				string_struct_addr=string_struct_addr.add(4);
@@ -61,5 +60,33 @@ public class SysTheVersion {
 			sys_the_version_addr=sys_the_version_addr.add(4);
 		}
 		return Optional.empty();
+	}
+
+	private boolean check_string_struct(Address string_struct_addr, String sys_the_version) {
+		long size=go_bin.get_address_value(string_struct_addr.add(go_bin.get_pointer_size()), go_bin.get_pointer_size());
+		if(size!=sys_the_version.length()) {
+			return false;
+		}
+
+		// runtime/proc.go
+		boolean badmorestackg0Msg=false;
+		boolean badmorestackgsignalMsg=false;
+		for(int i=-2; i<3; i++) {
+			String around_str=go_bin.read_string_struct(string_struct_addr.add(go_bin.get_pointer_size()*2*i), go_bin.get_pointer_size());
+			if(around_str==null) {
+				continue;
+			}
+			if(around_str.contains("fatal: morestack on g0")) {
+				badmorestackg0Msg=true;
+			}
+			if(around_str.contains("fatal: morestack on gsignal")) {
+				badmorestackgsignalMsg=true;
+			}
+		}
+		if(GolangVersion.compare_go_version(sys_the_version, "go1.8beta1")>0 && (!badmorestackg0Msg || !badmorestackgsignalMsg)) {
+			return false;
+		}
+
+		return true;
 	}
 }
