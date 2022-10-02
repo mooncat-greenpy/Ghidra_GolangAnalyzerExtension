@@ -61,7 +61,11 @@ class GolangDatatype {
 		this.addr=go_bin.get_address(type_base_addr, offset);
 		this.key=offset;
 		this.pointer_size=go_bin.get_pointer_size();
-		this.ext_base_addr=go_bin.get_address(this.addr, this.pointer_size*4+16);
+		if(is_go16) {
+			this.ext_base_addr=go_bin.get_address(this.addr, this.pointer_size*7+8);
+		} else {
+			this.ext_base_addr=go_bin.get_address(this.addr, this.pointer_size*4+16);
+		}
 		this.dependence_type_key_list=new ArrayList<Long>();
 
 		uncommon_type_opt=Optional.empty();
@@ -181,7 +185,7 @@ class GolangDatatype {
 		if(name.length()==0) {
 			name=String.format("not_found_%x", key);
 		}
-		if(ptr_to_this_off>0) {
+		if(ptr_to_this_off!=0) {
 			dependence_type_key_list.add(ptr_to_this_off);
 		}
 
