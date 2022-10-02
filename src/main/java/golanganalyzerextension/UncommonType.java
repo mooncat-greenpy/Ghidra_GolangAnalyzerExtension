@@ -82,9 +82,9 @@ public class UncommonType {
 
 			Optional<Address> text_base_addr_opt=go_bin_inner.get_text_base();
 			this.interface_method_addr=go_bin_inner.get_address(0);
-			text_base_addr_opt.ifPresent(addr -> {if(ifn_offset!=-1) {this.interface_method_addr=addr.add(ifn_offset);}});
+			text_base_addr_opt.ifPresent(addr -> {if(ifn_offset!=0 && ifn_offset!=-1) {this.interface_method_addr=addr.add(ifn_offset);}});
 			this.normal_method_addr=go_bin_inner.get_address(0);
-			text_base_addr_opt.ifPresent(addr -> {if(tfn_offset!=-1) {this.normal_method_addr=addr.add(tfn_offset);}});
+			text_base_addr_opt.ifPresent(addr -> {if(tfn_offset!=0 && tfn_offset!=-1) {this.normal_method_addr=addr.add(tfn_offset);}});
 		}
 
 		private void parse_go16(Address base_addr, Address type_base_addr) {
