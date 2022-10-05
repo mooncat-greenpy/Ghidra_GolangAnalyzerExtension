@@ -31,7 +31,27 @@ public class GolangVersion {
 		return version_str;
 	}
 
-	public static int compare(GolangVersion cmp1, GolangVersion cmp2) {
+	public boolean eq(String go_version) {
+		return compare(this, new GolangVersion(go_version))==0;
+	}
+
+	public boolean gt(String go_version) {
+		return compare(this, new GolangVersion(go_version))>0;
+	}
+
+	public boolean lt(String go_version) {
+		return compare(this, new GolangVersion(go_version))<0;
+	}
+
+	public boolean ge(String go_version) {
+		return compare(this, new GolangVersion(go_version))>=0;
+	}
+
+	public boolean le(String go_version) {
+		return compare(this, new GolangVersion(go_version))<=0;
+	}
+
+	private int compare(GolangVersion cmp1, GolangVersion cmp2) {
 		for(int i=0; i<PART_NUM; i++) {
 			for(int j=0; j<VALUE_NUM; j++) {
 				if(cmp1.version_data[i][j]>cmp2.version_data[i][j]) {

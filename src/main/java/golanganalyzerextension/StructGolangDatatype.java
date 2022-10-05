@@ -18,7 +18,7 @@ class StructField {
 	StructField(GolangBinary go_bin, String name, long type_key, int offset){
 		this.name=name;
 		this.type_key=type_key;
-		if(go_bin.compare_go_version("go1.19beta1")<=0/* || go_bin.compare_go_version("go1.9beta1")>0*/) {
+		if(go_bin.ge_go_version("go1.19beta1") || go_bin.lt_go_version("go1.9beta1")) {
 			this.offset=offset;
 		} else {
 			this.offset=offset>>1;

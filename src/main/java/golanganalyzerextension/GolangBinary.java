@@ -491,11 +491,11 @@ public class GolangBinary {
 		byte go12_magic[]= {(byte)0xfb,(byte)0xff,(byte)0xff,(byte)0xff};
 		boolean is_go116=false;
 		boolean is_go118=false;
-		if(compare_go_version("go1.16beta1")<=0) {
+		if(ge_go_version("go1.16beta1")) {
 			is_go116=true;
 			go12_magic[0]=(byte)0xfa;
 		}
-		if(compare_go_version("go1.18beta1")<=0) {
+		if(ge_go_version("go1.18beta1")) {
 			is_go118=true;
 			go12_magic[0]=(byte)0xf0;
 		}
@@ -572,7 +572,23 @@ public class GolangBinary {
 		return go_version.get_version_str();
 	}
 
-	public int compare_go_version(String cmp_go_version) {
-		return go_version.compare(new GolangVersion(cmp_go_version), go_version);
+	public boolean eq_go_version(String cmp_go_version) {
+		return go_version.eq(cmp_go_version);
+	}
+
+	public boolean gt_go_version(String cmp_go_version) {
+		return go_version.gt(cmp_go_version);
+	}
+
+	public boolean lt_go_version(String cmp_go_version) {
+		return go_version.lt(cmp_go_version);
+	}
+
+	public boolean ge_go_version(String cmp_go_version) {
+		return go_version.ge(cmp_go_version);
+	}
+
+	public boolean le_go_version(String cmp_go_version) {
+		return go_version.le(cmp_go_version);
 	}
 }

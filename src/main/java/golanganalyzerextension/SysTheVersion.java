@@ -83,7 +83,8 @@ public class SysTheVersion {
 				badmorestackgsignalMsg=true;
 			}
 		}
-		if(GolangVersion.compare(new GolangVersion(sys_the_version), new GolangVersion("go1.8beta1"))>0 && (!badmorestackg0Msg || !badmorestackgsignalMsg)) {
+		GolangVersion go_version=new GolangVersion(sys_the_version);
+		if(go_version.ge("go1.8beta1") && (!badmorestackg0Msg || !badmorestackgsignalMsg)) {
 			return false;
 		}
 

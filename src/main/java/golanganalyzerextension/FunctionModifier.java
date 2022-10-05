@@ -64,7 +64,7 @@ public class FunctionModifier{
 
 	boolean init_file_name_list() {
 		boolean is_go116=false;
-		if(go_bin.compare_go_version("go1.16beta1")<=0) {
+		if(go_bin.ge_go_version("go1.16beta1")) {
 			is_go116=true;
 		}
 
@@ -107,10 +107,10 @@ public class FunctionModifier{
 	boolean init_functions() {
 		boolean is_go116=false;
 		boolean is_go118=false;
-		if(go_bin.compare_go_version("go1.16beta1")<=0) {
+		if(go_bin.ge_go_version("go1.16beta1")) {
 			is_go116=true;
 		}
-		if(go_bin.compare_go_version("go1.18beta1")<=0) {
+		if(go_bin.ge_go_version("go1.18beta1")) {
 			is_go118=true;
 		}
 

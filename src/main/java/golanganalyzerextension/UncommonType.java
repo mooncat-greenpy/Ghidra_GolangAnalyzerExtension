@@ -30,7 +30,7 @@ public class UncommonType {
 
 	private String get_type_string(Address address) {
 		boolean is_go117=false;
-		if(go_bin.compare_go_version("go1.17beta1")<=0) {
+		if(go_bin.ge_go_version("go1.17beta1")) {
 			is_go117=true;
 		}
 

@@ -81,7 +81,7 @@ public class GolangFunctionX86 extends GolangFunction {
 
 	@Override
 	boolean check_inst_reg_arg(Instruction inst, Map<Register, REG_FLAG> builtin_reg_state) {
-		if(go_bin.compare_go_version("go1.17beta1")>0) {
+		if(go_bin.lt_go_version("go1.17beta1")) {
 			return false;
 		}
 		String mnemonic=inst.getMnemonicString();

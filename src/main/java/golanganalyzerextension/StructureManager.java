@@ -79,10 +79,10 @@ public class StructureManager {
 	boolean init_basig_golang_datatype() {
 		boolean is_go116=false;
 		boolean is_go118=false;
-		if(go_bin.compare_go_version("go1.16beta1")<=0) {
+		if(go_bin.ge_go_version("go1.16beta1")) {
 			is_go116=true;
 		}
-		if(go_bin.compare_go_version("go1.18beta1")<=0) {
+		if(go_bin.ge_go_version("go1.18beta1")) {
 			is_go118=true;
 		}
 
@@ -186,7 +186,7 @@ public class StructureManager {
 
 	String get_type_string(Address address, int tflag) {
 		boolean is_go117=false;
-		if(go_bin.compare_go_version("go1.17beta1")<=0) {
+		if(go_bin.ge_go_version("go1.17beta1")) {
 			is_go117=true;
 		}
 

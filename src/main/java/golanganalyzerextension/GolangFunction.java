@@ -107,7 +107,7 @@ public class GolangFunction {
 
 	boolean init_func() {
 		boolean is_go118=false;
-		if(go_bin.compare_go_version("go1.18beta1")<=0) {
+		if(go_bin.ge_go_version("go1.18beta1")) {
 			is_go118=true;
 		}
 		long entry_addr_value=go_bin.get_address_value(info_addr, is_go118?4:go_bin.get_pointer_size());
@@ -144,10 +144,10 @@ public class GolangFunction {
 	boolean init_func_name() {
 		boolean is_go116=false;
 		boolean is_go118=false;
-		if(go_bin.compare_go_version("go1.16beta1")<=0) {
+		if(go_bin.ge_go_version("go1.16beta1")) {
 			is_go116=true;
 		}
-		if(go_bin.compare_go_version("go1.18beta1")<=0) {
+		if(go_bin.ge_go_version("go1.18beta1")) {
 			is_go118=true;
 		}
 
@@ -190,7 +190,7 @@ public class GolangFunction {
 
 	boolean init_params() {
 		boolean is_go118=false;
-		if(go_bin.compare_go_version("go1.18beta1")<=0) {
+		if(go_bin.ge_go_version("go1.18beta1")) {
 			is_go118=true;
 		}
 
@@ -286,10 +286,10 @@ public class GolangFunction {
 	boolean init_file_line_map() {
 		boolean is_go116=false;
 		boolean is_go118=false;
-		if(go_bin.compare_go_version("go1.16beta1")<=0) {
+		if(go_bin.ge_go_version("go1.16beta1")) {
 			is_go116=true;
 		}
-		if(go_bin.compare_go_version("go1.18beta1")<=0) {
+		if(go_bin.ge_go_version("go1.18beta1")) {
 			is_go118=true;
 		}
 
@@ -340,10 +340,10 @@ public class GolangFunction {
 	boolean init_frame_map() {
 		boolean is_go116=false;
 		boolean is_go118=false;
-		if(go_bin.compare_go_version("go1.16beta1")<=0) {
+		if(go_bin.ge_go_version("go1.16beta1")) {
 			is_go116=true;
 		}
-		if(go_bin.compare_go_version("go1.18beta1")<=0) {
+		if(go_bin.ge_go_version("go1.18beta1")) {
 			is_go118=true;
 		}
 
@@ -398,10 +398,10 @@ public class GolangFunction {
 	String pc_to_file_name(int target_pc_offset) {
 		boolean is_go116=false;
 		boolean is_go118=false;
-		if(go_bin.compare_go_version("go1.16beta1")<=0) {
+		if(go_bin.ge_go_version("go1.16beta1")) {
 			is_go116=true;
 		}
-		if(go_bin.compare_go_version("go1.18beta1")<=0) {
+		if(go_bin.ge_go_version("go1.18beta1")) {
 			is_go118=true;
 		}
 
