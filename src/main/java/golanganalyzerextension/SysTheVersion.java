@@ -32,7 +32,7 @@ public class SysTheVersion {
 			}
 
 			String str=go_bin.read_string(sys_the_version_addr, 15);
-			Optional<String> sys_the_version_opt=GolangVersion.extract_go_version(str);
+			Optional<String> sys_the_version_opt=GolangVersionExtractor.extract_go_version(str);
 			if(sys_the_version_opt.isEmpty()) {
 				sys_the_version_addr=sys_the_version_addr.add(4);
 				continue;
@@ -83,7 +83,7 @@ public class SysTheVersion {
 				badmorestackgsignalMsg=true;
 			}
 		}
-		if(GolangVersion.compare_go_version(sys_the_version, "go1.8beta1")>0 && (!badmorestackg0Msg || !badmorestackgsignalMsg)) {
+		if(GolangVersion.compare(new GolangVersion(sys_the_version), new GolangVersion("go1.8beta1"))>0 && (!badmorestackg0Msg || !badmorestackgsignalMsg)) {
 			return false;
 		}
 
