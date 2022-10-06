@@ -46,6 +46,7 @@ import ghidra.program.model.symbol.SourceType;
 import ghidra.program.model.util.CodeUnitInsertionException;
 import ghidra.util.exception.InvalidInputException;
 import ghidra.util.task.TaskMonitor;
+import golanganalyzerextension.exceptions.InvalidGolangVersionFormatException;
 import golanganalyzerextension.version.GolangVersion;
 import golanganalyzerextension.version.GolangVersionExtractor;
 
@@ -574,23 +575,23 @@ public class GolangBinary {
 		return go_version.get_version_str();
 	}
 
-	public boolean eq_go_version(String cmp_go_version) {
+	public boolean eq_go_version(String cmp_go_version) throws InvalidGolangVersionFormatException {
 		return go_version.eq(cmp_go_version);
 	}
 
-	public boolean gt_go_version(String cmp_go_version) {
+	public boolean gt_go_version(String cmp_go_version) throws InvalidGolangVersionFormatException {
 		return go_version.gt(cmp_go_version);
 	}
 
-	public boolean lt_go_version(String cmp_go_version) {
+	public boolean lt_go_version(String cmp_go_version) throws InvalidGolangVersionFormatException {
 		return go_version.lt(cmp_go_version);
 	}
 
-	public boolean ge_go_version(String cmp_go_version) {
+	public boolean ge_go_version(String cmp_go_version) throws InvalidGolangVersionFormatException {
 		return go_version.ge(cmp_go_version);
 	}
 
-	public boolean le_go_version(String cmp_go_version) {
+	public boolean le_go_version(String cmp_go_version) throws InvalidGolangVersionFormatException {
 		return go_version.le(cmp_go_version);
 	}
 }

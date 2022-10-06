@@ -1,5 +1,7 @@
 package golanganalyzerextension.version;
 
+import golanganalyzerextension.exceptions.InvalidGolangVersionFormatException;
+
 public class GolangVersion {
 	private static final String GO_VERSION_PATTERN="go\\d+(\\.\\d+(\\.\\d+)?)?(beta\\d+|rc\\d+)?";
 	// major minor patch
@@ -13,7 +15,7 @@ public class GolangVersion {
 	private String version_str;
 	private int[][] version_data;
 
-	public GolangVersion(String go_version) {
+	public GolangVersion(String go_version) throws InvalidGolangVersionFormatException {
 		version_str=go_version;
 		version_data=new int[PART_NUM][VALUE_NUM];
 		parse_version_str();
@@ -31,23 +33,23 @@ public class GolangVersion {
 		return version_str;
 	}
 
-	public boolean eq(String go_version) {
+	public boolean eq(String go_version) throws InvalidGolangVersionFormatException {
 		return compare(this, new GolangVersion(go_version))==0;
 	}
 
-	public boolean gt(String go_version) {
+	public boolean gt(String go_version) throws InvalidGolangVersionFormatException {
 		return compare(this, new GolangVersion(go_version))>0;
 	}
 
-	public boolean lt(String go_version) {
+	public boolean lt(String go_version) throws InvalidGolangVersionFormatException {
 		return compare(this, new GolangVersion(go_version))<0;
 	}
 
-	public boolean ge(String go_version) {
+	public boolean ge(String go_version) throws InvalidGolangVersionFormatException {
 		return compare(this, new GolangVersion(go_version))>=0;
 	}
 
-	public boolean le(String go_version) {
+	public boolean le(String go_version) throws InvalidGolangVersionFormatException {
 		return compare(this, new GolangVersion(go_version))<=0;
 	}
 
@@ -64,13 +66,13 @@ public class GolangVersion {
 		return 0;
 	}
 
-	private void parse_version_str() {
+	private void parse_version_str() throws InvalidGolangVersionFormatException {
 		if(version_str.length()<=2 || !version_str.startsWith("go")) {
-			return;
+			throw new InvalidGolangVersionFormatException("Not start with \"go\".");
 		}
 		String[] split_str=version_str.substring(2).split("\\.");
 		if(split_str.length>PART_NUM) {
-			return;
+			throw new InvalidGolangVersionFormatException("Too many \".\".");
 		}
 		for(int i=0; i<split_str.length; i++) {
 			version_data[i][0]=get_ver_value(split_str[i]);
@@ -78,23 +80,31 @@ public class GolangVersion {
 		}
 	}
 
-	private int get_ver_value(String str) {
-		if(str.contains("rc")) {
-			return Integer.valueOf(str.split("rc")[0]);
-		}
-		if(str.contains("beta")) {
-			return Integer.valueOf(str.split("beta")[0]);
-		}
-		return Integer.valueOf(str);
+	private int get_ver_value(String str) throws InvalidGolangVersionFormatException {
+		try {
+			if(str.contains("rc")) {
+				return Integer.valueOf(str.split("rc")[0]);
+			}
+			if(str.contains("beta")) {
+				return Integer.valueOf(str.split("beta")[0]);
+			}
+			return Integer.valueOf(str);
+		} catch(NumberFormatException e) {
+			throw new InvalidGolangVersionFormatException(str+" is invalid.");
+		}		
 	}
 
-	private int get_rc_beta_value(String str) {
-		if(str.contains("rc")) {
-			return Integer.valueOf(str.split("rc")[1])*RC_BASE;
-		}
-		if(str.contains("beta")) {
-			return Integer.valueOf(str.split("beta")[1])*BETA_BASE;
-		}
-		return RC_BETA_MAX_VALUE;
+	private int get_rc_beta_value(String str) throws InvalidGolangVersionFormatException {
+		try {
+			if(str.contains("rc")) {
+				return Integer.valueOf(str.split("rc")[1])*RC_BASE;
+			}
+			if(str.contains("beta")) {
+				return Integer.valueOf(str.split("beta")[1])*BETA_BASE;
+			}
+			return RC_BETA_MAX_VALUE;
+		} catch(NumberFormatException e) {
+			throw new InvalidGolangVersionFormatException(str+" is invalid.");
+		}		
 	}
 }
