@@ -1,4 +1,4 @@
-package golanganalyzerextension;
+package golanganalyzerextension.version;
 
 public class GolangVersion {
 	private static final String GO_VERSION_PATTERN="go\\d+(\\.\\d+(\\.\\d+)?)?(beta\\d+|rc\\d+)?";

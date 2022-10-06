@@ -1,3 +1,5 @@
+package golanganalyzerextension;
+
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
@@ -16,8 +18,6 @@ import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Program;
 import ghidra.test.AbstractGhidraHeadlessIntegrationTest;
 import ghidra.util.task.TaskMonitor;
-import golanganalyzerextension.GolangBinary;
-import golanganalyzerextension.GolangBuildInfo;
 
 public class GolangBuildInfoTest extends AbstractGhidraHeadlessIntegrationTest {
 

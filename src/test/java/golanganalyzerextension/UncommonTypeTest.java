@@ -1,3 +1,5 @@
+package golanganalyzerextension;
+
 import static org.junit.Assert.assertEquals;
 
 import java.lang.reflect.Field;
@@ -15,8 +17,6 @@ import ghidra.program.database.ProgramBuilder;
 import ghidra.program.model.listing.Program;
 import ghidra.test.AbstractGhidraHeadlessIntegrationTest;
 import ghidra.util.task.TaskMonitor;
-import golanganalyzerextension.GolangBinary;
-import golanganalyzerextension.UncommonType;
 import golanganalyzerextension.UncommonType.UncommonMethod;
 
 public class UncommonTypeTest extends AbstractGhidraHeadlessIntegrationTest {

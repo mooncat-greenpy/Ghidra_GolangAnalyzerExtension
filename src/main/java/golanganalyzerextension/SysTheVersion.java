@@ -3,6 +3,8 @@ package golanganalyzerextension;
 import java.util.Optional;
 
 import ghidra.program.model.address.Address;
+import golanganalyzerextension.version.GolangVersion;
+import golanganalyzerextension.version.GolangVersionExtractor;
 
 public class SysTheVersion {
 	private GolangBinary go_bin;

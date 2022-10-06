@@ -1,3 +1,5 @@
+package golanganalyzerextension.version;
+
 import static org.junit.Assert.assertEquals;
 
 import java.util.HashMap;
@@ -14,8 +16,6 @@ import ghidra.program.model.listing.Program;
 import ghidra.test.AbstractGhidraHeadlessIntegrationTest;
 import ghidra.util.task.TaskMonitor;
 import golanganalyzerextension.GolangBinary;
-import golanganalyzerextension.GolangVersion;
-import golanganalyzerextension.GolangVersionExtractor;
 
 public class GolangVersionExtractorTest extends AbstractGhidraHeadlessIntegrationTest {
 

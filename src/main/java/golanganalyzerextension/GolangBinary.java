@@ -46,6 +46,8 @@ import ghidra.program.model.symbol.SourceType;
 import ghidra.program.model.util.CodeUnitInsertionException;
 import ghidra.util.exception.InvalidInputException;
 import ghidra.util.task.TaskMonitor;
+import golanganalyzerextension.version.GolangVersion;
+import golanganalyzerextension.version.GolangVersionExtractor;
 
 
 public class GolangBinary {

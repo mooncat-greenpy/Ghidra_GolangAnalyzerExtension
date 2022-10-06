@@ -1,3 +1,5 @@
+package golanganalyzerextension.version;
+
 import static org.junit.Assert.assertEquals;
 
 import java.util.HashMap;
@@ -11,7 +13,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import ghidra.program.database.ProgramBuilder;
 import ghidra.program.model.listing.Program;
 import ghidra.test.AbstractGhidraHeadlessIntegrationTest;
-import golanganalyzerextension.GolangVersion;
 
 public class GolangVersionTest extends AbstractGhidraHeadlessIntegrationTest {
 
