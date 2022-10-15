@@ -8,7 +8,7 @@ import java.util.Optional;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.DataTypeConflictException;
-import ghidra.program.model.data.VoidDataType;
+import ghidra.program.model.data.StructureDataType;
 import ghidra.program.model.util.CodeUnitInsertionException;
 import golanganalyzerextension.StructureManager.Tflag;
 
@@ -89,11 +89,11 @@ class GolangDatatype {
 		return uncommon_type_opt;
 	}
 
-	public DataType get_datatype(DatatypeSearcher datatype_searcher) {
-		return new VoidDataType();
+	public StructureDataType get_datatype(DatatypeSearcher datatype_searcher) {
+		return new StructureDataType(name, 0);
 	}
 
-	public DataType get_datatype(DatatypeSearcher datatype_searcher, boolean once) {
+	public StructureDataType get_datatype(DatatypeSearcher datatype_searcher, boolean once) {
 		return get_datatype(datatype_searcher);
 	}
 

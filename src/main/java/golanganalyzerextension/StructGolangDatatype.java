@@ -35,7 +35,7 @@ class StructGolangDatatype extends GolangDatatype {
 	}
 
 	@Override
-	public DataType get_datatype(DatatypeSearcher datatype_searcher) {
+	public StructureDataType get_datatype(DatatypeSearcher datatype_searcher) {
 		StructureDataType structure_datatype=new StructureDataType(name, 0);
 
 		// ver <= go1.8.*

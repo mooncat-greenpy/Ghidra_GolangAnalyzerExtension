@@ -14,7 +14,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 
 import ghidra.framework.plugintool.ComponentProviderAdapter;
-import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.DataTypeComponent;
 import ghidra.program.model.data.StructureDataType;
 import ghidra.util.layout.VerticalLayout;
@@ -72,23 +71,17 @@ public class DatatypeDetailProvider extends ComponentProviderAdapter {
 
 		String[] columns={"Offset", "Datatype", "Name", "Comment", "Length"};
 		DatatypeSearcher datatype_searcher=new DatatypeSearcher(gae_tool, gae_tool.get_binary(), false);
-		DataType datatype=go_datatype.get_datatype(datatype_searcher, true);
-		Object[][] data;
-		if(datatype instanceof StructureDataType) {
-			StructureDataType struct_datatype=(StructureDataType)datatype;
-			data=new Object[struct_datatype.getNumComponents()][5];
-			for(int i=0; i<struct_datatype.getNumComponents(); i++) {
-				DataTypeComponent dtc=struct_datatype.getComponent(i);
-				if(dtc==null) {
-					Object[] row={0, "Null", "Null", "Null", 0};
-					data[i]=row;
-				} else {
-					Object[] row={dtc.getOffset(), dtc.getDataType().getName(), dtc.getFieldName(), dtc.getComment(), dtc.getLength()};
-					data[i]=row;
-				}
+		StructureDataType datatype=go_datatype.get_datatype(datatype_searcher, true);
+		Object[][] data=new Object[datatype.getNumComponents()][5];
+		for(int i=0; i<datatype.getNumComponents(); i++) {
+			DataTypeComponent dtc=datatype.getComponent(i);
+			if(dtc==null) {
+				Object[] row={0, "Null", "Null", "Null", 0};
+				data[i]=row;
+			} else {
+				Object[] row={dtc.getOffset(), dtc.getDataType().getName(), dtc.getFieldName(), dtc.getComment(), dtc.getLength()};
+				data[i]=row;
 			}
-		} else {
-			data=new Object[][]{{0, datatype.getName(), "", "", datatype.getLength()}};
 		}
 
 		JTable table=new JTable(data, columns);

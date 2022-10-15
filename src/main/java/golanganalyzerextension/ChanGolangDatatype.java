@@ -1,7 +1,6 @@
 package golanganalyzerextension;
 
 import ghidra.program.model.address.Address;
-import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.PointerDataType;
 import ghidra.program.model.data.StructureDataType;
 import golanganalyzerextension.StructureManager.Tflag;
@@ -16,13 +15,14 @@ class ChanGolangDatatype extends GolangDatatype {
 	}
 
 	@Override
-	public DataType get_datatype(DatatypeSearcher datatype_searcher) {
-		DataType chan_datatype=new PointerDataType(get_datatype(datatype_searcher, true), go_bin.get_pointer_size());
+	public StructureDataType get_datatype(DatatypeSearcher datatype_searcher) {
+		StructureDataType chan_datatype=new StructureDataType(name, 0);
+		chan_datatype.add(new PointerDataType(get_datatype(datatype_searcher, true), go_bin.get_pointer_size()));
 		return chan_datatype;
 	}
 
 	@Override
-	public DataType get_datatype(DatatypeSearcher datatype_searcher, boolean once) {
+	public StructureDataType get_datatype(DatatypeSearcher datatype_searcher, boolean once) {
 		String struct_name=name;
 		if(struct_name.length()>0 && struct_name.endsWith("*")) {
 			struct_name=struct_name.substring(0, struct_name.length()-1);

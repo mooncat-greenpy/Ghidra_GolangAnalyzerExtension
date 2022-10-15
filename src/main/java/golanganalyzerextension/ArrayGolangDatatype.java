@@ -18,14 +18,16 @@ class ArrayGolangDatatype extends GolangDatatype {
 	}
 
 	@Override
-	public DataType get_datatype(DatatypeSearcher datatype_searcher) {
+	public StructureDataType get_datatype(DatatypeSearcher datatype_searcher) {
 		return get_datatype(datatype_searcher, false);
 	}
 
 	@Override
-	public DataType get_datatype(DatatypeSearcher datatype_searcher, boolean once) {
+	public StructureDataType get_datatype(DatatypeSearcher datatype_searcher, boolean once) {
+		StructureDataType array_datatype=new StructureDataType(name, 0);
 		if(len<=0) {
-			return new VoidDataType();
+			array_datatype.add(new VoidDataType());
+			return array_datatype;
 		}
 		DataType inner_datatype=null;
 		if(once) {
@@ -35,7 +37,7 @@ class ArrayGolangDatatype extends GolangDatatype {
 			String[] name_split=name.split("]");
 			inner_datatype=new StructureDataType(name_split[name_split.length-1]+"_data", (int)size/len);
 		}
-		ArrayDataType array_datatype=new ArrayDataType(inner_datatype, len, inner_datatype.getLength());
+		array_datatype.add(new ArrayDataType(inner_datatype, len, inner_datatype.getLength()));
 		return array_datatype;
 	}
 

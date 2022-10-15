@@ -3,6 +3,7 @@ package golanganalyzerextension;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.PointerDataType;
+import ghidra.program.model.data.StructureDataType;
 import ghidra.program.model.data.VoidDataType;
 import golanganalyzerextension.StructureManager.Tflag;
 
@@ -15,20 +16,24 @@ class PtrGolangDatatype extends GolangDatatype {
 	}
 
 	@Override
-	public DataType get_datatype(DatatypeSearcher datatype_searcher) {
-		return new PointerDataType(new VoidDataType(), go_bin.get_pointer_size());
+	public StructureDataType get_datatype(DatatypeSearcher datatype_searcher) {
+		StructureDataType ptr_datatype=new StructureDataType(name, 0);
+		ptr_datatype.add(new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()));
+		return ptr_datatype;
 	}
 
 	@Override
-	public DataType get_datatype(DatatypeSearcher datatype_searcher, boolean once) {
+	public StructureDataType get_datatype(DatatypeSearcher datatype_searcher, boolean once) {
+		StructureDataType ptr_datatype=new StructureDataType(name, 0);
 		if(!once) {
-			return new PointerDataType(new VoidDataType(), go_bin.get_pointer_size());
+			ptr_datatype.add(new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()));
+			return ptr_datatype;
 		}
 		DataType inner_datatype=datatype_searcher.get_datatype_by_key(elem_type_key);
 		if(inner_datatype==null) {
 			inner_datatype=new VoidDataType();
 		}
-		DataType ptr_datatype=new PointerDataType(inner_datatype, go_bin.get_pointer_size());
+		ptr_datatype.add(new PointerDataType(inner_datatype, go_bin.get_pointer_size()));
 		return ptr_datatype;
 	}
 

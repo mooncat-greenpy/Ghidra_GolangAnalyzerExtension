@@ -16,12 +16,12 @@ class SliceGolangDatatype extends GolangDatatype {
 	}
 
 	@Override
-	public DataType get_datatype(DatatypeSearcher datatype_searcher) {
+	public StructureDataType get_datatype(DatatypeSearcher datatype_searcher) {
 		return get_datatype(datatype_searcher, false);
 	}
 
 	@Override
-	public DataType get_datatype(DatatypeSearcher datatype_searcher, boolean once) {
+	public StructureDataType get_datatype(DatatypeSearcher datatype_searcher, boolean once) {
 		DataType inner_datatype=null;
 		if(once) {
 			inner_datatype=datatype_searcher.get_datatype_by_key(elem_type_key);

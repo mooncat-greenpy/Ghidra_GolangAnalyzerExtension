@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import ghidra.program.model.address.Address;
-import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.PointerDataType;
 import ghidra.program.model.data.StructureDataType;
 import ghidra.program.model.data.VoidDataType;
@@ -21,7 +20,7 @@ class InterfaceGolangDatatype extends GolangDatatype {
 	}
 
 	@Override
-	public DataType get_datatype(DatatypeSearcher datatype_searcher) {
+	public StructureDataType get_datatype(DatatypeSearcher datatype_searcher) {
 		// runtime/iface.go
 		StructureDataType interface_datatype=new StructureDataType(name, 0);
 		interface_datatype.setPackingEnabled(true);

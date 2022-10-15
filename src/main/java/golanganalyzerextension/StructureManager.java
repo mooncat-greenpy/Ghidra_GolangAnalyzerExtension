@@ -63,13 +63,7 @@ public class StructureManager {
 				go_datatype.modify(datatype_searcher);
 
 				Category category=datatype_manager.createCategory(new CategoryPath(String.format("/Golang_%s", go_datatype.kind.name())));
-				DataType datatype=go_datatype.get_datatype(datatype_searcher, true);
-				if(datatype.getClass().getName()!="ghidra.program.model.data.StructureDataType" && datatype.getClass().getName()!="ghidra.program.model.data.VoidDataType") {
-					StructureDataType structure_datatype=new StructureDataType(go_datatype.get_name(), 0);
-					structure_datatype.add(datatype);
-					datatype=structure_datatype;
-				}
-				category.addDataType(datatype, null);
+				category.addDataType(go_datatype.get_datatype(datatype_searcher, true), null);
 			}catch(Exception e) {
 				Logger.append_message(String.format("Error: %s", e.getMessage()));
 			}
