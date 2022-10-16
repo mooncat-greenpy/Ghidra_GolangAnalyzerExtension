@@ -8,6 +8,7 @@ import java.util.Map;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.*;
 import ghidra.program.model.listing.Program;
+import golanganalyzerextension.UncommonType.UncommonMethod;
 
 
 public class StructureManager {
@@ -64,10 +65,30 @@ public class StructureManager {
 
 				Category category=datatype_manager.createCategory(new CategoryPath(String.format("/Golang_%s", go_datatype.kind.name())));
 				category.addDataType(go_datatype.get_datatype(datatype_searcher, true), null);
+
+				go_bin.set_comment(go_datatype.addr, ghidra.program.model.listing.CodeUnit.PLATE_COMMENT, make_datatype_comment(go_datatype, datatype_searcher));
 			}catch(Exception e) {
 				Logger.append_message(String.format("Error: %s", e.getMessage()));
 			}
 		}
+	}
+
+	String make_datatype_comment(GolangDatatype go_datatype, DatatypeSearcher datatype_searcher) {
+		String comment="Name: "+go_datatype.get_name()+"\n";
+
+		comment+=go_datatype.get_kind().name()+":\n";
+		for(DataTypeComponent field : go_datatype.get_datatype(datatype_searcher, true).getComponents()) {
+			comment+=String.format("  +%#6x %#6x %s %s\n", field.getOffset(), field.getLength(), field.getDataType().getName(), field.getFieldName()!=null?field.getFieldName():"");
+		}
+
+		if(go_datatype.get_uncommon_type().isPresent()) {
+			comment+="Method:\n";
+			for(UncommonMethod method : go_datatype.get_uncommon_type().get().get_method_list()) {
+				comment+=String.format("  +%s %#x %#x\n", method.get_name(), method.get_interface_method_addr().getOffset(), method.get_normal_method_addr().getOffset());
+			}
+		}
+
+		return comment;
 	}
 
 	boolean init_basig_golang_datatype() {
