@@ -210,7 +210,8 @@ public class FunctionModifier{
 				modify_func_param(gofunc);
 			}
 			if(comment_option) {
-				add_func_comment(gofunc);
+				add_func_info_comment(gofunc);
+				add_file_line_comment(gofunc);
 			}
 		}
 	}
@@ -244,7 +245,14 @@ public class FunctionModifier{
 		}
 	}
 
-	void add_func_comment(GolangFunction gofunc) {
+	void add_func_info_comment(GolangFunction gofunc) {
+		String comment="Name: "+gofunc.func_name+"\n";
+		comment+=String.format("Start: %x\n", gofunc.func_addr.getOffset());
+		comment+=String.format("End: %x", gofunc.func_addr.add(gofunc.func_size).getOffset());
+		go_bin.set_comment(gofunc.func_addr, ghidra.program.model.listing.CodeUnit.PLATE_COMMENT, comment);
+	}
+
+	void add_file_line_comment(GolangFunction gofunc) {
 		Address addr=gofunc.get_func_addr();
 		Map<Integer, String> comment_map=gofunc.get_file_line_comment_map();
 
