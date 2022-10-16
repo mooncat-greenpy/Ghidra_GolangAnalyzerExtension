@@ -9,6 +9,7 @@ import ghidra.program.model.address.Address;
 import ghidra.program.model.data.*;
 import ghidra.program.model.listing.Program;
 import golanganalyzerextension.UncommonType.UncommonMethod;
+import golanganalyzerextension.exceptions.InvalidBinaryStructureException;
 
 
 public class StructureManager {
@@ -146,16 +147,18 @@ public class StructureManager {
 
 				Address tmp_type_addr=go_bin.get_address(type_addr_value);
 				Address tmp_typelink_addr=go_bin.get_address(typelink_addr_value);
-				GolangDatatype tmp_datatype=new GolangDatatype(go_bin, tmp_type_addr, go_bin.get_address_value(tmp_typelink_addr, 0, 4), is_go16);
-				if(tmp_datatype.crashed) {
+				try {
+					analyze_type(tmp_type_addr, go_bin.get_address_value(tmp_typelink_addr, 0, 4));
+				} catch(InvalidBinaryStructureException e) {
 					type_addr_value=go_bin.get_address_value(base_addr, 25*pointer_size, pointer_size);
 					typelink_addr_value=go_bin.get_address_value(base_addr, 27*pointer_size, pointer_size);
 					typelink_len=go_bin.get_address_value(base_addr, 28*pointer_size, pointer_size);
 					tmp_type_addr=go_bin.get_address(type_addr_value);
 					tmp_typelink_addr=go_bin.get_address(typelink_addr_value);
 				}
-				tmp_datatype=new GolangDatatype(go_bin, tmp_type_addr, go_bin.get_address_value(tmp_typelink_addr, 0, 4), is_go16);
-				if(tmp_datatype.crashed) {
+				try {
+					analyze_type(tmp_type_addr, go_bin.get_address_value(tmp_typelink_addr, 0, 4));
+				} catch(InvalidBinaryStructureException e) {
 					is_go16=true;
 					typelink_len=go_bin.get_address_value(base_addr, 26*pointer_size, pointer_size);
 				}
@@ -183,7 +186,11 @@ public class StructureManager {
 				}else {
 					offset=go_bin.get_address_value(typelink_addr, i*4, 4);
 				}
-				analyze_type(type_addr, offset);
+				try {
+					analyze_type(type_addr, offset);
+				} catch(InvalidBinaryStructureException e) {
+					Logger.append_message(String.format("Failed to analyze type: addr=%x, offset=%x", type_addr.getOffset(), offset));
+				}
 			}
 
 			base_addr=go_bin.get_address(base_addr, 4);
@@ -235,7 +242,7 @@ public class StructureManager {
 		return false;
 	}
 
-	boolean analyze_type(Address type_base_addr, long offset) {
+	boolean analyze_type(Address type_base_addr, long offset) throws InvalidBinaryStructureException {
 		if(datatype_map.containsKey(offset)) {
 			return true;
 		}
@@ -243,9 +250,6 @@ public class StructureManager {
 		int pointer_size=go_bin.get_pointer_size();
 
 		GolangDatatype go_datatype=new GolangDatatype(go_bin, type_base_addr, offset, is_go16);
-		if(go_datatype.crashed) {
-			return false;
-		}
 		datatype_map.put(offset, go_datatype);
 
 		if(go_datatype.kind==Kind.Bool) {
@@ -317,6 +321,7 @@ public class StructureManager {
 			go_datatype=new OtherGolangDatatype(go_bin, type_base_addr, offset, is_go16, new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()));
 		}
 		go_datatype.parse();
+
 		for(long dependence_type_key : go_datatype.dependence_type_key_list) {
 			analyze_type(type_base_addr, dependence_type_key);
 		}
