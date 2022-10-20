@@ -160,16 +160,17 @@ public class StructureManager {
 					analyze_type(tmp_type_addr, go_bin.get_address_value(tmp_typelink_addr, 0, 4));
 				} catch(InvalidBinaryStructureException e) {
 					is_go16=true;
+					type_addr_value=0;
+					typelink_addr_value=go_bin.get_address_value(base_addr, 25*pointer_size, pointer_size);
 					typelink_len=go_bin.get_address_value(base_addr, 26*pointer_size, pointer_size);
 				}
 				text_addr=go_bin.get_address(go_bin.get_address_value(base_addr, 12*pointer_size, pointer_size));
 			}
 
-
 			Address type_addr=go_bin.get_address(type_addr_value);
 			Address typelink_addr=go_bin.get_address(typelink_addr_value);
 
-			if(!go_bin.is_valid_address(type_addr) || (!go_bin.is_valid_address(typelink_addr) && !is_go16) || !text_addr.equals(go_bin.get_section(".text")))
+			if((!go_bin.is_valid_address(type_addr) && !is_go16) || !go_bin.is_valid_address(typelink_addr) || !text_addr.equals(go_bin.get_section(".text")))
 			{
 				base_addr=go_bin.get_address(base_addr, 4);
 				if(base_addr==null) {
@@ -182,14 +183,14 @@ public class StructureManager {
 			{
 				long offset=0;
 				if(is_go16) {
-					offset=go_bin.get_address_value(type_addr, pointer_size*i, pointer_size)-type_addr.getOffset();
+					offset=go_bin.get_address_value(typelink_addr, pointer_size*i, pointer_size)-type_addr.getOffset();
 				}else {
 					offset=go_bin.get_address_value(typelink_addr, i*4, 4);
 				}
 				try {
 					analyze_type(type_addr, offset);
 				} catch(InvalidBinaryStructureException e) {
-					Logger.append_message(String.format("Failed to analyze type: addr=%x, offset=%x", type_addr.getOffset(), offset));
+					Logger.append_message(String.format("Failed to analyze type: addr=%x, offset=%x message=%s", type_addr.getOffset(), offset, e.getMessage()));
 				}
 			}
 
