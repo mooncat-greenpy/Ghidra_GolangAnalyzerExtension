@@ -86,7 +86,7 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 			}
 			if(service==null) {
 				Logger.append_message(String.format("Failed to get service"));
-				return false;
+				service=new GolangAnalyzerExtensionDummyService();
 			}
 
 			FunctionModifier func_modifier=new FunctionModifier(go_bin, service, rename_option, param_option, comment_option, disasm_option, extended_option);
