@@ -42,7 +42,7 @@ public class GolangFunction {
 	String func_name="";
 	int arg_size=0;
 	List<Parameter> params=null;
-	Map<Integer, String> file_line_comment_map=null;
+	Map<Integer, FileLine> file_line_comment_map=null;
 	Map<Integer, Long> frame_map=null;
 
 	boolean ok=false;
@@ -332,7 +332,7 @@ public class GolangFunction {
 				file_name="not found";
 			}
 
-			file_line_comment_map.put(key, String.format("%s:%d", file_name, line_num));
+			file_line_comment_map.put(key, new FileLine(file_name, line_num));
 		}
 		return true;
 	}
@@ -516,7 +516,7 @@ public class GolangFunction {
 		return params;
 	}
 
-	Map<Integer, String> get_file_line_comment_map(){
+	Map<Integer, FileLine> get_file_line_comment_map(){
 		return file_line_comment_map;
 	}
 }

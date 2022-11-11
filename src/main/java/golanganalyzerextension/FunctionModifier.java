@@ -254,10 +254,10 @@ public class FunctionModifier{
 
 	void add_file_line_comment(GolangFunction gofunc) {
 		Address addr=gofunc.get_func_addr();
-		Map<Integer, String> comment_map=gofunc.get_file_line_comment_map();
+		Map<Integer, FileLine> comment_map=gofunc.get_file_line_comment_map();
 
 		for(Integer key: comment_map.keySet()) {
-			go_bin.set_comment(go_bin.get_address(addr, key), ghidra.program.model.listing.CodeUnit.PRE_COMMENT, comment_map.get(key));
+			go_bin.set_comment(go_bin.get_address(addr, key), ghidra.program.model.listing.CodeUnit.PRE_COMMENT, comment_map.get(key).toString());
 		}
 	}
 }

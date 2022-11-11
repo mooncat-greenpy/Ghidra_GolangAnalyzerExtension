@@ -16,11 +16,14 @@ import ghidra.util.task.TaskMonitor;
 
 public class FilenameTableModel extends AddressBasedTableModel<String> {
 	PluginTool plugin_tool;
+	GolangAnalyzerExtensionPlugin gae_plugin;
+	FileDetailProvider file_detail_provider;
 
-	FilenameTableModel(PluginTool tool, Program program, TaskMonitor monitor) {
+	FilenameTableModel(PluginTool tool, Program program, TaskMonitor monitor, GolangAnalyzerExtensionPlugin gae_plugin) {
 		super("Functions Table", tool, program, monitor, true);
 
 		plugin_tool=tool;
+		this.gae_plugin=gae_plugin;
 	}
 
 	/*@Override
@@ -39,6 +42,9 @@ public class FilenameTableModel extends AddressBasedTableModel<String> {
 
 	*/@Override
 	public Address getAddress(int row) {
+		file_detail_provider=new FileDetailProvider(gae_plugin, getRowObject(row));
+		file_detail_provider.getTool().showComponentProvider(file_detail_provider, true);
+		file_detail_provider.toFront();
 		return null;
 	}
 

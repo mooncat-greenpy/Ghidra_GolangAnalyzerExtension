@@ -79,13 +79,13 @@ public class FunctionDetailProvider extends ComponentProviderAdapter {
 	}
 
 	private JScrollPane create_file_line_table(GolangFunction gofunc) {
-		Map<Integer, String> file_line_map=gofunc.get_file_line_comment_map();
+		Map<Integer, FileLine> file_line_map=gofunc.get_file_line_comment_map();
 		List<Integer> key_list=new ArrayList<Integer>(file_line_map.keySet());
 		key_list.sort(null);
 		String[] columns={"Offset", "File name"};
 		Object[][] data=new Object[file_line_map.size()][2];
 		for(int i=0; i<key_list.size(); i++) {
-			Object[] row={key_list.get(i), file_line_map.get(key_list.get(i))};
+			Object[] row={key_list.get(i), file_line_map.get(key_list.get(i)).toString()};
 			data[i]=row;
 		}
 		JTable table=new JTable(data, columns);
