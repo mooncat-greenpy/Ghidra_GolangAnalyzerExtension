@@ -12,7 +12,6 @@ import ghidra.program.model.address.AddressOutOfBoundsException;
 import ghidra.program.model.address.AddressSet;
 import ghidra.program.model.data.ByteDataType;
 import ghidra.program.model.data.DataType;
-import ghidra.program.model.data.DataTypeConflictException;
 import ghidra.program.model.data.Integer16DataType;
 import ghidra.program.model.data.Integer3DataType;
 import ghidra.program.model.data.Integer5DataType;
@@ -338,7 +337,7 @@ public class GolangBinary {
 				if(!string_data.getDataType().isEquivalent((new StringDataType()))) {
 					return "not found";
 				}
-			} catch (CodeUnitInsertionException | DataTypeConflictException e) {
+			} catch (CodeUnitInsertionException e) {
 				Logger.append_message(String.format("Failed to create string data: %s %x", e.getMessage(), addr.getOffset()));
 			}
 		}
@@ -353,7 +352,7 @@ public class GolangBinary {
 		return (String)string_data.getValue();
 	}
 
-	public void create_data(Address addr, DataType datatype) throws CodeUnitInsertionException, DataTypeConflictException {
+	public void create_data(Address addr, DataType datatype) throws CodeUnitInsertionException {
 		clear_data(addr, datatype.getLength());
 		program.getListing().createData(addr, datatype);
 	}
