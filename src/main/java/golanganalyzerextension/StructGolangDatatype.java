@@ -7,59 +7,52 @@ import ghidra.program.model.address.Address;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.StructureDataType;
 import ghidra.program.model.data.VoidDataType;
-import golanganalyzerextension.StructureManager.Tflag;
 
 
-class StructField {
-	String name;
-	long type_key;
-	int offset;
-
-	StructField(GolangBinary go_bin, String name, long type_key, int offset){
-		this.name=name;
-		this.type_key=type_key;
-		if(go_bin.ge_go_version("go1.19beta1") || go_bin.lt_go_version("go1.9beta1")) {
-			this.offset=offset;
-		} else {
-			this.offset=offset>>1;
-		}
-	}
-}
-
-class StructGolangDatatype extends GolangDatatype {
-	String pkg_name="";
-	List<StructField> field_list=null;
+public class StructGolangDatatype extends GolangDatatype {
+	private String pkg_name;
+	private List<StructField> field_list;
 
 	StructGolangDatatype(GolangBinary go_bin, Address type_base_addr, long offset, boolean is_go16) {
 		super(go_bin, type_base_addr, offset, is_go16);
 	}
 
+	public String get_pkg_name() {
+		return pkg_name;
+	}
+
+	public List<StructField> get_field_list(){
+		return field_list;
+	}
+
 	@Override
-	public StructureDataType get_datatype(DatatypeSearcher datatype_searcher) {
+	public void make_datatype(DatatypeHolder datatype_searcher) {
 		StructureDataType structure_datatype=new StructureDataType(name, 0);
 
 		// ver <= go1.8.*
 		int pre_field_end=0;
 
 		for(StructField field : field_list) {
-			DataType field_datatype=datatype_searcher.get_datatype_by_key(field.type_key);
+			DataType field_datatype=datatype_searcher.get_datatype_by_key(field.get_type_key());
 			if(field_datatype!=null && !field_datatype.isZeroLength() && !(field_datatype instanceof VoidDataType)) {
-				int offset=field.offset;
+				int offset=field.get_offset();
 				if(offset<pre_field_end) {
 					offset<<=1;
 				}
-				structure_datatype.insertAtOffset(offset, field_datatype, field_datatype.getLength(), field.name, null);
+				structure_datatype.insertAtOffset(offset, field_datatype, field_datatype.getLength(), field.get_name(), null);
 				pre_field_end=offset+field_datatype.getLength();
 			}
 		}
 		for(int i=structure_datatype.getLength(); i<size; i++) {
 			structure_datatype.add(DataType.DEFAULT, 1);
 		}
-		return structure_datatype;
+		datatype=structure_datatype;
 	}
 
 	@Override
-	protected void parse_datatype() {
+	void parse_datatype() {
+		int pointer_size=go_bin.get_pointer_size();
+
 		long pkg_path_addr_value=go_bin.get_address_value(ext_base_addr, pointer_size);
 		long fields_addr_value=go_bin.get_address_value(ext_base_addr, pointer_size, pointer_size);
 		long fields_len=go_bin.get_address_value(ext_base_addr, pointer_size*2, pointer_size);

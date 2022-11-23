@@ -1,33 +1,33 @@
 package golanganalyzerextension;
 
 import ghidra.program.model.address.Address;
+import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.PointerDataType;
 import ghidra.program.model.data.StructureDataType;
 import ghidra.program.model.data.VoidDataType;
-import golanganalyzerextension.StructureManager.Tflag;
 
 
-class MapGolangDatatype extends GolangDatatype {
-	long key_type_key=0;
-	long elem_type_key=0;
+public class MapGolangDatatype extends GolangDatatype {
+	private long key_type_key;
+	private long elem_type_key;
 
 	MapGolangDatatype(GolangBinary go_bin, Address type_base_addr, long offset, boolean is_go16) {
 		super(go_bin, type_base_addr, offset, is_go16);
 	}
 
 	@Override
-	public StructureDataType get_datatype(DatatypeSearcher datatype_searcher) {
-		StructureDataType map_datatype=new StructureDataType(name, 0);
-		map_datatype.add(new PointerDataType(get_datatype(datatype_searcher, true), go_bin.get_pointer_size()));
-		return map_datatype;
+	public DataType get_inner_datatype(boolean once) {
+		return new PointerDataType(datatype, go_bin.get_pointer_size());
 	}
 
 	@Override
-	public StructureDataType get_datatype(DatatypeSearcher datatype_searcher, boolean once) {
+	public void make_datatype(DatatypeHolder datatype_searcher) {
 		String struct_name=name;
 		if(struct_name.length()>0 && struct_name.endsWith("*")) {
 			struct_name=struct_name.substring(0, struct_name.length()-1);
 		}
+
+		int pointer_size=go_bin.get_pointer_size();
 
 		// runtime/map.go
 		StructureDataType hmap_datatype=new StructureDataType(struct_name, 0);
@@ -42,11 +42,13 @@ class MapGolangDatatype extends GolangDatatype {
 		hmap_datatype.add(datatype_searcher.get_datatype_by_name("unsafe.Pointer"), "oldbuckets", "");
 		hmap_datatype.add(datatype_searcher.get_datatype_by_name("uintptr"), "nevacuate", "");
 		hmap_datatype.add(new PointerDataType(new VoidDataType(), pointer_size), "extra", "");
-		return hmap_datatype;
+		datatype=hmap_datatype;
 	}
 
 	@Override
-	protected void parse_datatype() {
+	void parse_datatype() {
+		int pointer_size=go_bin.get_pointer_size();
+
 		long key_addr_value=go_bin.get_address_value(ext_base_addr, pointer_size);
 		key_type_key=key_addr_value-type_base_addr.getOffset();
 		long elem_addr_value=go_bin.get_address_value(ext_base_addr, pointer_size, pointer_size);

@@ -19,14 +19,14 @@ import ghidra.program.model.data.UnsignedLongLongDataType;
 import ghidra.program.model.data.UnsignedShortDataType;
 import ghidra.program.model.data.VoidDataType;
 
-class DatatypeSearcher {
-	GolangAnalyzerExtensionService service=null;
-	Map<String, DataType> hardcode_datatype_map=null;
-	GolangBinary go_bin=null;
-	boolean is_go16=false;
+class DatatypeHolder {
+	Map<Long, GolangDatatype> datatype_map;
+	Map<String, DataType> hardcode_datatype_map;
+	GolangBinary go_bin;
+	boolean is_go16;
 
-	DatatypeSearcher(GolangAnalyzerExtensionService service, GolangBinary go_bin, boolean is_go16) {
-		this.service=service;
+	public DatatypeHolder(GolangBinary go_bin, boolean is_go16) {
+		this.datatype_map=new HashMap<Long, GolangDatatype>();;
 
 		this.go_bin=go_bin;
 		this.is_go16=is_go16;
@@ -34,25 +34,37 @@ class DatatypeSearcher {
 		init_hardcode_golang_datatype();
 	}
 
+	Map<Long, GolangDatatype> get_datatype_map() {
+		return datatype_map;
+	}
+
+	Set<Long> get_key_set() {
+		return datatype_map.keySet();
+	}
+
+	boolean contain_key(long key) {
+		return datatype_map.containsKey(key);
+	}
+
 	GolangDatatype get_go_datatype_by_key(long key) {
-		return service.get_datatype_map().get(key);
+		return datatype_map.get(key);
 	}
 
 	DataType get_datatype_by_key(long key) {
-		GolangDatatype result = service.get_datatype_map().get(key);
+		GolangDatatype result = datatype_map.get(key);
 		if(result!=null) {
-			return result.get_datatype(this);
+			return result.get_inner_datatype(false);
 		}
 		return null;
 	}
 
 	DataType get_datatype_by_name(String name) {
-		for(Map.Entry<Long, GolangDatatype> entry : service.get_datatype_map().entrySet()) {
+		for(Map.Entry<Long, GolangDatatype> entry : datatype_map.entrySet()) {
 			GolangDatatype tmp_go_datatype=entry.getValue();
 			if(!tmp_go_datatype.get_name().equals(name)) {
 				continue;
 			}
-			DataType tmp_datatype=tmp_go_datatype.get_datatype(this);
+			DataType tmp_datatype=tmp_go_datatype.get_inner_datatype(false);
 			if(tmp_datatype.getLength()>0) {
 				return tmp_datatype;
 			}
@@ -61,8 +73,12 @@ class DatatypeSearcher {
 		return hardcode_datatype_map.get(name);
 	}
 
-	Set<Long> get_key_set() {
-		return service.get_datatype_map().keySet();
+	void put_datatype(long key, GolangDatatype go_datatype) {
+		datatype_map.put(key, go_datatype);
+	}
+
+	void replace_datatype(long key, GolangDatatype go_datatype) {
+		datatype_map.replace(key, go_datatype);
 	}
 
 	private void init_hardcode_golang_datatype() {
