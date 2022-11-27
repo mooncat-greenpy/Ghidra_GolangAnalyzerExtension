@@ -11,12 +11,14 @@ public class GolangAnalyzerExtensionDummyService implements GolangAnalyzerExtens
 	List<GolangFunction> func_list;
 	List<String> filename_list;
 	Map<Long, GolangDatatype> datatype_map;
+	private Map<Long, String> string_map;
 
 	public GolangAnalyzerExtensionDummyService() {
 		go_bin=null;
 		func_list=new ArrayList<>();
 		filename_list=new ArrayList<>();
 		datatype_map=new HashMap<>();
+		string_map=new HashMap<>();
 	}
 
 	@Override
@@ -64,5 +66,15 @@ public class GolangAnalyzerExtensionDummyService implements GolangAnalyzerExtens
 	@Override
 	public void store_datatype_map(Map<Long, GolangDatatype> map) {
 		datatype_map=map;
+	}
+
+	@Override
+	public Map<Long, String> get_string_map() {
+		return string_map;
+	}
+
+	@Override
+	public void store_string_map(Map<Long, String> map) {
+		string_map=map;
 	}
 }

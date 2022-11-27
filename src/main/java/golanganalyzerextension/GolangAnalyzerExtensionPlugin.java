@@ -61,6 +61,7 @@ public class GolangAnalyzerExtensionPlugin extends ProgramPlugin implements Gola
 	List<GolangFunction> func_list=new ArrayList<>();
 	List<String> filename_list=new ArrayList<>();
 	Map<Long, GolangDatatype> datatype_map=new HashMap<>();
+	private Map<Long, String> string_map;
 
 	@Override
 	public GolangBinary get_binary() {
@@ -99,6 +100,7 @@ public class GolangAnalyzerExtensionPlugin extends ProgramPlugin implements Gola
 		}
 		filename_list.add(filename);
 	}
+
 	@Override
 	public Map<Long, GolangDatatype> get_datatype_map() {
 		return datatype_map;
@@ -107,5 +109,15 @@ public class GolangAnalyzerExtensionPlugin extends ProgramPlugin implements Gola
 	@Override
 	public void store_datatype_map(Map<Long, GolangDatatype> map) {
 		datatype_map=map;
+	}
+
+	@Override
+	public Map<Long, String> get_string_map() {
+		return string_map;
+	}
+
+	@Override
+	public void store_string_map(Map<Long, String> map) {
+		string_map=map;
 	}
 }

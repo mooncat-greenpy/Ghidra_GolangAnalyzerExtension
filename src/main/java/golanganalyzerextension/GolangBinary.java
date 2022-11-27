@@ -288,6 +288,10 @@ public class GolangBinary {
 		}
 	}
 
+	public MemoryBlock[] get_memory_blocks() {
+		return memory.getBlocks();
+	}
+
 	public void clear_data(Address addr, long size) {
 		program_listing.clearCodeUnits(addr, addr.add(size), false);
 	}
