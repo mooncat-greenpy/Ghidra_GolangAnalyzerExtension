@@ -79,7 +79,7 @@ public class GolangDatatype {
 
 		parse_basic_info(offset);;
 
-		datatype=new StructureDataType(name, (int)size);
+		datatype=new StructureDataType(name, (int)size>=0?(int)size:0);
 	}
 
 	public static GolangDatatype create_by_parsing(GolangBinary go_bin, Address type_base_addr, long offset, boolean is_go16) throws InvalidBinaryStructureException {

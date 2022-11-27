@@ -594,4 +594,8 @@ public class GolangBinary {
 	public boolean le_go_version(String cmp_go_version) throws InvalidGolangVersionFormatException {
 		return go_version.le(cmp_go_version);
 	}
+
+	public void set_go_version(String str) {
+		go_version.set_version_str(str);
+	}
 }

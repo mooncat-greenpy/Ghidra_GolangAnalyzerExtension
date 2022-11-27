@@ -15,7 +15,6 @@ public class StructureManager {
 
 	private DataTypeManager datatype_manager;
 	private DatatypeHolder datatype_holder;
-	private boolean is_go16;
 
 	private boolean ok;
 
@@ -27,7 +26,7 @@ public class StructureManager {
 		}
 
 		this.datatype_manager=program.getDataTypeManager();
-		this.datatype_holder=new DatatypeHolder(go_bin, is_go16);
+		this.datatype_holder=new DatatypeHolder(go_bin, false);
 
 		if(!init_basig_golang_datatype()) {
 			Logger.append_message("Failed to init datatype");
@@ -69,7 +68,10 @@ public class StructureManager {
 		String comment="Name: "+go_datatype.get_name()+"\n";
 
 		comment+=go_datatype.get_kind().name()+":\n";
-		for(DataTypeComponent field : go_datatype.get_datatype().getComponents()) {
+		DataTypeComponent[] components=go_datatype.get_datatype().getComponents();
+		final int MAX_FIELD_NUM=100;
+		for(int i=0; i<components.length && i<MAX_FIELD_NUM; i++) {
+			DataTypeComponent field=components[i];
 			comment+=String.format("  +%#6x %#6x %s %s\n", field.getOffset(), field.getLength(), field.getDataType().getName(), field.getFieldName()!=null?field.getFieldName():"");
 		}
 
@@ -84,15 +86,6 @@ public class StructureManager {
 	}
 
 	boolean init_basig_golang_datatype() {
-		boolean is_go116=false;
-		boolean is_go118=false;
-		if(go_bin.ge_go_version("go1.16beta1")) {
-			is_go116=true;
-		}
-		if(go_bin.ge_go_version("go1.18beta1")) {
-			is_go118=true;
-		}
-
 		ByteBuffer buffer=ByteBuffer.allocate(Long.BYTES);
 		buffer.putLong(go_bin.get_gopclntab_base().getOffset());
 		buffer.flip();
@@ -105,8 +98,6 @@ public class StructureManager {
 		int pointer_size=go_bin.get_pointer_size();
 		Address base_addr=null;
 		while(true) {
-			is_go16=false;
-
 			if(pointer_size==4) {
 				base_addr=go_bin.find_memory(base_addr, gopclntab_base_bytes, new byte[] {(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x00});
 			}else {
@@ -116,52 +107,9 @@ public class StructureManager {
 				break;
 			}
 
-			// runtime/symtab.go
-			long type_addr_value=0;
-			long typelink_addr_value=0;
-			long typelink_len=0;
-			Address text_addr=null;
-			if(is_go118) {
-				type_addr_value=go_bin.get_address_value(base_addr, 35*pointer_size, pointer_size);
-				typelink_addr_value=go_bin.get_address_value(base_addr, 42*pointer_size, pointer_size);
-				typelink_len=go_bin.get_address_value(base_addr, 43*pointer_size, pointer_size);
-				text_addr=go_bin.get_address(go_bin.get_address_value(base_addr, 22*pointer_size, pointer_size));
-			}else if(is_go116) {
-				type_addr_value=go_bin.get_address_value(base_addr, 35*pointer_size, pointer_size);
-				typelink_addr_value=go_bin.get_address_value(base_addr, 40*pointer_size, pointer_size);
-				typelink_len=go_bin.get_address_value(base_addr, 41*pointer_size, pointer_size);
-				text_addr=go_bin.get_address(go_bin.get_address_value(base_addr, 22*pointer_size, pointer_size));
-			}else {
-				type_addr_value=go_bin.get_address_value(base_addr, 25*pointer_size, pointer_size);
-				typelink_addr_value=go_bin.get_address_value(base_addr, 30*pointer_size, pointer_size);
-				typelink_len=go_bin.get_address_value(base_addr, 31*pointer_size, pointer_size);
+			ModuleData module_data=ModuleData.create_by_parsing(go_bin, base_addr);
 
-				Address tmp_type_addr=go_bin.get_address(type_addr_value);
-				Address tmp_typelink_addr=go_bin.get_address(typelink_addr_value);
-				try {
-					analyze_type(tmp_type_addr, go_bin.get_address_value(tmp_typelink_addr, 0, 4));
-				} catch(InvalidBinaryStructureException e) {
-					type_addr_value=go_bin.get_address_value(base_addr, 25*pointer_size, pointer_size);
-					typelink_addr_value=go_bin.get_address_value(base_addr, 27*pointer_size, pointer_size);
-					typelink_len=go_bin.get_address_value(base_addr, 28*pointer_size, pointer_size);
-					tmp_type_addr=go_bin.get_address(type_addr_value);
-					tmp_typelink_addr=go_bin.get_address(typelink_addr_value);
-				}
-				try {
-					analyze_type(tmp_type_addr, go_bin.get_address_value(tmp_typelink_addr, 0, 4));
-				} catch(InvalidBinaryStructureException e) {
-					is_go16=true;
-					type_addr_value=0;
-					typelink_addr_value=go_bin.get_address_value(base_addr, 25*pointer_size, pointer_size);
-					typelink_len=go_bin.get_address_value(base_addr, 26*pointer_size, pointer_size);
-				}
-				text_addr=go_bin.get_address(go_bin.get_address_value(base_addr, 12*pointer_size, pointer_size));
-			}
-
-			Address type_addr=go_bin.get_address(type_addr_value);
-			Address typelink_addr=go_bin.get_address(typelink_addr_value);
-
-			if((!go_bin.is_valid_address(type_addr) && !is_go16) || !go_bin.is_valid_address(typelink_addr) || !text_addr.equals(go_bin.get_section(".text")))
+			if(module_data==null)
 			{
 				base_addr=go_bin.get_address(base_addr, 4);
 				if(base_addr==null) {
@@ -170,6 +118,10 @@ public class StructureManager {
 				continue;
 			}
 
+			Address type_addr=module_data.get_type_addr();
+			Address typelink_addr=module_data.get_typelink_addr();
+			long typelink_len=module_data.get_typelink_len();
+			boolean is_go16=module_data.get_is_go16();
 			datatype_holder=new DatatypeHolder(go_bin, is_go16);
 
 			for(long i=0;i<typelink_len;i++)
@@ -181,7 +133,7 @@ public class StructureManager {
 					offset=go_bin.get_address_value(typelink_addr, i*4, 4);
 				}
 				try {
-					analyze_type(type_addr, offset);
+					analyze_type(type_addr, offset, is_go16);
 				} catch(InvalidBinaryStructureException e) {
 					Logger.append_message(String.format("Failed to analyze type: addr=%x, offset=%x message=%s", type_addr.getOffset(), offset, e.getMessage()));
 				}
@@ -200,7 +152,7 @@ public class StructureManager {
 		return true;
 	}
 
-	boolean analyze_type(Address type_base_addr, long offset) throws InvalidBinaryStructureException {
+	boolean analyze_type(Address type_base_addr, long offset, boolean is_go16) throws InvalidBinaryStructureException {
 		if(datatype_holder.contain_key(offset)) {
 			return true;
 		}
@@ -209,7 +161,7 @@ public class StructureManager {
 		datatype_holder.put_datatype(offset, go_datatype);
 
 		for(long dependence_type_key : go_datatype.dependence_type_key_list) {
-			analyze_type(type_base_addr, dependence_type_key);
+			analyze_type(type_base_addr, dependence_type_key, is_go16);
 		}
 		go_datatype.make_datatype(datatype_holder);
 		datatype_holder.replace_datatype(offset, go_datatype);
