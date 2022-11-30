@@ -94,6 +94,12 @@ public class StringExtractor {
 		// LEA        RDX,[0xXXXXXXXX]              : 0xXXXXXXXX: "name"
 		// MOV        qword ptr [RAX],RDX
 
+		// MOV        qword ptr [RAX + 0x8],0x4
+		// CMP        dword ptr [0xYYYYYYYY],0x0
+		// JNZ        0xZZZZZZZZ
+		// LEA        RDX,[0xXXXXXXXX]              : 0xXXXXXXXX: "name"
+		// MOV        qword ptr [RAX],RDX
+
 		// LEA        RBX,[0xXXXXXXXX]              : 0xXXXXXXXX: &"name", 4
 	}
 }
