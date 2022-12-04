@@ -190,7 +190,11 @@ public class GolangBinary {
 	}
 
 	public boolean is_valid_address(long addr_value) {
-		return is_valid_address(get_address(addr_value));
+		try {
+			return is_valid_address(get_address(addr_value));
+		} catch (AddressOutOfBoundsException e) {
+			return false;
+		}
 	}
 
 	public long get_address_value(Address addr, int size) {
