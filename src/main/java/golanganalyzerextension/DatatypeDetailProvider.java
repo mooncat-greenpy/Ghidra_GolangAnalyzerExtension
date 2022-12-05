@@ -70,8 +70,7 @@ public class DatatypeDetailProvider extends ComponentProviderAdapter {
 		}
 
 		String[] columns={"Offset", "Datatype", "Name", "Comment", "Length"};
-		DatatypeSearcher datatype_searcher=new DatatypeSearcher(gae_tool, gae_tool.get_binary(), false);
-		StructureDataType datatype=go_datatype.get_datatype(datatype_searcher, true);
+		StructureDataType datatype=go_datatype.get_datatype();
 		Object[][] data=new Object[datatype.getNumComponents()][5];
 		for(int i=0; i<datatype.getNumComponents(); i++) {
 			DataTypeComponent dtc=datatype.getComponent(i);

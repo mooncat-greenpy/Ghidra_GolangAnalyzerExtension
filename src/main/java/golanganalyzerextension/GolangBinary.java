@@ -189,7 +189,11 @@ public class GolangBinary {
 	}
 
 	public boolean is_valid_address(long addr_value) {
-		return is_valid_address(get_address(addr_value));
+		try {
+			return is_valid_address(get_address(addr_value));
+		} catch (AddressOutOfBoundsException e) {
+			return false;
+		}
 	}
 
 	public long get_address_value(Address addr, int size) {
@@ -285,6 +289,10 @@ public class GolangBinary {
 		}else {
 			return new IntegerDataType();
 		}
+	}
+
+	public MemoryBlock[] get_memory_blocks() {
+		return memory.getBlocks();
 	}
 
 	public void clear_data(Address addr, long size) {
@@ -592,5 +600,9 @@ public class GolangBinary {
 
 	public boolean le_go_version(String cmp_go_version) throws InvalidGolangVersionFormatException {
 		return go_version.le(cmp_go_version);
+	}
+
+	public void set_go_version(String str) {
+		go_version.set_version_str(str);
 	}
 }

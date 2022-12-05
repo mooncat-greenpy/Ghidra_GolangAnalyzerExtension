@@ -7,6 +7,9 @@ It supports both 32bit and 64bit.
 - Modify function arguments
 - Add source file and line number information to comments
 - Add data type
+- Search strings
+
+<img src="img/image.png" width="600">
 
 ## Usage
 1. Download the release

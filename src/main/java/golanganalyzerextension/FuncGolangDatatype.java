@@ -5,28 +5,26 @@ import java.util.List;
 
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.PointerDataType;
-import ghidra.program.model.data.StructureDataType;
 import ghidra.program.model.data.VoidDataType;
-import golanganalyzerextension.StructureManager.Tflag;
 
 
-class FuncGolangDatatype extends GolangDatatype {
-	List<Long> in_type_key_list=null;
-	List<Long> out_type_key_list=null;
+public class FuncGolangDatatype extends GolangDatatype {
+	private List<Long> in_type_key_list;
+	private List<Long> out_type_key_list;
 
 	FuncGolangDatatype(GolangBinary go_bin, Address type_base_addr, long offset, boolean is_go16) {
 		super(go_bin, type_base_addr, offset, is_go16);
 	}
 
 	@Override
-	public StructureDataType get_datatype(DatatypeSearcher datatype_searcher) {
-		StructureDataType func_datatype=new StructureDataType(name, 0);
-		func_datatype.add(new PointerDataType(new VoidDataType(), go_bin.get_pointer_size()));
-		return func_datatype;
+	public void make_datatype(DatatypeHolder datatype_searcher) {
+		datatype=new PointerDataType(new VoidDataType(), go_bin.get_pointer_size());
 	}
 
 	@Override
-	protected void parse_datatype() {
+	void parse_datatype() {
+		int pointer_size=go_bin.get_pointer_size();
+
 		int in_len=(short)go_bin.get_address_value(ext_base_addr, 2);
 		int out_len=(short)go_bin.get_address_value(ext_base_addr, 2, 2);
 		out_len=(short)(out_len&0x1f);

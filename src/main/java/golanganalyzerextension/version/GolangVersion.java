@@ -53,6 +53,10 @@ public class GolangVersion {
 		return compare(this, new GolangVersion(go_version))<=0;
 	}
 
+	public void set_version_str(String str) {
+		version_str=str;
+	}
+
 	private int compare(GolangVersion cmp1, GolangVersion cmp2) {
 		for(int i=0; i<PART_NUM; i++) {
 			for(int j=0; j<VALUE_NUM; j++) {
