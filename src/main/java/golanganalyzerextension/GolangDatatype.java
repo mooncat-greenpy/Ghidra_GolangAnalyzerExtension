@@ -7,7 +7,6 @@ import java.util.Optional;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.BooleanDataType;
 import ghidra.program.model.data.DataType;
-import ghidra.program.model.data.DataTypeConflictException;
 import ghidra.program.model.data.Float4DataType;
 import ghidra.program.model.data.Float8DataType;
 import ghidra.program.model.data.IntegerDataType;
@@ -196,7 +195,7 @@ public class GolangDatatype {
 				go_bin.set_comment(go_bin.get_address(addr, go_bin.get_pointer_size()*4+4*2+1*4), ghidra.program.model.listing.CodeUnit.EOL_COMMENT,
 						String.format("%x", type_base_addr.getOffset()+ptr_to_this_off));
 			}
-		} catch (CodeUnitInsertionException | DataTypeConflictException e) {
+		} catch (CodeUnitInsertionException e) {
 			Logger.append_message(String.format("Failed to create data: %s %x %s", e.getMessage(), addr.getOffset(), get_name()));
 		}
 	}
