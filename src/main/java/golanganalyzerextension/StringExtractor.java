@@ -56,7 +56,7 @@ public class StringExtractor {
 		if(str_len<=0 || str_len>=0x1000) {
 			return null;
 		}
-		if(go_bin.is_valid_address(addr.add(pointer_size*2))) {
+		if(go_bin.is_valid_address(addr.getOffset()+pointer_size*2)) {
 			long str_len2=go_bin.get_address_value(addr, pointer_size*2, pointer_size);
 			if(str_len==str_len2) {
 				return null;
@@ -101,78 +101,6 @@ public class StringExtractor {
 		for(GolangFunction go_func : service.get_function_list()) {
 			search_function(go_func.get_func_addr(), (int)go_func.func_size);
 		}
-		// amd64
-		// LEA        RCX,[0xXXXXXXXX]              : 0xXXXXXXXX: "name"
-		// MOV        EDI,0x4
-
-		// LEA        RBX,[0xXXXXXXXX]              : 0xXXXXXXXX: "name"
-		// MOV        qword ptr [RSP + 0x180],RBX
-		// MOV        qword ptr [RSP + 0x188],0x4
-
-		// MOV        qword ptr [RAX + 0x8],0x4
-		// CMP        dword ptr [0xYYYYYYYY],0x0
-		// JNZ        0xZZZZZZZZ
-		// LEA        RDX,[0xXXXXXXXX]              : 0xXXXXXXXX: "name"
-		// MOV        qword ptr [RAX],RDX
-
-		// MOV        qword ptr [RAX + 0x8],0x4
-		// CMP        dword ptr [0xYYYYYYYY],0x0
-		// JNZ        0xZZZZZZZZ
-		// LEA        RDX,[0xXXXXXXXX]              : 0xXXXXXXXX: "name"
-		// MOV        qword ptr [RAX],RDX
-
-		// LEA        RBX,[0xXXXXXXXX]              : 0xXXXXXXXX: &"name", 4
-
-
-		// arm
-		// ldr        r2,[0xYYYYYYYY]               : 0xYYYYYYYY: 0xXXXXXXXX
-		// str        r2,[sp,#0xc]                  : 0xXXXXXXXX: "name"
-		// mov        r3,#0x4
-		// str        r3,[sp,#0x10]
-
-
-		// arm64
-		// adrp       x2,0xb6000
-		// add        x2=>DAT_000b6b98,x2,#0xb98    : 0x000b6b98: "name"
-		// orr        x3,xzr,#0x4
-
-		// orr        x1,xzr,#0x4
-		// str        x1,[x0, #0x8]
-		// adrp       x27,0x177000
-		// add        x27,x27,#0x150
-		// ldr        w2,[x27]=>DAT_00177150
-		// cbnz       w2,LAB_000912d0
-		// adrp       x4,0xb6000
-		// add        x4=>DAT_000b6f98,x4,#0xf98
-		// str        x4=>DAT_000b6f98,[x0]         : 0x000b6f98: "name"
-
-
-
-		// mips64
-		// lui        a0,0xd
-		// daddu      a0,a0,gp
-		// daddiu     a0,a0,0x6a96
-		// sd         a0=>DAT_000d6a96,0x18(sp)     : 0x000d7a96: &"name"
-		// daddiu     a1,zero,0x4
-		// sd         a1,0x20(sp)
-
-		// ld         s4,0x28(sp)
-		// daddiu     v0,zero,0x4
-		// sd         v0,0x8(s4)
-		// lui        s7,0x1a
-		// daddu      s7,s7,gp
-		// lwu        v1,-0x6760(s7)
-		// bne        v1,zero,bbc20
-		// lui        at,0xd
-		// daddu      at,at,gp
-		// daddiu     at,at,0x6f39
-		// sd         at=>DAT_000d6f39,0x0(s4)      : 0x000d6f39: &"name"
-
-
-		// ppc64
-		// lis        r5,0xb
-		// addi       r5,r5,0x6a6c
-		// li         r6=>DAT_000b6a6c,0x4
 	}
 
 	private void search_function(Address addr, int length) {
