@@ -332,7 +332,7 @@ public class GolangFunction {
 				file_name="not found";
 			}
 
-			file_line_comment_map.put(key, new FileLine(file_name, line_num));
+			file_line_comment_map.put(key, new FileLine(func_addr, key, pc_offset-key, file_name, line_num));
 		}
 		return true;
 	}
