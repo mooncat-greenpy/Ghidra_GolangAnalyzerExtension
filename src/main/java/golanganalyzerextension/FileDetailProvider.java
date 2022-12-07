@@ -47,15 +47,16 @@ public class FileDetailProvider extends ComponentProviderAdapter {
 				return;
 			}
 
+			long key=0;
 			for(FileLine file_line : file_line_map.values()) {
-				if(!file_line.get_file_name().equals(file_name)) {
-					continue;
+				if(file_line.get_file_name().equals(file_name)) {
+					key=file_line.get_line_num();
 				}
-				if(line_fl_map.containsKey(file_line.get_line_num())) {
-					line_fl_map.get(file_line.get_line_num()).add(file_line);
+				if(line_fl_map.containsKey(key)) {
+					line_fl_map.get(key).add(file_line);
 				} else {
-					line_fl_map.put(file_line.get_line_num(), new ArrayList<>());
-					line_fl_map.get(file_line.get_line_num()).add(file_line);
+					line_fl_map.put(key, new ArrayList<>());
+					line_fl_map.get(key).add(file_line);
 				}
 			}
 		}
@@ -83,6 +84,15 @@ public class FileDetailProvider extends ComponentProviderAdapter {
 			int idx=0;
 			for(Object key : map_key) {
 				for(FileLine file_line : line_fl_map.get(key)) {
+					Function func=gae_tool.get_binary().get_function(file_line.get_func_addr());
+					String func_name=String.format("FUN_%x", file_line.get_func_addr().getOffset());
+					if(func!=null) {
+						func_name=func.getName();
+					}
+					if(!file_line.get_file_name().equals(file_name)) {
+						func_name+=String.format(" ( %s )", file_line.get_file_name());
+					}
+
 					String call_info="";
 					Instruction inst=gae_tool.get_binary().get_instruction(file_line.get_address());
 					while(inst!=null && inst.getAddress().getOffset()<file_line.get_address().getOffset()+file_line.get_size()) {
@@ -100,11 +110,6 @@ public class FileDetailProvider extends ComponentProviderAdapter {
 						inst=inst.getNext();
 					}
 
-					Function func=gae_tool.get_binary().get_function(file_line.get_func_addr());
-					String func_name=String.format("FUN_%x", file_line.get_func_addr().getOffset());
-					if(func!=null) {
-						func_name=func.getName();
-					}
 					Object[] row={key, func_name, call_info};
 					data[idx++]=row;
 					if(idx>=data_count) {
