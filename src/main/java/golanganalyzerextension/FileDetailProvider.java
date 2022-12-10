@@ -17,6 +17,7 @@ import ghidra.framework.plugintool.ComponentProviderAdapter;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Instruction;
+import ghidra.program.model.symbol.Reference;
 
 public class FileDetailProvider extends ComponentProviderAdapter {
 
@@ -65,6 +66,10 @@ public class FileDetailProvider extends ComponentProviderAdapter {
 			if(gae_tool==null) {
 				return new JScrollPane();
 			}
+			GolangBinary go_bin=gae_tool.get_binary();
+			if(go_bin==null) {
+				return new JScrollPane();
+			}
 
 			Map<Long, List<FileLine>> line_fl_map=new HashMap<>();
 			for(GolangFunction func : gae_tool.get_function_list()) {
@@ -84,7 +89,7 @@ public class FileDetailProvider extends ComponentProviderAdapter {
 			int idx=0;
 			for(Object key : map_key) {
 				for(FileLine file_line : line_fl_map.get(key)) {
-					Function func=gae_tool.get_binary().get_function(file_line.get_func_addr());
+					Function func=go_bin.get_function(file_line.get_func_addr());
 					String func_name=String.format("FUN_%x", file_line.get_func_addr().getOffset());
 					if(func!=null) {
 						func_name=func.getName();
@@ -94,12 +99,22 @@ public class FileDetailProvider extends ComponentProviderAdapter {
 					}
 
 					String call_info="";
-					Instruction inst=gae_tool.get_binary().get_instruction(file_line.get_address());
+					Instruction inst=go_bin.get_instruction(file_line.get_address());
 					while(inst!=null && inst.getAddress().getOffset()<file_line.get_address().getOffset()+file_line.get_size()) {
+						for(int i=0; i<inst.getNumOperands(); i++) {
+							// TODO: parse args
+							for(Reference ref : inst.getOperandReferences(i)) {
+								Address ref_addr=ref.getToAddress();
+								Function called_func=go_bin.get_function(ref_addr);
+								if(called_func==null || call_info.contains(called_func.getName())) {
+									continue;
+								}
+								call_info+=String.format("[addr %s] ", called_func.getName());
+							}
+						}
 						if(inst.getFlowType().isCall()) {
 							for(Address called : inst.getFlows()) {
-								// TODO: runtime.newproc
-								Function called_func=gae_tool.get_binary().get_function(called);
+								Function called_func=go_bin.get_function(called);
 								String called_func_name=String.format("FUN_%x", called.getOffset());
 								if(called_func!=null) {
 									called_func_name=called_func.getName();
