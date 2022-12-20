@@ -248,7 +248,7 @@ public class ModuleData {
 	}
 
 	private boolean check_text(Address addr) {
-		if(addr.equals(go_bin.get_section(".text")))
+		if(go_bin.is_valid_address(addr))
 		{
 			return true;
 		}

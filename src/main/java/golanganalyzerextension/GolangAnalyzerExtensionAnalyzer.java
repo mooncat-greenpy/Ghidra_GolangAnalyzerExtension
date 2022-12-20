@@ -104,6 +104,7 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 				Logger.append_message(String.format("Failed to get service"));
 				service=new GolangAnalyzerExtensionDummyService();
 			}
+			service.store_binary(go_bin);
 
 			FunctionModifier func_modifier=new FunctionModifier(go_bin, service, rename_option, param_option, comment_option, disasm_option, extended_option);
 			func_modifier.modify();
@@ -113,8 +114,6 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 
 			StringExtractor str_extractor=new StringExtractor(go_bin, service);
 			str_extractor.modify();
-
-			service.store_binary(go_bin);
 		}catch(Exception e) {
 			Logger.append_message(String.format("Error: %s", e.getMessage()));
 			return false;
