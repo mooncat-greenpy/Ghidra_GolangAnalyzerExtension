@@ -509,6 +509,9 @@ public class GolangBinary {
 			is_go118=true;
 			go12_magic[0]=(byte)0xf0;
 		}
+		if(ge_go_version("go1.20beta1")) {
+			go12_magic[0]=(byte)0xf1;
+		}
 
 		Address tmp_gopclntab_base=null;
 		while(true) {

@@ -28,11 +28,14 @@ public class ModuleData {
 	}
 
 	private boolean parse() {
+		boolean is_go120=false;
 		boolean is_go118=false;
 		boolean is_go116=false;
 		boolean is_go18=false;
 		boolean is_go17=false;
-		if(go_bin.ge_go_version("go1.18beta1")) {
+		if(go_bin.ge_go_version("go1.20beta1")) {
+			is_go120=true;
+		} else if(go_bin.ge_go_version("go1.18beta1")) {
 			is_go118=true;
 		} else if(go_bin.ge_go_version("go1.16beta1")) {
 			is_go116=true;
@@ -44,6 +47,9 @@ public class ModuleData {
 
 		// runtime/symtab.go
 		boolean parsed=false;
+		if(!parsed || is_go120) {
+			parsed=parse_go120(base_addr);
+		}
 		if(!parsed || is_go118) {
 			parsed=parse_go118(base_addr);
 		}
@@ -93,6 +99,33 @@ public class ModuleData {
 		} catch(InvalidBinaryStructureException e) {
 			return false;
 		}
+		return true;
+	}
+
+	private boolean parse_go120(Address base_addr) {
+		int pointer_size=go_bin.get_pointer_size();
+
+		long tmp_type_addr_value=go_bin.get_address_value(base_addr, 37*pointer_size, pointer_size);
+		Address tmp_type_addr=go_bin.get_address(tmp_type_addr_value);
+		long tmp_typelink_addr_value=go_bin.get_address_value(base_addr, 44*pointer_size, pointer_size);
+		Address tmp_typelink_addr=go_bin.get_address(tmp_typelink_addr_value);
+		long tmp_typelink_len=go_bin.get_address_value(base_addr, 45*pointer_size, pointer_size);
+		Address tmp_text_addr=go_bin.get_address(go_bin.get_address_value(base_addr, 22*pointer_size, pointer_size));
+
+		if(!check_type(tmp_type_addr) || !check_typelink(tmp_typelink_addr) || !check_text(tmp_text_addr)) {
+			return false;
+		}
+
+		if(!is_golang_type(tmp_type_addr, go_bin.get_address_value(tmp_typelink_addr, 0, 4), false)) {
+			return false;
+		}
+
+		type_addr=tmp_type_addr;
+		typelink_addr=tmp_typelink_addr;
+		typelink_len=tmp_typelink_len;
+		text_addr=tmp_text_addr;
+		is_go16=false;
+
 		return true;
 	}
 
