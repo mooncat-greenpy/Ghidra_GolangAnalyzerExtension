@@ -167,7 +167,11 @@ public class GolangFunction {
 		if(func_name_addr==null) {
 			return false;
 		}
-		func_name=go_bin.create_string_data(func_name_addr);
+		String str=go_bin.create_string_data(func_name_addr).orElse(null);
+		if(str==null) {
+			return false;
+		}
+		func_name=str;
 		return true;
 	}
 
@@ -329,7 +333,7 @@ public class GolangFunction {
 			pc_offset+=byte_size*go_bin.get_quantum();
 			String file_name=pc_to_file_name(pc_offset);
 			if(file_name==null) {
-				file_name="not found";
+				file_name="not_found";
 			}
 
 			file_line_comment_map.put(key, new FileLine(func_addr, key, pc_offset-key, file_name, line_num));
@@ -460,7 +464,7 @@ public class GolangFunction {
 						return null;
 					}
 
-					String file_name=go_bin.create_string_data(file_name_addr);
+					String file_name=go_bin.create_string_data(file_name_addr).orElse(String.format("not_found_%x", file_name_addr.getOffset()));
 					service.add_filename(file_name);
 					return file_name;
 				}

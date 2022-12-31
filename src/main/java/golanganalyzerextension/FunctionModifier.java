@@ -96,7 +96,7 @@ public class FunctionModifier{
 			if(file_name_addr==null) {
 				return false;
 			}
-			file_name_list.add(go_bin.create_string_data(file_name_addr));
+			file_name_list.add(go_bin.create_string_data(file_name_addr).orElse(String.format("not_found_%x", file_name_addr.getOffset())));
 		}
 
 		service.store_filename_list(file_name_list);
@@ -220,7 +220,7 @@ public class FunctionModifier{
 		Function func=gofunc.get_func();
 		String func_name=gofunc.get_func_name();
 
-		if(func_name.equals("not found") || func.getName().equals(func_name)) {
+		if(func.getName().equals(func_name)) {
 			return;
 		}
 		try {

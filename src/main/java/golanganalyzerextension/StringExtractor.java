@@ -10,6 +10,7 @@ import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.mem.MemoryBlock;
 import ghidra.program.model.scalar.Scalar;
 import ghidra.program.model.symbol.RefType;
+import golanganalyzerextension.exceptions.InvalidBinaryStructureException;
 
 public class StringExtractor {
 
@@ -18,13 +19,13 @@ public class StringExtractor {
 	private GolangBinary go_bin;
 	private GolangAnalyzerExtensionService service;
 
-	private Map<Long, String> string_map;
+	private Map<Long, GolangString> string_map;
 
 	public StringExtractor(GolangBinary go_bin, GolangAnalyzerExtensionService service) {
 		this.go_bin=go_bin;
 		this.service=service;
 
-		string_map=new HashMap<Long, String>();
+		string_map=new HashMap<Long, GolangString>();
 
 		search_memory();
 		search_inst();
@@ -32,51 +33,24 @@ public class StringExtractor {
 		service.store_string_map(string_map);
 	}
 
-	public Map<Long, String> get_string_map(){
+	public Map<Long, GolangString> get_string_map(){
 		return string_map;
 	}
 
 	public void modify() {
-		for(Map.Entry<Long, String> entry : string_map.entrySet()) {
-			go_bin.create_label(go_bin.get_address(entry.getKey()), String.format("gos_%s_%x", entry.getValue(), entry.getKey()));
-		}
-	}
-
-	private String check_string(Address addr) {
-		int pointer_size=go_bin.get_pointer_size();
-
-		if(!go_bin.is_valid_address(addr) || !go_bin.is_valid_address(addr.add(pointer_size))) {
-			return null;
-		}
-		long str_addr_value=go_bin.get_address_value(addr, pointer_size);
-		if(!go_bin.is_valid_address(str_addr_value)) {
-			return null;
-		}
-		long str_len=go_bin.get_address_value(addr, pointer_size, pointer_size);
-		if(str_len<=0 || str_len>=0x1000) {
-			return null;
-		}
-		if(go_bin.is_valid_address(addr.getOffset()+pointer_size*2)) {
-			long str_len2=go_bin.get_address_value(addr, pointer_size*2, pointer_size);
-			if(str_len==str_len2) {
-				return null;
+		for(GolangString entry : string_map.values()) {
+			if(entry.get_is_struct()) {
+				go_bin.create_label(entry.get_addr(), String.format("goss_%s_%x", entry.get_str(), entry.get_addr().getOffset()));
+				Address str_addr=go_bin.get_address(go_bin.get_address_value(entry.get_addr(), go_bin.get_pointer_size()));
+				if(str_addr==null) {
+					continue;
+				}
+				go_bin.create_string_data(str_addr, entry.get_str().length());
+			} else {
+				go_bin.create_label(entry.get_addr(), String.format("gos_%s_%x", entry.get_str(), entry.get_addr().getOffset()));
+				go_bin.create_string_data(entry.get_addr(), entry.get_str().length());
 			}
 		}
-
-		String str=go_bin.read_string(go_bin.get_address(str_addr_value), (int)str_len);
-		if(str.length()!=str_len) {
-			return null;
-		}
-
-		return str;
-	}
-
-	private String check_string(Address str_addr, long str_len) {
-		String str=go_bin.read_string(str_addr, (int)str_len);
-		if(str.length()!=str_len) {
-			return null;
-		}
-		return str;
 	}
 
 	private void search_memory() {
@@ -85,14 +59,13 @@ public class StringExtractor {
 		for (MemoryBlock mb : go_bin.get_memory_blocks()) {
 			Address search_addr=mb.getStart();
 			while(go_bin.is_valid_address(search_addr) && search_addr.getOffset()<mb.getEnd().getOffset()) {
-				String str=check_string(search_addr);
-				if(str==null) {
+				try {
+					GolangString str=GolangString.create_string_struct(go_bin, search_addr);
+					string_map.put(search_addr.getOffset(), str);
+					search_addr=search_addr.add(pointer_size*2);
+				} catch (InvalidBinaryStructureException e) {
 					search_addr=search_addr.add(pointer_size);
-					continue;
 				}
-
-				string_map.put(search_addr.getOffset(), str);
-				search_addr=search_addr.add(pointer_size*2);
 			}
 		}
 	}
@@ -135,7 +108,10 @@ public class StringExtractor {
 
 		String base_reg=((Register)str_len_inst_op1[0]).getName();
 		long string_len_offset=((Scalar)str_len_inst_op1[1]).getValue();
-		long string_len=((Scalar)str_len_inst_op2[0]).getValue();
+		int string_len=(int)((Scalar)str_len_inst_op2[0]).getValue();
+		if(string_len<=0) {
+			return;
+		}
 
 		Instruction check_inst=inst;
 		for(int i=0; i<CHECK_INST_NUM; i++) {
@@ -164,10 +140,12 @@ public class StringExtractor {
 				Object[] op2=check_inst.getOpObjects(1);
 				Address data=reg_map.get((Register)op2[0]);
 				if(data!=null && ((Register)op1[0]).getName().equals(base_reg) && string_len_offset==go_bin.get_pointer_size()) {
-					String str=check_string(data, string_len);
-					if(str!=null) {
+					try {
+						GolangString str=GolangString.create_string(go_bin, data, string_len);
 						string_map.put(data.getOffset(), str);
 						continue;
+					} catch (InvalidBinaryStructureException e) {
+						Logger.append_message(String.format("Failed to get string: %s", e.getMessage()));
 					}
 				}
 			} else if (is_move_reg_to_addr_reg_scalar(check_inst)) {
@@ -175,10 +153,12 @@ public class StringExtractor {
 				Object[] op2=check_inst.getOpObjects(1);
 				Address data=reg_map.get((Register)op2[0]);
 				if(data!=null && ((Register)op1[0]).getName().equals(base_reg) && string_len_offset==((Scalar)op1[1]).getValue()+go_bin.get_pointer_size()) {
-					String str=check_string(data, string_len);
-					if(str!=null) {
+					try {
+						GolangString str=GolangString.create_string(go_bin, data, string_len);
 						string_map.put(data.getOffset(), str);
 						continue;
+					} catch (InvalidBinaryStructureException e) {
+						Logger.append_message(String.format("Failed to get string: %s", e.getMessage()));
 					}
 				}
 			} else {

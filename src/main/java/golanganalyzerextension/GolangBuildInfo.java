@@ -51,7 +51,7 @@ public class GolangBuildInfo {
 		byte endian=(byte)go_bin.get_address_value(base_addr, 15, 1);
 		if((endian&2)!=0) {
 			byte str_size=(byte)go_bin.get_address_value(base_addr, 32, 1);
-			return Optional.ofNullable(go_bin.read_string(go_bin.get_address(base_addr, 33), str_size));
+			return go_bin.read_string(go_bin.get_address(base_addr, 33), str_size);
 		}
 		boolean is_big_endian=endian!=0;
 		if(is_big_endian) {
@@ -59,7 +59,7 @@ public class GolangBuildInfo {
 			return Optional.empty();
 		}
 
-		return Optional.ofNullable(go_bin.read_string_struct(go_bin.get_address_value(base_addr, 16, size), size));
+		return go_bin.read_string_struct(go_bin.get_address_value(base_addr, 16, size), size);
 	}
 
 	public Optional<String> find_module_version(Address base_addr) {
@@ -80,6 +80,6 @@ public class GolangBuildInfo {
 		}
 
 		// runtime/debug/mod.go
-		return Optional.ofNullable(go_bin.read_string(bytes_addr.add(16), (int)bytes_size-16-16));
+		return go_bin.read_string(bytes_addr.add(16), (int)bytes_size-16-16);
 	}
 }

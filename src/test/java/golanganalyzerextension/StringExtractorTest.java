@@ -48,8 +48,14 @@ public class StringExtractorTest {
 
 		StringExtractor string_extractor=new StringExtractor(go_bin, service);
 
-		assertEquals(string_extractor.get_string_map(), expected);
-		assertEquals(service.get_string_map(), expected);
+		Map<Long, GolangString> str_map=string_extractor.get_string_map();
+		Map<Long, GolangString> serv_str_map=service.get_string_map();
+		assertEquals(str_map.size(), expected.size());
+		assertEquals(serv_str_map.size(), expected.size());
+		for(long key : expected.keySet()) {
+			assertEquals(str_map.get(key).get_str(), expected.get(key));
+			assertEquals(serv_str_map.get(key).get_str(), expected.get(key));
+		}
 	}
 
 	static Stream<Arguments> test_string_extractor_params() throws Throwable {
@@ -152,8 +158,14 @@ public class StringExtractorTest {
 			method.invoke(string_extractor, go_bin.get_address(Integer.decode(entry.getKey())), entry.getValue().length()/2);
 		}
 
-		assertEquals(string_extractor.get_string_map(), expected);
-		assertEquals(service.get_string_map(), expected);
+		Map<Long, GolangString> str_map=string_extractor.get_string_map();
+		Map<Long, GolangString> serv_str_map=service.get_string_map();
+		assertEquals(str_map.size(), expected.size());
+		assertEquals(serv_str_map.size(), expected.size());
+		for(long key : expected.keySet()) {
+			assertEquals(str_map.get(key).get_str(), expected.get(key));
+			assertEquals(serv_str_map.get(key).get_str(), expected.get(key));
+		}
 	}
 
 	static Stream<Arguments> test_search_inst_params() throws Throwable {

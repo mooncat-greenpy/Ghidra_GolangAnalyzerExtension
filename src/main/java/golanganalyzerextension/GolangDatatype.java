@@ -200,7 +200,7 @@ public class GolangDatatype {
 		}
 	}
 
-	String get_type_string(Address address, int flag) {
+	String get_type_string(Address address, int flag) throws InvalidBinaryStructureException {
 		boolean is_go117=false;
 		if(go_bin.ge_go_version("go1.17beta1")) {
 			is_go117=true;
@@ -209,10 +209,13 @@ public class GolangDatatype {
 		String str=null;
 		if(is_go117) {
 			int str_size=(int)(go_bin.get_address_value(address, 1, 1));
-			str=go_bin.read_string(go_bin.get_address(address, 2), str_size);
+			str=go_bin.read_string(go_bin.get_address(address, 2), str_size).orElse(null);
 		}else {
 			int str_size=(int)(go_bin.get_address_value(address, 1, 1)<<8)+(int)(go_bin.get_address_value(address, 2, 1));
-			str=go_bin.read_string(go_bin.get_address(address, 3), str_size);
+			str=go_bin.read_string(go_bin.get_address(address, 3), str_size).orElse(null);
+		}
+		if(str==null) {
+			throw new InvalidBinaryStructureException(String.format("Failed to get type string: addr=%x", address.getOffset()));
 		}
 		if(str.length()>0 && check_tflag(flag, Tflag.ExtraStar)) {
 			str=str.substring(1);
@@ -252,10 +255,10 @@ public class GolangDatatype {
 		name="";
 		ptr_to_this_off=0;
 		if(is_go16) {
-			name=go_bin.read_string_struct(go_bin.get_address_value(type_base_addr, offset+pointer_size*4+4+1*4, pointer_size), pointer_size);
-			if(name==null) {
-				throw new InvalidBinaryStructureException("Failed to get type name: version <= go1.6*");
-			}
+			go_bin.read_string_struct(go_bin.get_address_value(type_base_addr, offset+pointer_size*4+4+1*4, pointer_size), pointer_size).ifPresentOrElse(
+					(str) -> name=str,
+					() -> { throw new InvalidBinaryStructureException("Failed to get type name: version <= go1.6*"); }
+				);
 			long x=go_bin.get_address_value(type_base_addr, offset+pointer_size*5+4+1*4, pointer_size);
 			if(x!=0) {
 				uncommon_base_addr=go_bin.get_address(x);

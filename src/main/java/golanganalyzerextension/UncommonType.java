@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 import ghidra.program.model.address.Address;
+import golanganalyzerextension.exceptions.InvalidBinaryStructureException;
 
 public class UncommonType {
 	private GolangBinary go_bin;
@@ -12,15 +13,18 @@ public class UncommonType {
 	private String pkg_path;
 	private List<UncommonMethod> method_list;
 
-	public UncommonType(GolangBinary go_bin, Address base_addr, Address type_base_addr, boolean is_go16) {
+	public UncommonType(GolangBinary go_bin, Address base_addr, Address type_base_addr, boolean is_go16) throws InvalidBinaryStructureException {
 		this.go_bin=go_bin;
 
 		if(is_go16) {
 			long pkgpath_addr_value=go_bin.get_address_value(base_addr, go_bin.get_pointer_size(), go_bin.get_pointer_size());
-			pkg_path=go_bin.read_string_struct(go_bin.get_address(pkgpath_addr_value), go_bin.get_pointer_size());
+			pkg_path=go_bin.read_string_struct(go_bin.get_address(pkgpath_addr_value), go_bin.get_pointer_size()).orElse(null);
 		} else {
 			long pkg_path_offset=go_bin.get_address_value(base_addr, 0, 4);
 			pkg_path=get_type_string(type_base_addr.add(pkg_path_offset));
+		}
+		if(pkg_path==null) {
+			 throw new InvalidBinaryStructureException("Failed to get UncommonType pkgpath");
 		}
 
 		method_list=new ArrayList<>();
@@ -37,10 +41,13 @@ public class UncommonType {
 		String str=null;
 		if(is_go117) {
 			int str_size=(int)(go_bin.get_address_value(address, 1, 1));
-			str=go_bin.read_string(go_bin.get_address(address, 2), str_size);
+			str=go_bin.read_string(go_bin.get_address(address, 2), str_size).orElse(null);
 		}else {
 			int str_size=(int)(go_bin.get_address_value(address, 1, 1)<<8)+(int)(go_bin.get_address_value(address, 2, 1));
-			str=go_bin.read_string(go_bin.get_address(address, 3), str_size);
+			str=go_bin.read_string(go_bin.get_address(address, 3), str_size).orElse(null);
+		}
+		if(str==null) {
+			throw new InvalidBinaryStructureException(String.format("Failed to get type string: addr=%x", address.getOffset()));
 		}
 		return str;
 	}
@@ -57,7 +64,7 @@ public class UncommonType {
 		private Address interface_method_addr;
 		private Address normal_method_addr;
 
-		UncommonMethod(GolangBinary go_bin, Address base_addr, Address type_base_addr, boolean is_go16) {
+		UncommonMethod(GolangBinary go_bin, Address base_addr, Address type_base_addr, boolean is_go16) throws InvalidBinaryStructureException {
 			this.go_bin_inner=go_bin;
 
 			if(is_go16) {
@@ -95,7 +102,10 @@ public class UncommonType {
 			long ifn_addr_value=go_bin_inner.get_address_value(base_addr, pointer_size*4, pointer_size);
 			long tfn_addr_value=go_bin_inner.get_address_value(base_addr, pointer_size*5, pointer_size);
 
-			this.name=go_bin_inner.read_string_struct(name_addr_value, go_bin_inner.get_pointer_size());
+			this.name=go_bin_inner.read_string_struct(name_addr_value, go_bin_inner.get_pointer_size()).orElse(null);
+			if(this.name==null) {
+				 throw new InvalidBinaryStructureException("Failed to get UncommonMethod name: version <= go1.6*");
+			}
 			this.type_offset=mtyp_addr_value-type_base_addr.getOffset();
 			this.interface_method_addr=go_bin_inner.get_address(ifn_addr_value);
 			this.normal_method_addr=go_bin_inner.get_address(tfn_addr_value);

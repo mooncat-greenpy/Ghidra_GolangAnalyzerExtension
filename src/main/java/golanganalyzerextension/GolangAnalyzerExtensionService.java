@@ -25,6 +25,6 @@ public interface GolangAnalyzerExtensionService {
 	public Map<Long, GolangDatatype> get_datatype_map();
 	public void store_datatype_map(Map<Long, GolangDatatype> map);
 
-	public Map<Long, String> get_string_map();
-	public void store_string_map(Map<Long, String> map);
+	public Map<Long, GolangString> get_string_map();
+	public void store_string_map(Map<Long, GolangString> map);
 }

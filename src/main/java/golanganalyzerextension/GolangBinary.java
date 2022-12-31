@@ -178,6 +178,9 @@ public class GolangBinary {
 	}
 
 	public boolean is_valid_address(Address addr) {
+		if(addr==null) {
+			return false;
+		}
 		boolean ret=false;
 		try {
 			memory.getByte(addr);
@@ -296,10 +299,13 @@ public class GolangBinary {
 	}
 
 	public void clear_data(Address addr, long size) {
-		program_listing.clearCodeUnits(addr, addr.add(size), false);
+		if(size<1) {
+			size=1;
+		}
+		program_listing.clearCodeUnits(addr, addr.add(size-1), false);
 	}
 
-	public String read_string(Address addr, int size) {
+	public Optional<String> read_string(Address addr, int size) {
 		try {
 			byte[] bytes=new byte[size];
 			memory.getBytes(addr, bytes, 0, size);
@@ -309,55 +315,69 @@ public class GolangBinary {
 			if(str.length()!=tmp_len) {
 				Logger.append_message(String.format("Invalid char: %x %x %s", addr.getOffset(), size, str));
 			}
-			return str;
+			return Optional.of(str);
 		} catch (MemoryAccessException e) {
 			Logger.append_message(String.format("Failed to read string: %s %x", e.getMessage(), addr.getOffset()));
 		}
-		return "not found";
+		return Optional.empty();
 	}
 
-	public String read_string_struct(Address string_struct_addr, int value_size) {
+	public Optional<String> read_string_struct(Address string_struct_addr, int value_size) {
 		if(!is_valid_address(string_struct_addr)) {
-			return null;
+			return Optional.empty();
 		}
-		Address string_addr=program.getAddressFactory().getAddress(
-				String.format("%x", get_address_value(string_struct_addr, value_size)));
+		Address string_addr=get_address(get_address_value(string_struct_addr, value_size));
 		if(!is_valid_address(string_addr)) {
-			return null;
+			return Optional.empty();
 		}
 		long string_size=get_address_value(string_struct_addr, value_size, value_size);
 		return read_string(string_addr, (int)string_size);
 	}
 
-	public String read_string_struct(long string_struct_addr_value, int value_size) {
-		return read_string_struct(program.getAddressFactory().getAddress(String.format("%x", string_struct_addr_value)), value_size);
+	public Optional<String> read_string_struct(long string_struct_addr_value, int value_size) {
+		Address addr=get_address(string_struct_addr_value);
+		if(!is_valid_address(addr)) {
+			return Optional.empty();
+		}
+		return read_string_struct(addr, value_size);
 	}
 
-	public String create_string_data(Address addr) {
-		if(addr==null) {
-			return "not found";
+	public Optional<String> create_string_data(Address addr, int size) {
+		clear_data(addr, size);
+		Data string_data=null;
+		try {
+			string_data=program_listing.createData(addr, new StringDataType(), size);
+		} catch (CodeUnitInsertionException e) {
+			Logger.append_message(String.format("Failed to create string data: %s %x", e.getMessage(), addr.getOffset()));
 		}
+		if(string_data==null || !string_data.getDataType().isEquivalent((new StringDataType()))) {
+			return Optional.empty();
+		}
+
+		return Optional.ofNullable((String)string_data.getValue());
+	}
+
+	public Optional<String> create_string_data(Address addr) {
 		clear_data(addr, 1);
-		Data string_data=program_listing.getDefinedDataAt(addr);
-		if(string_data==null) {
-			try {
-				string_data=program_listing.createData(addr, new StringDataType());
-				if(!string_data.getDataType().isEquivalent((new StringDataType()))) {
-					return "not found";
-				}
-			} catch (CodeUnitInsertionException e) {
-				Logger.append_message(String.format("Failed to create string data: %s %x", e.getMessage(), addr.getOffset()));
+		Data string_data=null;
+		try {
+			string_data=program_listing.createData(addr, new StringDataType());
+			if(!string_data.getDataType().isEquivalent((new StringDataType()))) {
+				return Optional.empty();
 			}
+		} catch (CodeUnitInsertionException e) {
+			Logger.append_message(String.format("Failed to create string data: %s addr=%x", e.getMessage(), addr.getOffset()));
 		}
+
 		if(string_data==null) {
 			Address zero_addr=memory.findBytes(addr, new byte[] {(byte)0x0}, new byte[] {(byte)0xff}, true, monitor);
 			if(zero_addr==null) {
-				return "not found";
+				return Optional.empty();
 			}
 			int size=(int)(zero_addr.getOffset()-addr.getOffset());
 			return read_string(addr, size);
 		}
-		return (String)string_data.getValue();
+		return Optional.ofNullable((String)string_data.getValue());
 	}
 
 	public void create_data(Address addr, DataType datatype) throws CodeUnitInsertionException {
