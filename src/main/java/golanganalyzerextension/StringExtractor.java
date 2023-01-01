@@ -62,9 +62,9 @@ public class StringExtractor {
 				try {
 					GolangString str=GolangString.create_string_struct(go_bin, search_addr);
 					string_map.put(search_addr.getOffset(), str);
-					search_addr=search_addr.add(pointer_size*2);
+					search_addr=go_bin.get_address(search_addr, pointer_size*2);
 				} catch (InvalidBinaryStructureException e) {
-					search_addr=search_addr.add(pointer_size);
+					search_addr=go_bin.get_address(search_addr, pointer_size);
 				}
 			}
 		}
@@ -79,7 +79,7 @@ public class StringExtractor {
 	private void search_function(Address addr, int length) {
 		Instruction inst=go_bin.get_instruction(addr);
 
-		while(inst!=null && inst.getAddress().getOffset()<=addr.add(length).getOffset()) {
+		while(inst!=null && inst.getAddress().getOffset()<=addr.getOffset()+length) {
 			check_insts(inst);
 			inst=inst.getNext();
 		}

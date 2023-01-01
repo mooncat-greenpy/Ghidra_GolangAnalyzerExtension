@@ -28,8 +28,20 @@ import ghidra.program.model.listing.Program;
 public class GolangAnalyzerExtensionPlugin extends ProgramPlugin implements GolangAnalyzerExtensionService {
 	private GolangAnalyzerExtensionProvider gae_provider;
 
+	private GolangBinary go_bin;
+	private List<GolangFunction> func_list;
+	private List<String> filename_list;
+	private Map<Long, GolangDatatype> datatype_map;
+	private Map<Long, GolangString> string_map;
+
 	public GolangAnalyzerExtensionPlugin(PluginTool tool) {
 		super(tool, false, true);
+
+		go_bin=null;
+		func_list=new ArrayList<>();
+		filename_list=new ArrayList<>();
+		datatype_map=new HashMap<>();
+		string_map=new HashMap<>();
 	}
 
 	@Override
@@ -57,11 +69,6 @@ public class GolangAnalyzerExtensionPlugin extends ProgramPlugin implements Gola
 		gae_provider.setVisible(true);
 	}
 
-	GolangBinary go_bin=null;
-	List<GolangFunction> func_list=new ArrayList<>();
-	List<String> filename_list=new ArrayList<>();
-	Map<Long, GolangDatatype> datatype_map=new HashMap<>();
-	private Map<Long, GolangString> string_map;
 
 	@Override
 	public GolangBinary get_binary() {

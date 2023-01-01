@@ -26,7 +26,7 @@ public class GolangString {
 	public static GolangString create_string_struct(GolangBinary go_bin, Address addr) throws InvalidBinaryStructureException {
 		int pointer_size=go_bin.get_pointer_size();
 
-		if(!go_bin.is_valid_address(addr) || !go_bin.is_valid_address(addr.add(pointer_size))) {
+		if(!go_bin.is_valid_address(addr, pointer_size*2)) {
 			throw new InvalidBinaryStructureException(String.format("Invalid address: addr=%x", addr.getOffset()));
 		}
 		long str_addr_value=go_bin.get_address_value(addr, pointer_size);

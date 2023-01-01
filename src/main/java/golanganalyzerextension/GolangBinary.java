@@ -191,9 +191,35 @@ public class GolangBinary {
 		return ret;
 	}
 
+	public boolean is_valid_address(Address addr, long size) {
+		if(size<1) {
+			size=1;
+		}
+		if(!is_valid_address(addr)) {
+			return false;
+		}
+		if(!is_valid_address(get_address(addr, size-1))) {
+			return false;
+		}
+		for(int i=0; i<size; i+=get_pointer_size()) {
+			if(!is_valid_address(get_address(addr, i))) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 	public boolean is_valid_address(long addr_value) {
 		try {
 			return is_valid_address(get_address(addr_value));
+		} catch (AddressOutOfBoundsException e) {
+			return false;
+		}
+	}
+
+	public boolean is_valid_address(long addr_value, long size) {
+		try {
+			return is_valid_address(get_address(addr_value), size);
 		} catch (AddressOutOfBoundsException e) {
 			return false;
 		}

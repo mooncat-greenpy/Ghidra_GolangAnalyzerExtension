@@ -96,6 +96,7 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 		int func_list_size=gae_plugin.get_function_list().size();
 		int filename_list_size=gae_plugin.get_filename_list().size();
 		int datatype_map_size=gae_plugin.get_datatype_map().size();
+		int string_map_size=gae_plugin.get_string_map().size();
 
 		JLabel name_panel=new JLabel(String.format("Name: %s", name));
 		name_panel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
@@ -115,6 +116,9 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 		JLabel datatype_num_panel=new JLabel(String.format("Number of datatyeps: %d", datatype_map_size));
 		datatype_num_panel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
 		panel.add(datatype_num_panel);
+		JLabel string_num_panel=new JLabel(String.format("Number of strings: %d", string_map_size));
+		string_num_panel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
+		panel.add(string_num_panel);
 
 		refresh_button = new JButton(Icons.REFRESH_ICON);
 		refresh_button.setText("Refresh");
