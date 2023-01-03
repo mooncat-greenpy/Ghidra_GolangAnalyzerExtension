@@ -4,10 +4,8 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import golanganalyzerextension.GolangBinary;
-import golanganalyzerextension.GolangBuildInfo;
-import golanganalyzerextension.SysTheVersion;
 import golanganalyzerextension.exceptions.InvalidGolangVersionFormatException;
+import golanganalyzerextension.gobinary.GolangBinary;
 
 public class GolangVersionExtractor {
 	private static final String DEFAULT_GO_VERSION="go0.0.0";

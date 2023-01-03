@@ -6,8 +6,13 @@ import java.nio.ByteOrder;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.*;
 import ghidra.program.model.listing.Program;
-import golanganalyzerextension.UncommonType.UncommonMethod;
+import golanganalyzerextension.datatype.GolangDatatype;
+import golanganalyzerextension.datatype.UncommonType.UncommonMethod;
 import golanganalyzerextension.exceptions.InvalidBinaryStructureException;
+import golanganalyzerextension.gobinary.GolangBinary;
+import golanganalyzerextension.gobinary.ModuleData;
+import golanganalyzerextension.log.Logger;
+import golanganalyzerextension.service.GolangAnalyzerExtensionService;
 
 
 public class StructureManager {
@@ -39,11 +44,11 @@ public class StructureManager {
 		return;
 	}
 
-	boolean is_ok() {
+	public boolean is_ok() {
 		return ok;
 	}
 
-	void modify() {
+	public void modify() {
 		if(!ok) {
 			Logger.append_message("Failed to setup StructureManager");
 			return;
@@ -54,17 +59,17 @@ public class StructureManager {
 				GolangDatatype go_datatype=datatype_holder.get_go_datatype_by_key(key);
 				go_datatype.modify(datatype_holder);
 
-				Category category=datatype_manager.createCategory(new CategoryPath(String.format("/Golang_%s", go_datatype.kind.name())));
+				Category category=datatype_manager.createCategory(new CategoryPath(String.format("/Golang_%s", go_datatype.get_kind().name())));
 				category.addDataType(go_datatype.get_datatype(), null);
 
-				go_bin.set_comment(go_datatype.addr, ghidra.program.model.listing.CodeUnit.PLATE_COMMENT, make_datatype_comment(go_datatype, datatype_holder));
+				go_bin.set_comment(go_datatype.get_addr(), ghidra.program.model.listing.CodeUnit.PLATE_COMMENT, make_datatype_comment(go_datatype, datatype_holder));
 			}catch(Exception e) {
 				Logger.append_message(String.format("Error: %s", e.getMessage()));
 			}
 		}
 	}
 
-	String make_datatype_comment(GolangDatatype go_datatype, DatatypeHolder datatype_searcher) {
+	private String make_datatype_comment(GolangDatatype go_datatype, DatatypeHolder datatype_searcher) {
 		String comment="Name: "+go_datatype.get_name()+"\n";
 
 		comment+=go_datatype.get_kind().name()+":\n";
@@ -85,7 +90,7 @@ public class StructureManager {
 		return comment;
 	}
 
-	boolean init_basig_golang_datatype() {
+	private boolean init_basig_golang_datatype() {
 		ByteBuffer buffer=ByteBuffer.allocate(Long.BYTES);
 		buffer.putLong(go_bin.get_gopclntab_base().getOffset());
 		buffer.flip();
@@ -152,7 +157,7 @@ public class StructureManager {
 		return true;
 	}
 
-	boolean analyze_type(Address type_base_addr, long offset, boolean is_go16) throws InvalidBinaryStructureException {
+	private boolean analyze_type(Address type_base_addr, long offset, boolean is_go16) throws InvalidBinaryStructureException {
 		if(datatype_holder.contain_key(offset)) {
 			return true;
 		}
@@ -160,7 +165,7 @@ public class StructureManager {
 		GolangDatatype go_datatype=GolangDatatype.create_by_parsing(go_bin, type_base_addr, offset, is_go16);
 		datatype_holder.put_datatype(offset, go_datatype);
 
-		for(long dependence_type_key : go_datatype.dependence_type_key_list) {
+		for(long dependence_type_key : go_datatype.get_dependence_type_key_list()) {
 			analyze_type(type_base_addr, dependence_type_key, is_go16);
 		}
 		go_datatype.make_datatype(datatype_holder);

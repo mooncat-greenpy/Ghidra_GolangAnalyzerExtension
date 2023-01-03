@@ -10,33 +10,47 @@ import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Function.FunctionUpdateType;
 import ghidra.program.model.listing.Parameter;
 import ghidra.program.model.symbol.SourceType;
+import golanganalyzerextension.function.FileLine;
+import golanganalyzerextension.function.GolangFunction;
+import golanganalyzerextension.function.GolangFunctionArm;
+import golanganalyzerextension.function.GolangFunctionX86;
+import golanganalyzerextension.gobinary.GolangBinary;
+import golanganalyzerextension.log.Logger;
+import golanganalyzerextension.service.GolangAnalyzerExtensionService;
 
 
 // debug/gosym/pclntab.go
-public class FunctionModifier{
-	GolangBinary go_bin=null;
-	GolangAnalyzerExtensionService service=null;
+public class FunctionModifier {
+	private GolangBinary go_bin;
+	private GolangAnalyzerExtensionService service;
 
-	long func_num=0;
-	List<GolangFunction> gofunc_list=null;
-	List<String> file_name_list=null;
-	boolean rename_option=false;
-	boolean param_option=false;
-	boolean comment_option=false;
-	boolean disasm_option=false;
-	boolean extended_option=false;
+	private long func_num;
+	private List<GolangFunction> gofunc_list;
+	private List<String> file_name_list;
 
-	boolean ok=false;
+	private boolean rename_option;
+	private boolean param_option;
+	private boolean comment_option;
+	private boolean disasm_option;
+	private boolean extended_option;
+
+	private boolean ok;
 
 	public FunctionModifier(GolangBinary go_bin, GolangAnalyzerExtensionService service, boolean rename_option, boolean param_option, boolean comment_option, boolean disasm_option, boolean extended_option) {
 		this.go_bin=go_bin;
 		this.service=service;
+
+		this.func_num=0;
+		this.gofunc_list=new ArrayList<>();
+		this.file_name_list=new ArrayList<>();
 
 		this.rename_option=rename_option;
 		this.param_option=param_option;
 		this.comment_option=comment_option;
 		this.disasm_option=disasm_option;
 		this.extended_option=extended_option;
+
+		this.ok=false;
 
 		if(!rename_option && !param_option && !comment_option) {
 			return;
@@ -58,11 +72,34 @@ public class FunctionModifier{
 		this.ok=true;
 	}
 
-	boolean is_ok() {
+	public boolean is_ok() {
 		return ok;
 	}
 
-	boolean init_file_name_list() {
+	public void modify() {
+		if(!ok) {
+			Logger.append_message("Failed to setup FunctionModifier");
+			return;
+		}
+
+		for(GolangFunction gofunc: gofunc_list) {
+			if(!gofunc.is_ok()) {
+				continue;
+			}
+			if(rename_option) {
+				rename_func(gofunc);
+			}
+			if(param_option) {
+				modify_func_param(gofunc);
+			}
+			if(comment_option) {
+				add_func_info_comment(gofunc);
+				add_file_line_comment(gofunc);
+			}
+		}
+	}
+
+	private boolean init_file_name_list() {
 		boolean is_go116=false;
 		if(go_bin.ge_go_version("go1.16beta1")) {
 			is_go116=true;
@@ -104,7 +141,7 @@ public class FunctionModifier{
 		return true;
 	}
 
-	boolean init_functions() {
+	private boolean init_functions() {
 		boolean is_go116=false;
 		boolean is_go118=false;
 		if(go_bin.ge_go_version("go1.16beta1")) {
@@ -171,10 +208,10 @@ public class FunctionModifier{
 		return true;
 	}
 
-	boolean init_hardcode_functions(){
+	private boolean init_hardcode_functions(){
 		for(Function func : go_bin.get_functions()) {
 			Address entry_addr=func.getEntryPoint();
-			GolangFunction find=gofunc_list.stream().filter(v -> v.func_addr.equals(entry_addr)).findFirst().orElse(null);
+			GolangFunction find=gofunc_list.stream().filter(v -> v.get_func_addr().equals(entry_addr)).findFirst().orElse(null);
 			if(find!=null) {
 				continue;
 			}
@@ -193,30 +230,7 @@ public class FunctionModifier{
 		return true;
 	}
 
-	void modify() {
-		if(!ok) {
-			Logger.append_message("Failed to setup FunctionModifier");
-			return;
-		}
-
-		for(GolangFunction gofunc: gofunc_list) {
-			if(!gofunc.is_ok()) {
-				continue;
-			}
-			if(rename_option) {
-				rename_func(gofunc);
-			}
-			if(param_option) {
-				modify_func_param(gofunc);
-			}
-			if(comment_option) {
-				add_func_info_comment(gofunc);
-				add_file_line_comment(gofunc);
-			}
-		}
-	}
-
-	void rename_func(GolangFunction gofunc) {
+	private void rename_func(GolangFunction gofunc) {
 		Function func=gofunc.get_func();
 		String func_name=gofunc.get_func_name();
 
@@ -230,7 +244,7 @@ public class FunctionModifier{
 		}
 	}
 
-	void modify_func_param(GolangFunction gofunc) {
+	private void modify_func_param(GolangFunction gofunc) {
 		Function func=gofunc.get_func();
 		List<Parameter> new_params=gofunc.get_params();
 		if(new_params==null) {
@@ -245,14 +259,14 @@ public class FunctionModifier{
 		}
 	}
 
-	void add_func_info_comment(GolangFunction gofunc) {
-		String comment="Name: "+gofunc.func_name+"\n";
-		comment+=String.format("Start: %x\n", gofunc.func_addr.getOffset());
-		comment+=String.format("End: %x", gofunc.func_addr.add(gofunc.func_size).getOffset());
-		go_bin.set_comment(gofunc.func_addr, ghidra.program.model.listing.CodeUnit.PLATE_COMMENT, comment);
+	private void add_func_info_comment(GolangFunction gofunc) {
+		String comment="Name: "+gofunc.get_func_name()+"\n";
+		comment+=String.format("Start: %x\n", gofunc.get_func_addr().getOffset());
+		comment+=String.format("End: %x", gofunc.get_func_addr().add(gofunc.get_func_size()).getOffset());
+		go_bin.set_comment(gofunc.get_func_addr(), ghidra.program.model.listing.CodeUnit.PLATE_COMMENT, comment);
 	}
 
-	void add_file_line_comment(GolangFunction gofunc) {
+	private void add_file_line_comment(GolangFunction gofunc) {
 		Address addr=gofunc.get_func_addr();
 		Map<Integer, FileLine> comment_map=gofunc.get_file_line_comment_map();
 

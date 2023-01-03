@@ -10,6 +10,11 @@ import ghidra.program.model.address.AddressSetView;
 import ghidra.program.model.listing.Program;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.task.TaskMonitor;
+import golanganalyzerextension.gobinary.GolangBinary;
+import golanganalyzerextension.log.Logger;
+import golanganalyzerextension.service.GolangAnalyzerExtensionDummyService;
+import golanganalyzerextension.service.GolangAnalyzerExtensionService;
+import golanganalyzerextension.string.StringExtractor;
 
 
 public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {

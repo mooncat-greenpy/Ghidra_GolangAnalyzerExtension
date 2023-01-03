@@ -15,7 +15,7 @@ import ghidra.program.database.ProgramBuilder;
 import ghidra.program.model.listing.Program;
 import ghidra.test.AbstractGhidraHeadlessIntegrationTest;
 import ghidra.util.task.TaskMonitor;
-import golanganalyzerextension.GolangBinary;
+import golanganalyzerextension.gobinary.GolangBinary;
 
 public class GolangVersionExtractorTest extends AbstractGhidraHeadlessIntegrationTest {
 

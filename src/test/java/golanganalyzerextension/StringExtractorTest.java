@@ -15,6 +15,11 @@ import ghidra.program.database.ProgramBuilder;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Program;
 import ghidra.util.task.TaskMonitor;
+import golanganalyzerextension.gobinary.GolangBinary;
+import golanganalyzerextension.service.GolangAnalyzerExtensionDummyService;
+import golanganalyzerextension.service.GolangAnalyzerExtensionService;
+import golanganalyzerextension.string.GolangString;
+import golanganalyzerextension.string.StringExtractor;
 
 public class StringExtractorTest {
 

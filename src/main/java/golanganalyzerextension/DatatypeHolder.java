@@ -18,14 +18,16 @@ import ghidra.program.model.data.UnsignedIntegerDataType;
 import ghidra.program.model.data.UnsignedLongLongDataType;
 import ghidra.program.model.data.UnsignedShortDataType;
 import ghidra.program.model.data.VoidDataType;
+import golanganalyzerextension.datatype.GolangDatatype;
+import golanganalyzerextension.gobinary.GolangBinary;
 
-class DatatypeHolder {
-	Map<Long, GolangDatatype> datatype_map;
-	Map<String, DataType> hardcode_datatype_map;
-	GolangBinary go_bin;
-	boolean is_go16;
+public class DatatypeHolder {
+	private Map<Long, GolangDatatype> datatype_map;
+	private Map<String, DataType> hardcode_datatype_map;
+	private GolangBinary go_bin;
+	private boolean is_go16;
 
-	public DatatypeHolder(GolangBinary go_bin, boolean is_go16) {
+	DatatypeHolder(GolangBinary go_bin, boolean is_go16) {
 		this.datatype_map=new HashMap<Long, GolangDatatype>();;
 
 		this.go_bin=go_bin;
@@ -34,23 +36,23 @@ class DatatypeHolder {
 		init_hardcode_golang_datatype();
 	}
 
-	Map<Long, GolangDatatype> get_datatype_map() {
+	public Map<Long, GolangDatatype> get_datatype_map() {
 		return datatype_map;
 	}
 
-	Set<Long> get_key_set() {
+	public Set<Long> get_key_set() {
 		return datatype_map.keySet();
 	}
 
-	boolean contain_key(long key) {
+	public boolean contain_key(long key) {
 		return datatype_map.containsKey(key);
 	}
 
-	GolangDatatype get_go_datatype_by_key(long key) {
+	public GolangDatatype get_go_datatype_by_key(long key) {
 		return datatype_map.get(key);
 	}
 
-	DataType get_datatype_by_key(long key) {
+	public DataType get_datatype_by_key(long key) {
 		GolangDatatype result = datatype_map.get(key);
 		if(result!=null) {
 			return result.get_inner_datatype(false);
@@ -58,7 +60,7 @@ class DatatypeHolder {
 		return null;
 	}
 
-	DataType get_datatype_by_name(String name) {
+	public DataType get_datatype_by_name(String name) {
 		for(Map.Entry<Long, GolangDatatype> entry : datatype_map.entrySet()) {
 			GolangDatatype tmp_go_datatype=entry.getValue();
 			if(!tmp_go_datatype.get_name().equals(name)) {
