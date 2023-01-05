@@ -10,10 +10,9 @@ import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Function.FunctionUpdateType;
 import ghidra.program.model.listing.Parameter;
 import ghidra.program.model.symbol.SourceType;
+import golanganalyzerextension.exceptions.InvalidBinaryStructureException;
 import golanganalyzerextension.function.FileLine;
 import golanganalyzerextension.function.GolangFunction;
-import golanganalyzerextension.function.GolangFunctionArm;
-import golanganalyzerextension.function.GolangFunctionX86;
 import golanganalyzerextension.gobinary.GolangBinary;
 import golanganalyzerextension.log.Logger;
 import golanganalyzerextension.service.GolangAnalyzerExtensionService;
@@ -83,9 +82,6 @@ public class FunctionModifier {
 		}
 
 		for(GolangFunction gofunc: gofunc_list) {
-			if(!gofunc.is_ok()) {
-				continue;
-			}
 			if(rename_option) {
 				rename_func(gofunc);
 			}
@@ -195,15 +191,12 @@ public class FunctionModifier {
 				continue;
 			}
 
-			GolangFunction gofunc=null;
-			if(go_bin.is_x86()) {
-				gofunc=new GolangFunctionX86(go_bin, service, func_info_addr, func_end_value-func_entry_value, disasm_option, extended_option);
-			}else if(go_bin.is_arm()) {
-				gofunc=new GolangFunctionArm(go_bin, service, func_info_addr, func_end_value-func_entry_value, disasm_option, extended_option);
-			}else {
-				gofunc=new GolangFunction(go_bin, service, func_info_addr, func_end_value-func_entry_value, disasm_option, extended_option);
+			try {
+				GolangFunction gofunc=GolangFunction.create_function(go_bin, service, func_info_addr, func_end_value-func_entry_value, disasm_option, extended_option);
+				gofunc_list.add(gofunc);
+			} catch (InvalidBinaryStructureException e) {
+				Logger.append_message(String.format("Failed to create function: %s", e.getMessage()));
 			}
-			gofunc_list.add(gofunc);
 		}
 		return true;
 	}
@@ -215,16 +208,11 @@ public class FunctionModifier {
 			if(find!=null) {
 				continue;
 			}
-			GolangFunction gofunc=null;
-			if(go_bin.is_x86()) {
-				gofunc=new GolangFunctionX86(go_bin, service, func, disasm_option, extended_option);
-			}else if(go_bin.is_arm()) {
-				gofunc=new GolangFunctionArm(go_bin, service, func, disasm_option, extended_option);
-			}else {
-				gofunc=new GolangFunction(go_bin, service, func, disasm_option, extended_option);
-			}
-			if(gofunc.is_ok()) {
+			try {
+				GolangFunction gofunc=GolangFunction.create_function_in_function(go_bin, service, func, disasm_option, extended_option);
 				gofunc_list.add(gofunc);
+			} catch (InvalidBinaryStructureException e) {
+				Logger.append_message(String.format("Failed to create hardcode function: %s", e.getMessage()));
 			}
 		}
 		return true;

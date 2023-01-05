@@ -24,11 +24,11 @@ public class GolangFunctionArm extends GolangFunction {
 
 	private static final String[] reg_arg_str={};
 
-	public GolangFunctionArm(GolangBinary go_bin, GolangAnalyzerExtensionService service, Address func_info_addr, long func_size, boolean disasm_option, boolean extended_option) {
+	GolangFunctionArm(GolangBinary go_bin, GolangAnalyzerExtensionService service, Address func_info_addr, long func_size, boolean disasm_option, boolean extended_option) {
 		super(go_bin, service, func_info_addr, func_size, disasm_option, extended_option);
 	}
 
-	public GolangFunctionArm(GolangBinary go_bin, GolangAnalyzerExtensionService service, Function func, boolean disasm_option, boolean extended_option) {
+	GolangFunctionArm(GolangBinary go_bin, GolangAnalyzerExtensionService service, Function func, boolean disasm_option, boolean extended_option) {
 		super(go_bin, service, func, disasm_option, extended_option);
 	}
 

@@ -112,10 +112,11 @@ public class StructureManager {
 				break;
 			}
 
-			ModuleData module_data=ModuleData.create_by_parsing(go_bin, base_addr);
-
-			if(module_data==null)
-			{
+			ModuleData module_data=null;
+			try {
+				module_data=new ModuleData(go_bin, base_addr);
+			} catch(InvalidBinaryStructureException e) {
+				Logger.append_message(String.format("Failed to get module data: %s", e.getMessage()));
 				base_addr=go_bin.get_address(base_addr, 4);
 				if(base_addr==null) {
 					break;

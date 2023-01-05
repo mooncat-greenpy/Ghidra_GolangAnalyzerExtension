@@ -15,17 +15,13 @@ public class ModuleData {
 	private Address text_addr;
 	private boolean is_go16;
 
-	static public ModuleData create_by_parsing(GolangBinary go_bin, Address base_addr) {
-		ModuleData module_data=new ModuleData(go_bin, base_addr);
-		if(module_data.parse()) {
-			return module_data;
-		}
-		return null;
-	}
-
-	private ModuleData(GolangBinary go_bin, Address base_addr) {
+	public ModuleData(GolangBinary go_bin, Address base_addr) throws InvalidBinaryStructureException {
 		this.go_bin=go_bin;
 		this.base_addr=base_addr;
+
+		if(!parse()) {
+			throw new InvalidBinaryStructureException("Parsing module data");
+		}
 	}
 
 	private boolean parse() {

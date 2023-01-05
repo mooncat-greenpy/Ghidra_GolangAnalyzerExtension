@@ -23,6 +23,7 @@ import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.listing.Parameter;
 import ghidra.program.model.listing.ParameterImpl;
 import ghidra.program.model.symbol.SourceType;
+import golanganalyzerextension.exceptions.InvalidBinaryStructureException;
 import golanganalyzerextension.gobinary.GolangBinary;
 import golanganalyzerextension.log.Logger;
 import golanganalyzerextension.service.GolangAnalyzerExtensionService;
@@ -48,9 +49,7 @@ public class GolangFunction {
 	Map<Integer, FileLine> file_line_comment_map;
 	Map<Integer, Long> frame_map;
 
-	boolean ok;
-
-	public GolangFunction(GolangBinary go_bin, GolangAnalyzerExtensionService service, Address func_info_addr, long func_size, boolean disasm_option, boolean extended_option) {
+	GolangFunction(GolangBinary go_bin, GolangAnalyzerExtensionService service, Address func_info_addr, long func_size, boolean disasm_option, boolean extended_option) {
 		this.go_bin=go_bin;
 		this.service=service;
 		this.file_name_list=service.get_filename_list();
@@ -66,13 +65,11 @@ public class GolangFunction {
 		this.frame_map = new TreeMap<>();
 
 		if(!init_func()) {
-			return;
+			throw new InvalidBinaryStructureException("Failed to init_func");
 		}
-
-		this.ok=true;
 	}
 
-	public GolangFunction(GolangBinary go_bin, GolangAnalyzerExtensionService service, Function func, boolean disasm_option, boolean extended_option) {
+	GolangFunction(GolangBinary go_bin, GolangAnalyzerExtensionService service, Function func, boolean disasm_option, boolean extended_option) {
 		this.go_bin=go_bin;
 		this.service=service;
 		this.file_name_list=new ArrayList<>();
@@ -92,14 +89,32 @@ public class GolangFunction {
 		this.frame_map = new TreeMap<>();
 
 		if(check_memcopy()) {
-			this.ok=true;
 			return;
 		}
 		if(check_memset()) {
-			this.ok=true;
 			return;
 		}
-		this.ok=false;
+		throw new InvalidBinaryStructureException("Failed to check_memcopy and check_memset");
+	}
+
+	public static GolangFunction create_function(GolangBinary go_bin, GolangAnalyzerExtensionService service, Address func_info_addr, long func_size, boolean disasm_option, boolean extended_option) throws InvalidBinaryStructureException {
+		if(go_bin.is_x86()) {
+			return new GolangFunctionX86(go_bin, service, func_info_addr, func_size, disasm_option, extended_option);
+		}else if(go_bin.is_arm()) {
+			return new GolangFunctionArm(go_bin, service, func_info_addr, func_size, disasm_option, extended_option);
+		}else {
+			return new GolangFunction(go_bin, service, func_info_addr, func_size, disasm_option, extended_option);
+		}
+	}
+
+	public static GolangFunction create_function_in_function(GolangBinary go_bin, GolangAnalyzerExtensionService service, Function func, boolean disasm_option, boolean extended_option) throws InvalidBinaryStructureException {
+		if(go_bin.is_x86()) {
+			return new GolangFunctionX86(go_bin, service, func, disasm_option, extended_option);
+		}else if(go_bin.is_arm()) {
+			return new GolangFunctionArm(go_bin, service, func, disasm_option, extended_option);
+		}else {
+			return new GolangFunction(go_bin, service, func, disasm_option, extended_option);
+		}
 	}
 
 	public Address get_func_addr() {
@@ -128,10 +143,6 @@ public class GolangFunction {
 
 	public Map<Integer, FileLine> get_file_line_comment_map(){
 		return file_line_comment_map;
-	}
-
-	public boolean is_ok() {
-		return ok;
 	}
 
 	boolean check_memcopy() {

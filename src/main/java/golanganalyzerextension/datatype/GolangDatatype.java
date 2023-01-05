@@ -183,7 +183,7 @@ public class GolangDatatype {
 			return (StructureDataType)datatype;
 		}
 		StructureDataType struct_datatype=new StructureDataType(name, 0);
-		struct_datatype.add(struct_datatype);
+		struct_datatype.add(datatype);
 		return struct_datatype;
 	}
 
