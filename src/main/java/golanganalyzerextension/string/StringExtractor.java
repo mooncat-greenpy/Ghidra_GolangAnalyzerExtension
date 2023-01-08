@@ -18,6 +18,8 @@ import golanganalyzerextension.service.GolangAnalyzerExtensionService;
 
 public class StringExtractor {
 
+	private static final String[] reg_arg_str={"RAX", "RBX", "RCX", "RDI", "RSI", "R8", "R9", "R10", "R11"};
+
 	private static final int CHECK_INST_NUM=6;
 
 	private GolangBinary go_bin;
@@ -90,10 +92,13 @@ public class StringExtractor {
 	}
 
 	private void check_insts(Instruction inst) {
+		boolean is_arg_reg=false;
 		if(inst.getNumOperands()!=2) {
 			return;
 		}
-		if(inst.getOperandType(0)!=OperandType.DYNAMIC || inst.getOperandType(1)!=OperandType.SCALAR) {
+		if((inst.getOperandType(0)&OperandType.REGISTER)!=0 && inst.getOperandType(1)==OperandType.SCALAR) {
+			is_arg_reg=true;
+		} else if ((inst.getOperandType(0)&OperandType.DYNAMIC)==0 || inst.getOperandType(1)!=OperandType.SCALAR) {
 			return;
 		}
 		if(inst.getOperandRefType(0)!=RefType.WRITE || inst.getOperandRefType(1)!=RefType.DATA) {
@@ -102,16 +107,41 @@ public class StringExtractor {
 
 		Object[] str_len_inst_op1=inst.getOpObjects(0);
 		Object[] str_len_inst_op2=inst.getOpObjects(1);
-		if(str_len_inst_op1.length!=2 || str_len_inst_op2.length!=1) {
-			return;
+		if(is_arg_reg) {
+			if(str_len_inst_op1.length!=1 || str_len_inst_op2.length!=1) {
+				return;
+			}
+		} else {
+			if(str_len_inst_op1.length!=2 || str_len_inst_op2.length!=1) {
+				return;
+			}
 		}
 
-		if(!(str_len_inst_op1[0] instanceof Register) || !(str_len_inst_op1[1] instanceof Scalar) || !(str_len_inst_op2[0] instanceof Scalar)) {
-			return;
+		if(is_arg_reg) {
+			if(!(str_len_inst_op1[0] instanceof Register) || !(str_len_inst_op2[0] instanceof Scalar)) {
+				return;
+			}
+		} else {
+			if(!(str_len_inst_op1[0] instanceof Register) || !(str_len_inst_op1[1] instanceof Scalar) || !(str_len_inst_op2[0] instanceof Scalar)) {
+				return;
+			}
 		}
 
 		String base_reg=((Register)str_len_inst_op1[0]).getName();
-		long string_len_offset=((Scalar)str_len_inst_op1[1]).getValue();
+		long string_len_offset=0;
+		if(is_arg_reg) {
+			for(int j=0; j<reg_arg_str.length; j++) {
+				if(((Register)str_len_inst_op1[0]).getBaseRegister().getName().equals(reg_arg_str[j])) {
+					string_len_offset=j;
+					break;
+				}
+			}
+			if(string_len_offset==0) {
+				return;
+			}
+		} else {
+			string_len_offset=((Scalar)str_len_inst_op1[1]).getValue();
+		}
 		int string_len=(int)((Scalar)str_len_inst_op2[0]).getValue();
 		if(string_len<=0) {
 			return;
@@ -119,35 +149,30 @@ public class StringExtractor {
 
 		Instruction check_inst=inst;
 		for(int i=0; i<CHECK_INST_NUM; i++) {
-			if(check_inst.getPrevious()==null) {
+			if(check_inst.getPrevious()==null || check_inst.getPrevious().getFlowType().isCall()) {
 				break;
 			}
 			check_inst=check_inst.getPrevious();
 		}
 
-		Map<Register, Address> reg_map=new HashMap<>();
+		Map<String, Address> reg_map=new HashMap<>();
 		for(int i=0; i<CHECK_INST_NUM*2 && check_inst!=null; i++) {
 			if(is_move_addr_to_reg(check_inst)) {
 				Object[] op1=check_inst.getOpObjects(0);
 				Object[] op2=check_inst.getOpObjects(1);
-				reg_map.put((Register)op1[0], (Address)op2[0]);
-				check_inst=check_inst.getNext();
-				continue;
+				reg_map.put(((Register)op1[0]).getName(), (Address)op2[0]);
 			} else if (is_move_scalar_to_reg(check_inst)) {
 				Object[] op1=check_inst.getOpObjects(0);
 				Object[] op2=check_inst.getOpObjects(1);
-				reg_map.put((Register)op1[0], go_bin.get_address(((Scalar)op2[0]).getValue()));
-				check_inst=check_inst.getNext();
-				continue;
+				reg_map.put(((Register)op1[0]).getName(), go_bin.get_address(((Scalar)op2[0]).getValue()));
 			} else if (is_move_reg_to_addr_reg(check_inst)) {
 				Object[] op1=check_inst.getOpObjects(0);
 				Object[] op2=check_inst.getOpObjects(1);
-				Address data=reg_map.get((Register)op2[0]);
+				Address data=reg_map.get(((Register)op2[0]).getName());
 				if(data!=null && ((Register)op1[0]).getName().equals(base_reg) && string_len_offset==go_bin.get_pointer_size()) {
 					try {
 						GolangString str=GolangString.create_string(go_bin, data, string_len);
 						string_map.put(data.getOffset(), str);
-						continue;
 					} catch (InvalidBinaryStructureException e) {
 						Logger.append_message(String.format("Failed to get string: %s", e.getMessage()));
 					}
@@ -155,15 +180,29 @@ public class StringExtractor {
 			} else if (is_move_reg_to_addr_reg_scalar(check_inst)) {
 				Object[] op1=check_inst.getOpObjects(0);
 				Object[] op2=check_inst.getOpObjects(1);
-				Address data=reg_map.get((Register)op2[0]);
+				Address data=reg_map.get(((Register)op2[0]).getName());
 				if(data!=null && ((Register)op1[0]).getName().equals(base_reg) && string_len_offset==((Scalar)op1[1]).getValue()+go_bin.get_pointer_size()) {
 					try {
 						GolangString str=GolangString.create_string(go_bin, data, string_len);
 						string_map.put(data.getOffset(), str);
-						continue;
 					} catch (InvalidBinaryStructureException e) {
 						Logger.append_message(String.format("Failed to get string: %s", e.getMessage()));
 					}
+				}
+			} else if (check_inst.getFlowType().isCall() || check_inst.getFlowType().isTerminal()) {
+				if(is_arg_reg && string_len_offset>0) {
+					Address arg_str_addr=reg_map.get(reg_arg_str[(int)string_len_offset-1]);
+					if(arg_str_addr!=null) {
+						try {
+							GolangString str=GolangString.create_string(go_bin, arg_str_addr, string_len);
+							string_map.put(arg_str_addr.getOffset(), str);
+						} catch (InvalidBinaryStructureException e) {
+							Logger.append_message(String.format("Failed to get string: %s", e.getMessage()));
+						}
+					}
+				}
+				if(is_arg_reg) {
+					return;
 				}
 			} else {
 				clear_reg_move_any_to_reg(reg_map, check_inst);
@@ -173,7 +212,7 @@ public class StringExtractor {
 		}
 	}
 
-	private boolean clear_reg_move_any_to_reg(Map<Register, Address> reg_map, Instruction inst) {
+	private boolean clear_reg_move_any_to_reg(Map<String, Address> reg_map, Instruction inst) {
 		for(int i=0; i<inst.getNumOperands(); i++) {
 			if((inst.getOperandType(i)&OperandType.REGISTER)==0) {
 				continue;
@@ -186,7 +225,7 @@ public class StringExtractor {
 				if(!(op instanceof Register)) {
 					continue;
 				}
-				reg_map.remove((Register)op);
+				reg_map.remove(((Register)op).getName());
 			}
 		}
 		return false;
@@ -240,7 +279,7 @@ public class StringExtractor {
 		if(inst.getNumOperands()!=2) {
 			return false;
 		}
-		if(inst.getOperandType(0)!=OperandType.DYNAMIC || (inst.getOperandType(1)|(OperandType.REGISTER))==0) {// mov [rax],rdx ADDR|REG(lea), mov [rax+0x100],rdx REG(mov)
+		if((inst.getOperandType(0)&OperandType.DYNAMIC)==0 || (inst.getOperandType(1)&OperandType.REGISTER)==0) {// mov [rax],rdx ADDR|REG(lea), mov [rax+0x100],rdx REG(mov)
 			return false;
 		}
 		if(inst.getOperandRefType(0)!=RefType.WRITE || inst.getOperandRefType(1)!=RefType.READ) {
@@ -262,7 +301,7 @@ public class StringExtractor {
 		if(inst.getNumOperands()!=2) {
 			return false;
 		}
-		if(inst.getOperandType(0)!=OperandType.DYNAMIC || (inst.getOperandType(1)|(OperandType.REGISTER))==0) {// x64 reg only x86 reg|scalar
+		if((inst.getOperandType(0)&OperandType.DYNAMIC)==0 || (inst.getOperandType(1)&OperandType.REGISTER)==0) {// x64 reg only x86 reg|scalar
 			return false;
 		}
 		if(inst.getOperandRefType(0)!=RefType.WRITE || inst.getOperandRefType(1)!=RefType.READ) {

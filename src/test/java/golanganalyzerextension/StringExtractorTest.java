@@ -250,7 +250,7 @@ public class StringExtractorTest {
 							put("0x05001000", "6e616d656e616d65");
 						}}
 				),
-				/*Arguments.of(
+				Arguments.of(
 						new HashMap<Long, String>(){{
 							put((long)0x05001000, "name");
 						}},
@@ -264,7 +264,7 @@ public class StringExtractorTest {
 							put("0x05001000", "6e616d656e616d65");
 						}}
 				),
-				Arguments.of(
+				/*Arguments.of(
 						new HashMap<Long, String>(){{
 							put((long)0x05000500, "name");
 						}},
