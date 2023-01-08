@@ -340,12 +340,15 @@ public class GolangBinary {
 	}
 
 	public Optional<String> read_string(Address addr, int size) {
+		if(size>0x1000) {
+			return Optional.empty();
+		}
 		try {
 			byte[] bytes=new byte[size];
 			memory.getBytes(addr, bytes, 0, size);
 			String str=new String(bytes);
 			int tmp_len=str.length();
-			str=str.replaceAll("[^\\x20-\\x7e]", "");
+			str=str.replaceAll("[^\\x09\\x0a\\x0d\\x20-\\x7e]", "");
 			if(str.length()!=tmp_len) {
 				Logger.append_message(String.format("Invalid char: %x %x %s", addr.getOffset(), size, str));
 			}

@@ -127,12 +127,12 @@ public class GolangBuildInfoTest extends AbstractGhidraHeadlessIntegrationTest {
 
 	static Stream<Arguments> test_find_module_version_params() throws Throwable {
 		return Stream.of(
-				Arguments.of("pathcommand-line-argumentsmodcommand-line-arguments(devel)", new HashMap<String, String>(){{
+				Arguments.of("path\tcommand-line-arguments\nmod\tcommand-line-arguments\t(devel)\t\n", new HashMap<String, String>(){{
 					put("0x529000", "ff20476f206275696c64696e663a 04 00 78725300 98725300 0000000000000000");
 					put("0x00537298", "bb834b00 60000000");
 					put("0x004b83bb", "3077af0c9274080241e1c107e6d618e6 7061746809636f6d6d616e642d6c696e652d617267756d656e74730a6d6f6409636f6d6d616e642d6c696e652d617267756d656e74730928646576656c29090a f932433186182072008242104116d8f2");
 				}}),
-				Arguments.of("pathcommand-line-argumentsmodcommand-line-arguments(devel)", new HashMap<String, String>(){{
+				Arguments.of("path\tcommand-line-arguments\nmod\tcommand-line-arguments\t(devel)\t\n", new HashMap<String, String>(){{
 					put("0x529000", "ff20476f206275696c64696e663a 08 00 7872530000000000 9872530000000000");
 					put("0x00537298", "bb834b0000000000 6000000000000000");
 					put("0x004b83bb", "3077af0c9274080241e1c107e6d618e6 7061746809636f6d6d616e642d6c696e652d617267756d656e74730a6d6f6409636f6d6d616e642d6c696e652d617267756d656e74730928646576656c29090a f932433186182072008242104116d8f2");
@@ -154,14 +154,14 @@ public class GolangBuildInfoTest extends AbstractGhidraHeadlessIntegrationTest {
 
 	static Stream<Arguments> test_golang_build_info_params() throws Throwable {
 		return Stream.of(
-				Arguments.of("go1.16.7", "pathcommand-line-argumentsmodcommand-line-arguments(devel)", new HashMap<String, String>(){{
+				Arguments.of("go1.16.7", "path\tcommand-line-arguments\nmod\tcommand-line-arguments\t(devel)\t\n", new HashMap<String, String>(){{
 					put("0x529000", "ff20476f206275696c64696e663a 04 00 78725300 98725300 0000000000000000");
 					put("0x537278", "d5f64a00 08000000");
 					put("0x4af6d5", "676f312e31362e37");
 					put("0x00537298", "bb834b00 60000000");
 					put("0x004b83bb", "3077af0c9274080241e1c107e6d618e6 7061746809636f6d6d616e642d6c696e652d617267756d656e74730a6d6f6409636f6d6d616e642d6c696e652d617267756d656e74730928646576656c29090a f932433186182072008242104116d8f2");
 				}}),
-				Arguments.of("go1.16.7", "pathcommand-line-argumentsmodcommand-line-arguments(devel)", new HashMap<String, String>(){{
+				Arguments.of("go1.16.7", "path\tcommand-line-arguments\nmod\tcommand-line-arguments\t(devel)\t\n", new HashMap<String, String>(){{
 					put("0x529000", "ff20476f206275696c64696e663a 08 00 7872530000000000 9872530000000000");
 					put("0x537278", "d5f64a0000000000 0800000000000000");
 					put("0x4af6d5", "676f312e31362e37");
