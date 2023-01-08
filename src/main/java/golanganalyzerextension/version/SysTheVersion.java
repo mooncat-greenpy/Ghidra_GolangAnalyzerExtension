@@ -76,7 +76,7 @@ class SysTheVersion {
 		// runtime/proc.go
 		boolean badmorestackg0Msg=false;
 		boolean badmorestackgsignalMsg=false;
-		for(int i=-2; i<3; i++) {
+		for(int i=-4; i<4; i++) {
 			String around_str=go_bin.read_string_struct(string_struct_addr.add(go_bin.get_pointer_size()*2*i), go_bin.get_pointer_size()).orElse(null);
 			if(around_str==null) {
 				continue;
