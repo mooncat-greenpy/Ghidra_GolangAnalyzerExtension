@@ -22,14 +22,14 @@ import golanganalyzerextension.service.GolangAnalyzerExtensionService;
 
 public class DatatypeTableModel extends AddressBasedTableModel<GolangDatatype> {
 	private PluginTool plugin_tool;
-	private GolangAnalyzerExtensionPlugin gae_plugin;
-	private DatatypeDetailProvider datatype_detail_provider;
+	// private GolangAnalyzerExtensionPlugin gae_plugin;
+	// private DatatypeDetailProvider datatype_detail_provider;
 
 	DatatypeTableModel(PluginTool tool, Program program, TaskMonitor monitor, GolangAnalyzerExtensionPlugin gae_plugin) {
 		super("Datatypes Table", tool, program, monitor, true);
 
 		plugin_tool=tool;
-		this.gae_plugin=gae_plugin;
+		// this.gae_plugin=gae_plugin;
 	}
 
 	void update_table(Program new_program) {
@@ -53,9 +53,9 @@ public class DatatypeTableModel extends AddressBasedTableModel<GolangDatatype> {
 	@Override
 	public Address getAddress(int row) {
 		GolangDatatype go_datatype = getRowObject(row);
-		datatype_detail_provider=new DatatypeDetailProvider(gae_plugin, go_datatype);
+		/*datatype_detail_provider=new DatatypeDetailProvider(gae_plugin, go_datatype);
 		datatype_detail_provider.getTool().showComponentProvider(datatype_detail_provider, true);
-		datatype_detail_provider.toFront();
+		datatype_detail_provider.toFront();*/
 		return go_datatype.get_addr();
 	}
 

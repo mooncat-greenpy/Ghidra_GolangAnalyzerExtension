@@ -22,14 +22,14 @@ import golanganalyzerextension.service.GolangAnalyzerExtensionService;
 
 class FunctionTableModel extends AddressBasedTableModel<GolangFunction> {
 	private PluginTool plugin_tool;
-	private GolangAnalyzerExtensionPlugin gae_plugin;
-	private FunctionDetailProvider function_detail_provider;
+	// private GolangAnalyzerExtensionPlugin gae_plugin;
+	// private FunctionDetailProvider function_detail_provider;
 
 	FunctionTableModel(PluginTool tool, Program program, TaskMonitor monitor, GolangAnalyzerExtensionPlugin gae_plugin) {
 		super("Functions Table", tool, program, monitor, true);
 
 		plugin_tool=tool;
-		this.gae_plugin=gae_plugin;
+		// this.gae_plugin=gae_plugin;
 	}
 
 	void update_table(Program new_program) {
@@ -54,9 +54,9 @@ class FunctionTableModel extends AddressBasedTableModel<GolangFunction> {
 	@Override
 	public Address getAddress(int row) {
 		GolangFunction gofunc = getRowObject(row);
-		function_detail_provider=new FunctionDetailProvider(gae_plugin, gofunc);
+		/*function_detail_provider=new FunctionDetailProvider(gae_plugin, gofunc);
 		function_detail_provider.getTool().showComponentProvider(function_detail_provider, true);
-		function_detail_provider.toFront();
+		function_detail_provider.toFront();*/
 		return gofunc.get_func_addr();
 	}
 

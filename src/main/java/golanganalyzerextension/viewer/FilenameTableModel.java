@@ -18,14 +18,14 @@ import golanganalyzerextension.service.GolangAnalyzerExtensionService;
 
 class FilenameTableModel extends AddressBasedTableModel<String> {
 	private PluginTool plugin_tool;
-	private GolangAnalyzerExtensionPlugin gae_plugin;
-	private FileDetailProvider file_detail_provider;
+	// private GolangAnalyzerExtensionPlugin gae_plugin;
+	// private FileDetailProvider file_detail_provider;
 
 	FilenameTableModel(PluginTool tool, Program program, TaskMonitor monitor, GolangAnalyzerExtensionPlugin gae_plugin) {
 		super("Functions Table", tool, program, monitor, true);
 
 		plugin_tool=tool;
-		this.gae_plugin=gae_plugin;
+		// this.gae_plugin=gae_plugin;
 	}
 
 	void update_table(Program new_program) {
@@ -49,9 +49,9 @@ class FilenameTableModel extends AddressBasedTableModel<String> {
 
 	*/@Override
 	public Address getAddress(int row) {
-		file_detail_provider=new FileDetailProvider(gae_plugin, getRowObject(row));
+		/*file_detail_provider=new FileDetailProvider(gae_plugin, getRowObject(row));
 		file_detail_provider.getTool().showComponentProvider(file_detail_provider, true);
-		file_detail_provider.toFront();
+		file_detail_provider.toFront();*/
 		return null;
 	}
 
