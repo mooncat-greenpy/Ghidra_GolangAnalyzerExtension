@@ -35,7 +35,7 @@ public class GolangFunctionArm extends GolangFunction {
 	@Override
 	void disassemble() {
 		try {
-			Register tmode=go_bin.get_register("TMode");
+			Register tmode=go_bin.get_register("TMode").orElse(null);
 			if(tmode!=null) {
 				// func_addr, func_addr.add(func_size) -> java.lang.NullPointerException
 				go_bin.set_register_value(tmode, get_func_addr(), get_func_addr(), BigInteger.ZERO);
@@ -59,11 +59,15 @@ public class GolangFunctionArm extends GolangFunction {
 				continue;
 			}
 			Register reg=(Register)op_input[j];
+			Register lr_reg=go_bin.get_register("lr").orElse(null);
+			if(lr_reg==null) {
+				continue;
+			}
 			if(!builtin_reg_state.containsKey(reg.getBaseRegister()) &&
 					inst.toString().contains(reg.toString()) &&
 					(reg.getTypeFlags()&(Register.TYPE_PC|Register.TYPE_SP))==0 &&
 					!reg.toString().contains("sp") &&
-					!go_bin.compare_register(reg, go_bin.get_register("lr"))) {
+					!go_bin.compare_register(reg, lr_reg)) {
 				builtin_reg_state.put(reg.getBaseRegister(), REG_FLAG.READ);
 				reg_arg.add(reg);
 			}
@@ -94,13 +98,16 @@ public class GolangFunctionArm extends GolangFunction {
 	}
 	@Override
 	boolean check_memcopy() {
-		Instruction inst=go_bin.get_instruction(get_func().getEntryPoint());
+		Instruction inst=go_bin.get_instruction(get_func().getEntryPoint()).orElse(null);
+		if(inst==null) {
+			return false;
+		}
 		MEMCPY_FUNC_STAGE stage=MEMCPY_FUNC_STAGE.GET_SRC;
 		Register dst_reg=null;
 		Register src_reg=null;
 		DataType inner_datatype=null;
-		String tmp_reg1="TMP";
-		String tmp_reg2="TMP";
+		String tmp_reg1_str="TMP";
+		String tmp_reg2_str="TMP";
 		int size=0;
 		while(inst!=null) {
 			if(go_bin.is_ret_inst(inst)) {
@@ -132,7 +139,7 @@ public class GolangFunctionArm extends GolangFunction {
 						return false;
 					}
 					src_reg=(Register)op2[0];
-					tmp_reg1=op1[0].toString();
+					tmp_reg1_str=op1[0].toString();
 					stage=MEMCPY_FUNC_STAGE.SET_DST;
 				}else if(mnemonic.equals("ldp")) {
 					if(inst.getNumOperands()<3) {
@@ -152,8 +159,8 @@ public class GolangFunctionArm extends GolangFunction {
 						return false;
 					}
 					src_reg=(Register)op3[0];
-					tmp_reg1=op1[0].toString();
-					tmp_reg2=op2[0].toString();
+					tmp_reg1_str=op1[0].toString();
+					tmp_reg2_str=op2[0].toString();
 					stage=MEMCPY_FUNC_STAGE.SET_DST;
 				}else {
 					return false;
@@ -164,7 +171,11 @@ public class GolangFunctionArm extends GolangFunction {
 					if(op2.length<2) {
 						return false;
 					}
-					if(!(op1[0] instanceof Register) || !go_bin.compare_register((Register)op1[0], go_bin.get_register(tmp_reg1))) {
+					Register tmp_reg1=go_bin.get_register(tmp_reg1_str).orElse(null);
+					if(tmp_reg1==null) {
+						return false;
+					}
+					if(!(op1[0] instanceof Register) || !go_bin.compare_register((Register)op1[0], tmp_reg1)) {
 						return false;
 					}
 					if(!(op2[0] instanceof Register)) {
@@ -187,10 +198,15 @@ public class GolangFunctionArm extends GolangFunction {
 					if(op3.length<1) {
 						return false;
 					}
-					if(!(op1[0] instanceof Register) || !go_bin.compare_register((Register)op1[0], go_bin.get_register(tmp_reg1))) {
+					Register tmp_reg1=go_bin.get_register(tmp_reg1_str).orElse(null);
+					Register tmp_reg2=go_bin.get_register(tmp_reg2_str).orElse(null);
+					if(tmp_reg1==null || tmp_reg2==null) {
 						return false;
 					}
-					if(!(op2[0] instanceof Register) || !go_bin.compare_register((Register)op2[0], go_bin.get_register(tmp_reg2))) {
+					if(!(op1[0] instanceof Register) || !go_bin.compare_register((Register)op1[0], tmp_reg1)) {
+						return false;
+					}
+					if(!(op2[0] instanceof Register) || !go_bin.compare_register((Register)op2[0], tmp_reg2)) {
 						return false;
 					}
 					if(!(op3[0] instanceof Register)) {
@@ -239,7 +255,10 @@ public class GolangFunctionArm extends GolangFunction {
 
 	@Override
 	boolean check_memset() {
-		Instruction inst=go_bin.get_instruction(get_func().getEntryPoint());
+		Instruction inst=go_bin.get_instruction(get_func().getEntryPoint()).orElse(null);
+		if(inst==null) {
+			return false;
+		}
 		Register dst_reg=null;
 		Register src_reg=null;
 		DataType inner_datatype=null;
@@ -290,10 +309,14 @@ public class GolangFunctionArm extends GolangFunction {
 				if(op3.length<1) {
 					return false;
 				}
-				if(!(op1[0] instanceof Register) || !go_bin.compare_register((Register)op1[0], go_bin.get_register("xzr"))) {
+				Register xzr_reg=go_bin.get_register("xzr").orElse(null);
+				if(xzr_reg==null) {
 					return false;
 				}
-				if(!(op2[0] instanceof Register) || !go_bin.compare_register((Register)op2[0], go_bin.get_register("xzr"))) {
+				if(!(op1[0] instanceof Register) || !go_bin.compare_register((Register)op1[0], xzr_reg)) {
+					return false;
+				}
+				if(!(op2[0] instanceof Register) || !go_bin.compare_register((Register)op2[0], xzr_reg)) {
 					return false;
 				}
 				if(!(op3[0] instanceof Register)) {

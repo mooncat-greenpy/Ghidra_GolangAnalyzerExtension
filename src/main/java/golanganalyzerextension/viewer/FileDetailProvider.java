@@ -21,6 +21,7 @@ import ghidra.program.model.symbol.Reference;
 import golanganalyzerextension.function.FileLine;
 import golanganalyzerextension.function.GolangFunction;
 import golanganalyzerextension.gobinary.GolangBinary;
+import golanganalyzerextension.gobinary.exceptions.BinaryAccessException;
 import golanganalyzerextension.service.GolangAnalyzerExtensionPlugin;
 
 class FileDetailProvider extends ComponentProviderAdapter {
@@ -93,7 +94,7 @@ class FileDetailProvider extends ComponentProviderAdapter {
 			int idx=0;
 			for(Object key : map_key) {
 				for(FileLine file_line : line_fl_map.get(key)) {
-					Function func=go_bin.get_function(file_line.get_func_addr());
+					Function func=go_bin.get_function(file_line.get_func_addr()).orElse(null);
 					String func_name=String.format("FUN_%x", file_line.get_func_addr().getOffset());
 					if(func!=null) {
 						func_name=func.getName();
@@ -103,14 +104,21 @@ class FileDetailProvider extends ComponentProviderAdapter {
 					}
 
 					String call_info="";
-					Address file_line_addr=go_bin.get_address(file_line.get_func_addr(), file_line.get_offset());
-					Instruction inst=go_bin.get_instruction(file_line_addr);
-					while(inst!=null && inst.getAddress().getOffset()<file_line_addr.getOffset()+file_line.get_size()) {
+					Address file_line_addr;
+					Instruction inst;
+					try {
+						file_line_addr = go_bin.get_address(file_line.get_func_addr(), file_line.get_offset());
+						inst=go_bin.get_instruction(file_line_addr).orElse(null);
+					} catch (BinaryAccessException e) {
+						file_line_addr=null;
+						inst=null;
+					}
+					while(file_line_addr!=null && inst!=null && inst.getAddress().getOffset()<file_line_addr.getOffset()+file_line.get_size()) {
 						for(int i=0; i<inst.getNumOperands(); i++) {
 							// TODO: parse args
 							for(Reference ref : inst.getOperandReferences(i)) {
 								Address ref_addr=ref.getToAddress();
-								Function called_func=go_bin.get_function(ref_addr);
+								Function called_func=go_bin.get_function(ref_addr).orElse(null);
 								if(called_func==null || call_info.contains(called_func.getName())) {
 									continue;
 								}
@@ -119,7 +127,7 @@ class FileDetailProvider extends ComponentProviderAdapter {
 						}
 						if(inst.getFlowType().isCall()) {
 							for(Address called : inst.getFlows()) {
-								Function called_func=go_bin.get_function(called);
+								Function called_func=go_bin.get_function(called).orElse(null);
 								String called_func_name=String.format("FUN_%x", called.getOffset());
 								if(called_func!=null) {
 									called_func_name=called_func.getName();

@@ -9,6 +9,7 @@ import ghidra.program.model.data.StructureDataType;
 import ghidra.program.model.data.VoidDataType;
 import golanganalyzerextension.DatatypeHolder;
 import golanganalyzerextension.gobinary.GolangBinary;
+import golanganalyzerextension.gobinary.exceptions.BinaryAccessException;
 
 
 public class InterfaceGolangDatatype extends GolangDatatype {
@@ -40,7 +41,7 @@ public class InterfaceGolangDatatype extends GolangDatatype {
 	}
 
 	@Override
-	void parse_datatype() {
+	void parse_datatype() throws BinaryAccessException {
 		int pointer_size=go_bin.get_pointer_size();
 
 		long pkg_path_addr_value=go_bin.get_address_value(ext_base_addr, pointer_size);

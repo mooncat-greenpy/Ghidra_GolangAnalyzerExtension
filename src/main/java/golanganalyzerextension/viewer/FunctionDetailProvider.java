@@ -54,10 +54,11 @@ class FunctionDetailProvider extends ComponentProviderAdapter {
 		JLabel name_panel=new JLabel(String.format("Name: %s", gofunc.get_func_name()));
 		name_panel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
 		panel.add(name_panel);
-		JLabel start_address_panel=new JLabel(String.format("Start address: %d", gofunc.get_func_addr().getOffset()));
+
+		JLabel start_address_panel=new JLabel(String.format("Start address: %x", gofunc.get_func_addr().getOffset()));
 		start_address_panel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
 		panel.add(start_address_panel);
-		JLabel end_address_panel=new JLabel(String.format("End address: %d", gofunc.get_func_addr().add(gofunc.get_func_size()).getOffset()));
+		JLabel end_address_panel=new JLabel(String.format("End address: %x", gofunc.get_func_addr().getOffset()+gofunc.get_func_size()));
 		end_address_panel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
 		panel.add(end_address_panel);
 		JLabel args_length_panel=new JLabel(String.format("Args Num: %d", gofunc.get_params().size()));

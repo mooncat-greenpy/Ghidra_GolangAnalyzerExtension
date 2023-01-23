@@ -25,6 +25,7 @@ import ghidra.program.model.listing.ParameterImpl;
 import ghidra.program.model.symbol.SourceType;
 import golanganalyzerextension.exceptions.InvalidBinaryStructureException;
 import golanganalyzerextension.gobinary.GolangBinary;
+import golanganalyzerextension.gobinary.exceptions.BinaryAccessException;
 import golanganalyzerextension.log.Logger;
 import golanganalyzerextension.service.GolangAnalyzerExtensionService;
 
@@ -157,7 +158,11 @@ public class GolangFunction {
 		if(!disasm_option) {
 			return;
 		}
-		go_bin.disassemble(func_addr, func_size);
+		try {
+			go_bin.disassemble(func_addr, func_size);
+		} catch (BinaryAccessException e) {
+			Logger.append_message(String.format("Failed to disassemble: addr=%s, size=%x", func_addr, func_size));
+		}
 	}
 
 	enum REG_FLAG {
@@ -184,7 +189,12 @@ public class GolangFunction {
 		}
 
 		int pointer_size=go_bin.get_pointer_size();
-		arg_size=(int)go_bin.get_address_value(info_addr, (is_go118?4:pointer_size)+4, 4);
+		try {
+			arg_size=(int)go_bin.get_address_value(info_addr, (is_go118?4:pointer_size)+4, 4);
+		} catch (BinaryAccessException e1) {
+			Logger.append_message(String.format("Failed to get arg size: info_addr=%s", info_addr));
+			return false;
+		}
 		int args_num=arg_size/pointer_size+(arg_size%pointer_size==0?0:1);
 
 		init_frame_map();
@@ -193,7 +203,7 @@ public class GolangFunction {
 		Map<Register, REG_FLAG> builtin_reg_state=new HashMap<>();
 		List<Register> builtin_reg_arg=new ArrayList<>();
 		boolean is_checked_builtin_reg=false;
-		Instruction inst=go_bin.get_instruction(func_addr);
+		Instruction inst=go_bin.get_instruction(func_addr).orElse(null);
 		while(inst!=null && inst.getAddress().getOffset()<func_addr.getOffset()+func_size) {
 			if(extended_option && !is_checked_builtin_reg) {
 				is_checked_builtin_reg=check_inst_builtin_reg_arg(inst, builtin_reg_state, builtin_reg_arg);
@@ -214,13 +224,13 @@ public class GolangFunction {
 			params=new ArrayList<>();
 			int stack_count=0;
 			for(int i=0;i<args_num && i<50;i++) {
-				DataType datatype=null;
 				int size=pointer_size;
 				if(i==args_num-1 && arg_size%pointer_size>0) {
 					size=arg_size%pointer_size;
 				}else if(is_builtin_reg && !is_reg_arg) {
 					size=builtin_reg_arg.get(i).getBitLength()/8;
 				}
+				DataType datatype;
 				if(size==8) {
 					datatype=new Undefined8DataType();
 				}else if(size==7) {
@@ -244,11 +254,11 @@ public class GolangFunction {
 				}
 				Register reg=null;
 				if(is_reg_arg) {
-					reg=go_bin.get_register(get_reg_arg_name(i));
+					reg=go_bin.get_register(get_reg_arg_name(i)).orElse(null);
 				}else if(is_builtin_reg) {
 					reg=builtin_reg_arg.get(i);
 				}
-				Parameter add_param=null;
+				Parameter add_param;
 				if(reg==null) {
 					add_param=new ParameterImpl(String.format("param_%d", i+1), datatype, (stack_count+1)*pointer_size, func.getProgram(), SourceType.USER_DEFINED);
 					stack_count++;
@@ -269,18 +279,28 @@ public class GolangFunction {
 		if(go_bin.ge_go_version("go1.18beta1")) {
 			is_go118=true;
 		}
-		long entry_addr_value=go_bin.get_address_value(info_addr, is_go118?4:go_bin.get_pointer_size());
-		if(is_go118) {
-			entry_addr_value+=go_bin.get_address_value(go_bin.get_gopclntab_base(), 8+go_bin.get_pointer_size()*2, go_bin.get_pointer_size());
+		long entry_addr_value;
+		try {
+			entry_addr_value=go_bin.get_address_value(info_addr, is_go118?4:go_bin.get_pointer_size());
+			if(is_go118) {
+				Address gopclntab_base=go_bin.get_gopclntab_base().orElse(null);
+				if(gopclntab_base==null) {
+					return false;
+				}
+				entry_addr_value+=go_bin.get_address_value(gopclntab_base, 8+go_bin.get_pointer_size()*2, go_bin.get_pointer_size());
+			}
+			func_addr=go_bin.get_address(entry_addr_value);
+		} catch (BinaryAccessException e) {
+			Logger.append_message(String.format("Failed to get func addr: info_addr=%s, message=%s", info_addr, e.getMessage()));
+			return false;
 		}
-		func_addr=go_bin.get_address(entry_addr_value);
 		if(disasm_option) {
 			disassemble();
 		}
-		func=go_bin.get_function(func_addr);
+		func=go_bin.get_function(func_addr).orElse(null);
 		if(func==null) {
 			go_bin.create_function(func_name, func_addr);
-			func=go_bin.get_function(func_addr);
+			func=go_bin.get_function(func_addr).orElse(null);
 		}
 		if(func==null) {
 			Logger.append_message(String.format("Failed to get function: %x", entry_addr_value));
@@ -311,21 +331,27 @@ public class GolangFunction {
 		}
 
 		int pointer_size=go_bin.get_pointer_size();
-		Address gopclntab_base=go_bin.get_gopclntab_base();
-		int func_name_offset=(int)go_bin.get_address_value(info_addr, is_go118?4:pointer_size, 4);
-		Address func_name_addr=null;
-		if(is_go118) {
-			Address func_name_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*3, pointer_size));
-			func_name_addr=go_bin.get_address(func_name_base, func_name_offset);
-		}else if(is_go116) {
-			Address func_name_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*2, pointer_size));
-			func_name_addr=go_bin.get_address(func_name_base, func_name_offset);
-		}else {
-			func_name_addr=go_bin.get_address(gopclntab_base, func_name_offset);
-		}
-		if(func_name_addr==null) {
+		Address gopclntab_base=go_bin.get_gopclntab_base().orElse(null);
+		if(gopclntab_base==null) {
 			return false;
 		}
+		Address func_name_addr;
+		try {
+			int func_name_offset=(int)go_bin.get_address_value(info_addr, is_go118?4:pointer_size, 4);
+			if(is_go118) {
+				Address func_name_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*3, pointer_size));
+				func_name_addr=go_bin.get_address(func_name_base, func_name_offset);
+			}else if(is_go116) {
+				Address func_name_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*2, pointer_size));
+				func_name_addr=go_bin.get_address(func_name_base, func_name_offset);
+			}else {
+				func_name_addr=go_bin.get_address(gopclntab_base, func_name_offset);
+			}
+		} catch (BinaryAccessException e) {
+			Logger.append_message(String.format("Failed to get func name addr: info_addr=%s, message=%s", info_addr, e.getMessage()));
+			return false;
+		}
+
 		String str=go_bin.create_string_data(func_name_addr).orElse(null);
 		if(str==null) {
 			return false;
@@ -347,17 +373,26 @@ public class GolangFunction {
 		file_line_comment_map = new HashMap<>();
 
 		int pointer_size=go_bin.get_pointer_size();
-		Address gopclntab_base=go_bin.get_gopclntab_base();
-		Address pcln_base=null;
-		int pcln_offset=(int)go_bin.get_address_value(info_addr, (is_go118?4:pointer_size)+5*4, 4);
-		if(is_go118) {
-			pcln_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*6, pointer_size));
-			pcln_base=go_bin.get_address(pcln_base, pcln_offset);
-		}else if(is_go116) {
-			pcln_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*5, pointer_size));
-			pcln_base=go_bin.get_address(pcln_base, pcln_offset);
-		}else {
-			pcln_base=go_bin.get_address(gopclntab_base, pcln_offset);
+		Address gopclntab_base=go_bin.get_gopclntab_base().orElse(null);
+		if(gopclntab_base==null) {
+			return false;
+		}
+
+		Address pcln_base;
+		try {
+			int pcln_offset=(int)go_bin.get_address_value(info_addr, (is_go118?4:pointer_size)+5*4, 4);
+			if(is_go118) {
+				pcln_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*6, pointer_size));
+				pcln_base=go_bin.get_address(pcln_base, pcln_offset);
+			}else if(is_go116) {
+				pcln_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*5, pointer_size));
+				pcln_base=go_bin.get_address(pcln_base, pcln_offset);
+			}else {
+				pcln_base=go_bin.get_address(gopclntab_base, pcln_offset);
+			}
+		} catch (BinaryAccessException e) {
+			Logger.append_message(String.format("Failed to get pcln base: info_addr=%s, message=%s", info_addr, e.getMessage()));
+			return false;
 		}
 
 		long line_num=-1;
@@ -365,10 +400,17 @@ public class GolangFunction {
 		boolean first=true;
 		int pc_offset=0;
 		while(true) {
-			int line_num_add=read_pc_data(go_bin.get_address(pcln_base, i));
-			i+=Integer.toBinaryString(line_num_add).length()/8+1;
-			int byte_size=read_pc_data(go_bin.get_address(pcln_base, i));
-			i+=Integer.toBinaryString(byte_size).length()/8+1;
+			int line_num_add;
+			int byte_size;
+			try {
+				line_num_add=read_pc_data(go_bin.get_address(pcln_base, i));
+				i+=Integer.toBinaryString(line_num_add).length()/8+1;
+				byte_size=read_pc_data(go_bin.get_address(pcln_base, i));
+				i+=Integer.toBinaryString(byte_size).length()/8+1;
+			} catch (BinaryAccessException e) {
+				Logger.append_message(String.format("Failed to get line num: info_addr=%s, message=%s", info_addr, e.getMessage()));
+				return false;
+			}
 			if(line_num_add==0 && !first) {
 				break;
 			}
@@ -399,17 +441,25 @@ public class GolangFunction {
 		}
 
 		int pointer_size=go_bin.get_pointer_size();
-		Address gopclntab_base=go_bin.get_gopclntab_base();
-		Address pcln_base=null;
-		int pcln_offset=(int)go_bin.get_address_value(info_addr, (is_go118?4:pointer_size)+3*4, 4);
-		if(is_go118) {
-			pcln_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*6, pointer_size));
-			pcln_base=go_bin.get_address(pcln_base, pcln_offset);
-		}else if(is_go116) {
-			pcln_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*5, pointer_size));
-			pcln_base=go_bin.get_address(pcln_base, pcln_offset);
-		}else {
-			pcln_base=go_bin.get_address(gopclntab_base, pcln_offset);
+		Address gopclntab_base=go_bin.get_gopclntab_base().orElse(null);
+		if(gopclntab_base==null) {
+			return false;
+		}
+		Address pcsp_base;
+		try {
+			int pcsp_offset=(int)go_bin.get_address_value(info_addr, (is_go118?4:pointer_size)+3*4, 4);
+			if(is_go118) {
+				pcsp_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*6, pointer_size));
+				pcsp_base=go_bin.get_address(pcsp_base, pcsp_offset);
+			}else if(is_go116) {
+				pcsp_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*5, pointer_size));
+				pcsp_base=go_bin.get_address(pcsp_base, pcsp_offset);
+			}else {
+				pcsp_base=go_bin.get_address(gopclntab_base, pcsp_offset);
+			}
+		} catch (BinaryAccessException e) {
+			Logger.append_message(String.format("Failed to get pcsp base: info_addr=%s, message=%s", info_addr, e.getMessage()));
+			return false;
 		}
 
 		long frame_size=-1;
@@ -417,10 +467,17 @@ public class GolangFunction {
 		boolean first=true;
 		int pc_offset=0;
 		while(true) {
-			int frame_size_add=read_pc_data(go_bin.get_address(pcln_base, i));
-			i+=Integer.toBinaryString(frame_size_add).length()/8+1;
-			int byte_size=read_pc_data(go_bin.get_address(pcln_base, i));
-			i+=Integer.toBinaryString(byte_size).length()/8+1;
+			int frame_size_add;
+			int byte_size;
+			try {
+				frame_size_add=read_pc_data(go_bin.get_address(pcsp_base, i));
+				i+=Integer.toBinaryString(frame_size_add).length()/8+1;
+				byte_size=read_pc_data(go_bin.get_address(pcsp_base, i));
+				i+=Integer.toBinaryString(byte_size).length()/8+1;
+			} catch (BinaryAccessException e) {
+				Logger.append_message(String.format("Failed to get line num: info_addr=%s, message=%s", info_addr, e.getMessage()));
+				return false;
+			}
 			if(frame_size_add==0 && !first) {
 				break;
 			}
@@ -457,17 +514,25 @@ public class GolangFunction {
 		}
 
 		int pointer_size=go_bin.get_pointer_size();
-		Address gopclntab_base=go_bin.get_gopclntab_base();
-		Address pcfile_base=null;
-		int pcfile_offset=(int)go_bin.get_address_value(info_addr, (is_go118?4:pointer_size)+4*4, 4);
-		if(is_go118) {
-			pcfile_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*6, pointer_size));
-			pcfile_base=go_bin.get_address(pcfile_base, pcfile_offset);
-		}else if(is_go116) {
-			pcfile_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*5, pointer_size));
-			pcfile_base=go_bin.get_address(pcfile_base, pcfile_offset);
-		}else {
-			pcfile_base=go_bin.get_address(gopclntab_base, pcfile_offset);
+		Address gopclntab_base=go_bin.get_gopclntab_base().orElse(null);
+		if(gopclntab_base==null) {
+			return null;
+		}
+		Address pcfile_base;
+		try {
+			int pcfile_offset=(int)go_bin.get_address_value(info_addr, (is_go118?4:pointer_size)+4*4, 4);
+			if(is_go118) {
+				pcfile_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*6, pointer_size));
+				pcfile_base=go_bin.get_address(pcfile_base, pcfile_offset);
+			}else if(is_go116) {
+				pcfile_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*5, pointer_size));
+				pcfile_base=go_bin.get_address(pcfile_base, pcfile_offset);
+			}else {
+				pcfile_base=go_bin.get_address(gopclntab_base, pcfile_offset);
+			}
+		} catch (BinaryAccessException e) {
+			Logger.append_message(String.format("Failed to get pcfile base: info_addr=%s, message=%s", info_addr, e.getMessage()));
+			return null;
 		}
 
 		long file_no=-1;
@@ -475,10 +540,18 @@ public class GolangFunction {
 		boolean first=true;
 		int pc_offset=0;
 		while(true) {
-			int file_no_add=read_pc_data(go_bin.get_address(pcfile_base, i));
-			i+=Integer.toBinaryString(file_no_add).length()/8+1;
-			int byte_size=read_pc_data(go_bin.get_address(pcfile_base, i));
-			i+=Integer.toBinaryString(byte_size).length()/8+1;
+			int file_no_add;
+			int byte_size;
+			try {
+				file_no_add=read_pc_data(go_bin.get_address(pcfile_base, i));
+				i+=Integer.toBinaryString(file_no_add).length()/8+1;
+				byte_size=read_pc_data(go_bin.get_address(pcfile_base, i));
+				i+=Integer.toBinaryString(byte_size).length()/8+1;
+			} catch (BinaryAccessException e) {
+				Logger.append_message(String.format("Failed to get line num: info_addr=%s, message=%s", info_addr, e.getMessage()));
+				return null;
+			}
+
 			if(file_no_add==0 && !first) {
 				break;
 			}
@@ -489,25 +562,26 @@ public class GolangFunction {
 
 			if(target_pc_offset<=pc_offset) {
 				if(is_go116) {
-					int cu_offset=(int)go_bin.get_address_value(info_addr, (is_go118?4:pointer_size)+4*7, 4);
-					Address cutab_base=null;
-					if(is_go118) {
-						cutab_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*4, pointer_size));
-					}else {
-						cutab_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*3, pointer_size));
-					}
-					if(cutab_base==null) {
-						return null;
-					}
-					long file_no_offset=go_bin.get_address_value(cutab_base, (cu_offset+file_no)*4, 4);
-					Address file_base=null;
-					if(is_go118) {
-						file_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*5, pointer_size));
-					}else {
-						file_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*4, pointer_size));
-					}
-					Address file_name_addr=go_bin.get_address(file_base, file_no_offset);
-					if(file_name_addr==null) {
+					Address file_name_addr;
+					try {
+						int cu_offset=(int)go_bin.get_address_value(info_addr, (is_go118?4:pointer_size)+4*7, 4);
+						Address cutab_base;
+						if(is_go118) {
+							cutab_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*4, pointer_size));
+						}else {
+							cutab_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*3, pointer_size));
+						}
+
+						long file_no_offset=go_bin.get_address_value(cutab_base, (cu_offset+file_no)*4, 4);
+						Address file_base;
+						if(is_go118) {
+							file_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*5, pointer_size));
+						}else {
+							file_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*4, pointer_size));
+						}
+						file_name_addr=go_bin.get_address(file_base, file_no_offset);
+					} catch (BinaryAccessException e) {
+						Logger.append_message(String.format("Failed to get file name addr: gopclntab_base=%s, pcfile_base=%s, file_no=%x, message=%s", gopclntab_base, pcfile_base, file_no, e.getMessage()));
 						return null;
 					}
 
@@ -535,10 +609,7 @@ public class GolangFunction {
 		return value;
 	}
 
-	private int read_pc_data(Address addr) {
-		if(addr==null) {
-			return 0;
-		}
+	private int read_pc_data(Address addr) throws BinaryAccessException {
 		int value=0;
 		for(int i=0, shift=0;;i++, shift+=7) {
 			int tmp=0;

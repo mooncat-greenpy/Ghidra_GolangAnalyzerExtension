@@ -3,52 +3,58 @@ package golanganalyzerextension.version;
 import java.util.Optional;
 
 import ghidra.program.model.address.Address;
+import golanganalyzerextension.exceptions.InvalidBinaryStructureException;
 import golanganalyzerextension.gobinary.GolangBinary;
-import golanganalyzerextension.log.Logger;
+import golanganalyzerextension.gobinary.exceptions.BinaryAccessException;
 
 class GolangBuildInfo {
 	private GolangBinary go_bin;
 
-	private Optional<String> go_version_opt;
+	private String go_version;
 	private Optional<String> module_version_opt;
 
-	GolangBuildInfo(GolangBinary go_bin) {
+	GolangBuildInfo(GolangBinary go_bin) throws InvalidBinaryStructureException {
 		this.go_bin=go_bin;
 
-		Optional<Address> build_info_addr=get_build_info_addr();
-		build_info_addr.ifPresentOrElse(
-			addr -> scan_build_info(addr),
-			() -> {
-				go_version_opt=Optional.empty();
-				module_version_opt=Optional.empty();
-				Logger.append_message("Failed to find \"\\xff Go buildinf:\"");
-			}
-		);
+		Address build_info_addr=get_build_info_addr();
+		if(build_info_addr==null) {
+			throw new InvalidBinaryStructureException("Not found \"\\xff Go buildinf:\"");
+		} else {
+			scan_build_info(build_info_addr);
+		}
 	}
 
-	private Optional<Address> get_build_info_addr() {
+	private Address get_build_info_addr() {
 		// ver > go1.12.*
 		// cmd/go/internal/version/version.go
 		// "\xff Go buildinf:"
 		byte build_info_magic[]={(byte)0xff,(byte)0x20,(byte)0x47,(byte)0x6f,(byte)0x20,(byte)0x62,(byte)0x75,(byte)0x69,(byte)0x6c,(byte)0x64,(byte)0x69,(byte)0x6e,(byte)0x66,(byte)0x3a};
 		byte magic_mask[]={(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff};
-		return Optional.ofNullable(go_bin.find_memory(null, build_info_magic, magic_mask));
+		return go_bin.find_memory(null, build_info_magic, magic_mask).orElse(null);
 	}
 
 	private void scan_build_info(Address base_addr) {
-		go_version_opt=find_go_version(base_addr);
-		module_version_opt=find_module_version(base_addr);
+		try {
+			go_version=find_go_version(base_addr);
+		} catch (BinaryAccessException | InvalidBinaryStructureException e) {
+			throw new InvalidBinaryStructureException(String.format("Read go version: addr=%s, message=%s", base_addr, e.getMessage()));
+		}
+		try {
+			module_version_opt=find_module_version(base_addr);
+		} catch (BinaryAccessException | InvalidBinaryStructureException e) {
+			module_version_opt=Optional.empty();
+		}
 	}
 
-	Optional<String> get_go_version() {
-		return go_version_opt;
+	String get_go_version() {
+		return go_version;
 	}
 
 	Optional<String> get_module_version() {
 		return module_version_opt;
 	}
 
-	Optional<String> find_go_version(Address base_addr) {
+	String find_go_version(Address base_addr) throws BinaryAccessException {
 		byte size=(byte)go_bin.get_address_value(base_addr, 14, 1);
 		byte endian=(byte)go_bin.get_address_value(base_addr, 15, 1);
 		if((endian&2)!=0) {
@@ -57,14 +63,13 @@ class GolangBuildInfo {
 		}
 		boolean is_big_endian=endian!=0;
 		if(is_big_endian) {
-			Logger.append_message("Go version is big endian");
-			return Optional.empty();
+			throw new InvalidBinaryStructureException("Go version is big endian");
 		}
 
 		return go_bin.read_string_struct(go_bin.get_address_value(base_addr, 16, size), size);
 	}
 
-	Optional<String> find_module_version(Address base_addr) {
+	Optional<String> find_module_version(Address base_addr) throws BinaryAccessException {
 		byte size=(byte)go_bin.get_address_value(base_addr, 14, 1);
 
 		long addr_value=go_bin.get_address_value(base_addr, 16+size, size);
@@ -77,11 +82,13 @@ class GolangBuildInfo {
 		}
 		long bytes_size=go_bin.get_address_value(addr_value + size, size);
 
-		if(go_bin.get_address_value(bytes_addr.add(bytes_size-17), 1)!='\n') {
+		// runtime/debug/mod.go
+		Address mod_bytes_addr=go_bin.get_address(bytes_addr, 16);
+		Address mod_bytes_end=go_bin.get_address(bytes_addr, bytes_size-17);
+		if(mod_bytes_addr==null || mod_bytes_end==null || go_bin.get_address_value(mod_bytes_end, 1)!='\n') {
 			return Optional.empty();
 		}
 
-		// runtime/debug/mod.go
-		return go_bin.read_string(bytes_addr.add(16), (int)bytes_size-16-16);
+		return Optional.ofNullable(go_bin.read_string(mod_bytes_addr, (int)bytes_size-16-16));
 	}
 }

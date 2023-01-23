@@ -3,6 +3,8 @@ package golanganalyzerextension.gobinary;
 import ghidra.program.model.address.Address;
 import golanganalyzerextension.datatype.GolangDatatype;
 import golanganalyzerextension.exceptions.InvalidBinaryStructureException;
+import golanganalyzerextension.gobinary.exceptions.BinaryAccessException;
+import golanganalyzerextension.log.Logger;
 
 public class ModuleData {
 
@@ -45,22 +47,46 @@ public class ModuleData {
 		// runtime/symtab.go
 		boolean parsed=false;
 		if(!parsed || is_go120) {
-			parsed=parse_go120(base_addr);
+			try {
+				parsed=parse_go120(base_addr);
+			} catch (BinaryAccessException e) {
+				Logger.append_message(String.format("Failed to parse moduledata: addr=%s, ver=go1.20", base_addr));
+			}
 		}
 		if(!parsed || is_go118) {
-			parsed=parse_go118(base_addr);
+			try {
+				parsed=parse_go118(base_addr);
+			} catch (BinaryAccessException e) {
+				Logger.append_message(String.format("Failed to parse moduledata: addr=%s, ver=go1.18", base_addr));
+			}
 		}
 		if(!parsed || is_go116) {
-			parsed=parse_go116(base_addr);
+			try {
+				parsed=parse_go116(base_addr);
+			} catch (BinaryAccessException e) {
+				Logger.append_message(String.format("Failed to parse moduledata: addr=%s, ver=go1.16", base_addr));
+			}
 		}
 		if(!parsed || is_go18) {
-			parsed=parse_go18(base_addr);
+			try {
+				parsed=parse_go18(base_addr);
+			} catch (BinaryAccessException e) {
+				Logger.append_message(String.format("Failed to parse moduledata: addr=%s, ver=go1.8", base_addr));
+			}
 		}
 		if(!parsed || is_go17) {
-			parsed=parse_go17(base_addr);
+			try {
+				parsed=parse_go17(base_addr);
+			} catch (BinaryAccessException e) {
+				Logger.append_message(String.format("Failed to parse moduledata: addr=%s, ver=go1.7", base_addr));
+			}
 		}
 		if(!parsed) {
-			parsed=parse(base_addr);
+			try {
+				parsed=parse(base_addr);
+			} catch (BinaryAccessException e) {
+				Logger.append_message(String.format("Failed to parse moduledata: addr=%s", base_addr));
+			}
 		}
 
 		return parsed;
@@ -99,7 +125,7 @@ public class ModuleData {
 		return true;
 	}
 
-	private boolean parse_go120(Address base_addr) {
+	private boolean parse_go120(Address base_addr) throws BinaryAccessException {
 		int pointer_size=go_bin.get_pointer_size();
 
 		long tmp_type_addr_value=go_bin.get_address_value(base_addr, 37*pointer_size, pointer_size);
@@ -126,7 +152,7 @@ public class ModuleData {
 		return true;
 	}
 
-	private boolean parse_go118(Address base_addr) {
+	private boolean parse_go118(Address base_addr) throws BinaryAccessException {
 		int pointer_size=go_bin.get_pointer_size();
 
 		long tmp_type_addr_value=go_bin.get_address_value(base_addr, 35*pointer_size, pointer_size);
@@ -153,7 +179,7 @@ public class ModuleData {
 		return true;
 	}
 
-	private boolean parse_go116(Address base_addr) {
+	private boolean parse_go116(Address base_addr) throws BinaryAccessException {
 		int pointer_size=go_bin.get_pointer_size();
 
 		long tmp_type_addr_value=go_bin.get_address_value(base_addr, 35*pointer_size, pointer_size);
@@ -180,7 +206,7 @@ public class ModuleData {
 		return true;
 	}
 
-	private boolean parse_go18(Address base_addr) {
+	private boolean parse_go18(Address base_addr) throws BinaryAccessException {
 		int pointer_size=go_bin.get_pointer_size();
 
 		long tmp_type_addr_value=go_bin.get_address_value(base_addr, 25*pointer_size, pointer_size);
@@ -207,7 +233,7 @@ public class ModuleData {
 		return true;
 	}
 
-	private boolean parse_go17(Address base_addr) {
+	private boolean parse_go17(Address base_addr) throws BinaryAccessException {
 		int pointer_size=go_bin.get_pointer_size();
 
 		long tmp_type_addr_value=go_bin.get_address_value(base_addr, 25*pointer_size, pointer_size);
@@ -234,7 +260,7 @@ public class ModuleData {
 		return true;
 	}
 
-	private boolean parse(Address base_addr) {
+	private boolean parse(Address base_addr) throws BinaryAccessException {
 		int pointer_size=go_bin.get_pointer_size();
 
 		long tmp_type_addr_value=0;

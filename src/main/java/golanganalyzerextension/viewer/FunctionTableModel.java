@@ -45,7 +45,7 @@ class FunctionTableModel extends AddressBasedTableModel<GolangFunction> {
 			GolangFunction gofunc = getRowObject(row);
 			Address addr = gofunc.get_func_addr();
 			if (addr != null) {
-				address_set.addRange(addr, addr.add(gofunc.get_func_size()));
+				address_set.addRange(addr, addr);
 			}
 		}
 		return new ProgramSelection(address_set);

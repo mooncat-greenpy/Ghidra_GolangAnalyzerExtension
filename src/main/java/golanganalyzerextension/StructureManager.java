@@ -11,6 +11,7 @@ import golanganalyzerextension.datatype.UncommonType.UncommonMethod;
 import golanganalyzerextension.exceptions.InvalidBinaryStructureException;
 import golanganalyzerextension.gobinary.GolangBinary;
 import golanganalyzerextension.gobinary.ModuleData;
+import golanganalyzerextension.gobinary.exceptions.BinaryAccessException;
 import golanganalyzerextension.log.Logger;
 import golanganalyzerextension.service.GolangAnalyzerExtensionService;
 
@@ -83,7 +84,7 @@ public class StructureManager {
 		if(go_datatype.get_uncommon_type().isPresent()) {
 			comment+="Method:\n";
 			for(UncommonMethod method : go_datatype.get_uncommon_type().get().get_method_list()) {
-				comment+=String.format("  +%s %#x %#x\n", method.get_name(), method.get_interface_method_addr().getOffset(), method.get_normal_method_addr().getOffset());
+				comment+=String.format("  +%s %s %s\n", method.get_name(), method.get_interface_method_addr().orElse(null), method.get_normal_method_addr().orElse(null));
 			}
 		}
 
@@ -92,7 +93,11 @@ public class StructureManager {
 
 	private boolean init_basig_golang_datatype() {
 		ByteBuffer buffer=ByteBuffer.allocate(Long.BYTES);
-		buffer.putLong(go_bin.get_gopclntab_base().getOffset());
+		Address gopclntab_base=go_bin.get_gopclntab_base().orElse(null);
+		if(gopclntab_base==null) {
+			return false;
+		}
+		buffer.putLong(gopclntab_base.getOffset());
 		buffer.flip();
 		buffer.order(ByteOrder.LITTLE_ENDIAN);
 		long reverse=buffer.getLong();
@@ -103,50 +108,49 @@ public class StructureManager {
 		int pointer_size=go_bin.get_pointer_size();
 		Address base_addr=null;
 		while(true) {
-			if(pointer_size==4) {
-				base_addr=go_bin.find_memory(base_addr, gopclntab_base_bytes, new byte[] {(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x00});
-			}else {
-				base_addr=go_bin.find_memory(base_addr, gopclntab_base_bytes, new byte[] {(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff});
-			}
-			if(base_addr==null) {
-				break;
-			}
-
-			ModuleData module_data=null;
 			try {
-				module_data=new ModuleData(go_bin, base_addr);
-			} catch(InvalidBinaryStructureException e) {
-				Logger.append_message(String.format("Failed to get module data: %s", e.getMessage()));
-				base_addr=go_bin.get_address(base_addr, 4);
+				if(pointer_size==4) {
+					base_addr=go_bin.find_memory(base_addr, gopclntab_base_bytes, new byte[] {(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x00}).orElse(null);
+				}else {
+					base_addr=go_bin.find_memory(base_addr, gopclntab_base_bytes, new byte[] {(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff}).orElse(null);
+				}
 				if(base_addr==null) {
 					break;
 				}
-				continue;
-			}
 
-			Address type_addr=module_data.get_type_addr();
-			Address typelink_addr=module_data.get_typelink_addr();
-			long typelink_len=module_data.get_typelink_len();
-			boolean is_go16=module_data.get_is_go16();
-			datatype_holder=new DatatypeHolder(go_bin, is_go16);
-
-			for(long i=0;i<typelink_len;i++)
-			{
-				long offset=0;
-				if(is_go16) {
-					offset=go_bin.get_address_value(typelink_addr, pointer_size*i, pointer_size)-type_addr.getOffset();
-				}else {
-					offset=go_bin.get_address_value(typelink_addr, i*4, 4);
-				}
+				ModuleData module_data;
 				try {
-					analyze_type(type_addr, offset, is_go16);
+					module_data=new ModuleData(go_bin, base_addr);
 				} catch(InvalidBinaryStructureException e) {
-					Logger.append_message(String.format("Failed to analyze type: addr=%x, offset=%x message=%s", type_addr.getOffset(), offset, e.getMessage()));
+					Logger.append_message(String.format("Failed to get module data: %s", e.getMessage()));
+					base_addr=go_bin.get_address(base_addr, 4);
+					continue;
 				}
-			}
 
-			base_addr=go_bin.get_address(base_addr, 4);
-			if(base_addr==null) {
+				Address type_addr=module_data.get_type_addr();
+				Address typelink_addr=module_data.get_typelink_addr();
+				long typelink_len=module_data.get_typelink_len();
+				boolean is_go16=module_data.get_is_go16();
+				datatype_holder=new DatatypeHolder(go_bin, is_go16);
+
+				for(long i=0;i<typelink_len;i++)
+				{
+					long offset;
+					if(is_go16) {
+						offset=go_bin.get_address_value(typelink_addr, pointer_size*i, pointer_size)-type_addr.getOffset();
+					}else {
+						offset=go_bin.get_address_value(typelink_addr, i*4, 4);
+					}
+					try {
+						analyze_type(type_addr, offset, is_go16);
+					} catch(InvalidBinaryStructureException e) {
+						Logger.append_message(String.format("Failed to analyze type: addr=%s, offset=%x, message=%s", type_addr, offset, e.getMessage()));
+					}
+				}
+
+				base_addr=go_bin.get_address(base_addr, 4);
+			} catch (BinaryAccessException e) {
+				Logger.append_message(String.format("Failed to get datatypes: addr=%s, message=%s", base_addr, e.getMessage()));
 				break;
 			}
 		}
@@ -167,7 +171,11 @@ public class StructureManager {
 		datatype_holder.put_datatype(offset, go_datatype);
 
 		for(long dependence_type_key : go_datatype.get_dependence_type_key_list()) {
-			analyze_type(type_base_addr, dependence_type_key, is_go16);
+			try {
+				analyze_type(type_base_addr, dependence_type_key, is_go16);
+			} catch(InvalidBinaryStructureException e) {
+				Logger.append_message(String.format("Failed to analyze dependence type: addr=%s, offset=%x, message=%s", type_base_addr, offset, e.getMessage()));
+			}
 		}
 		go_datatype.make_datatype(datatype_holder);
 		datatype_holder.replace_datatype(offset, go_datatype);

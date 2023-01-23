@@ -112,8 +112,8 @@ class DatatypeDetailProvider extends ComponentProviderAdapter {
 				Object[] row={
 					method.get_name(),
 					mtyp_str,
-					String.format("%x", method.get_interface_method_addr().getOffset()),
-					String.format("%x", method.get_normal_method_addr().getOffset())
+					String.format("%s", method.get_interface_method_addr().orElse(null)),
+					String.format("%s", method.get_normal_method_addr().orElse(null))
 				};
 				data[i]=row;
 			}

@@ -38,7 +38,7 @@ public class FileLineTest extends AbstractGhidraHeadlessIntegrationTest {
 
 		FileLine file_line=new FileLine(go_bin.get_address(addr_value), offset, 0, "", 0);
 
-		assertEquals(file_line.get_func_addr().add(file_line.get_offset()).getOffset(), addr_value+offset);
+		assertEquals(file_line.get_func_addr().getOffset()+file_line.get_offset(), addr_value+offset);
 	}
 
 	static Stream<Arguments> test_get_address_params() throws Throwable {

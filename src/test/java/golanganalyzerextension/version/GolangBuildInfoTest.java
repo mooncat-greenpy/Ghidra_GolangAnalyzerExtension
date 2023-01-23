@@ -18,6 +18,7 @@ import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Program;
 import ghidra.test.AbstractGhidraHeadlessIntegrationTest;
 import ghidra.util.task.TaskMonitor;
+import golanganalyzerextension.exceptions.InvalidBinaryStructureException;
 import golanganalyzerextension.gobinary.GolangBinary;
 
 public class GolangBuildInfoTest extends AbstractGhidraHeadlessIntegrationTest {
@@ -38,24 +39,33 @@ public class GolangBuildInfoTest extends AbstractGhidraHeadlessIntegrationTest {
 		initialize(bytes_map);
 		GolangBinary go_bin=new GolangBinary(program, TaskMonitor.DUMMY);
 
-		GolangBuildInfo go_build_info=new GolangBuildInfo(go_bin);
+		boolean result=true;
+		GolangBuildInfo go_build_info;
+		try {
+			go_build_info=new GolangBuildInfo(go_bin);
+			Method method=GolangBuildInfo.class.getDeclaredMethod("get_build_info_addr");
+			method.setAccessible(true);
+			@SuppressWarnings("unchecked")
+			Address addr=(Address)method.invoke(go_build_info);
+			assertEquals(addr, go_bin.get_address(0x529000));
+		} catch (InvalidBinaryStructureException e) {
+			result=false;
+		}
 
-		Method method=GolangBuildInfo.class.getDeclaredMethod("get_build_info_addr");
-		method.setAccessible(true);
-		@SuppressWarnings("unchecked")
-		Optional<Address> addr_opt=(Optional<Address>)method.invoke(go_build_info);
-		assertEquals(addr_opt.isPresent(), expected);
-
-		addr_opt.ifPresent(addr -> {assert addr_opt.get().equals(go_bin.get_address(0x529000));});
+		assertEquals(result, expected);
 	}
 
 	static Stream<Arguments> test_get_build_info_addr_params() throws Throwable {
 		return Stream.of(
 				Arguments.of(true, new HashMap<String, String>(){{
 					put("0x529000", "ff20476f206275696c64696e663a 04 00 78725300 98725300 0000000000000000");
+					put("0x537278", "d5f64a00 08000000");
+					put("0x4af6d5", "676f312e31362e37");
 				}}),
 				Arguments.of(false, new HashMap<String, String>(){{
 					put("0x529000", "0020476f206275696c64696e663a 04 00 78725300 98725300 0000000000000000");
+					put("0x537278", "d5f64a00 08000000");
+					put("0x4af6d5", "676f312e31362e37");
 				}})
 			);
 	}
@@ -68,10 +78,8 @@ public class GolangBuildInfoTest extends AbstractGhidraHeadlessIntegrationTest {
 
 		GolangBuildInfo go_build_info=new GolangBuildInfo(go_bin);
 
-		Optional<String> str_opt=go_build_info.find_go_version(go_bin.get_address("0x529000"));
-		assertTrue(str_opt.isPresent());
-
-		str_opt.ifPresent(str -> assertEquals(str, expected));
+		String str=go_build_info.find_go_version(go_bin.get_address("0x529000"));
+		assertEquals(str, expected);
 	}
 
 	static Stream<Arguments> test_find_go_version_params() throws Throwable {
@@ -129,11 +137,15 @@ public class GolangBuildInfoTest extends AbstractGhidraHeadlessIntegrationTest {
 		return Stream.of(
 				Arguments.of("path\tcommand-line-arguments\nmod\tcommand-line-arguments\t(devel)\t\n", new HashMap<String, String>(){{
 					put("0x529000", "ff20476f206275696c64696e663a 04 00 78725300 98725300 0000000000000000");
+					put("0x537278", "d5f64a00 08000000");
+					put("0x4af6d5", "676f312e31362e37");
 					put("0x00537298", "bb834b00 60000000");
 					put("0x004b83bb", "3077af0c9274080241e1c107e6d618e6 7061746809636f6d6d616e642d6c696e652d617267756d656e74730a6d6f6409636f6d6d616e642d6c696e652d617267756d656e74730928646576656c29090a f932433186182072008242104116d8f2");
 				}}),
 				Arguments.of("path\tcommand-line-arguments\nmod\tcommand-line-arguments\t(devel)\t\n", new HashMap<String, String>(){{
 					put("0x529000", "ff20476f206275696c64696e663a 08 00 7872530000000000 9872530000000000");
+					put("0x537278", "d5f64a0000000000 0800000000000000");
+					put("0x4af6d5", "676f312e31362e37");
 					put("0x00537298", "bb834b0000000000 6000000000000000");
 					put("0x004b83bb", "3077af0c9274080241e1c107e6d618e6 7061746809636f6d6d616e642d6c696e652d617267756d656e74730a6d6f6409636f6d6d616e642d6c696e652d617267756d656e74730928646576656c29090a f932433186182072008242104116d8f2");
 				}})
@@ -148,7 +160,7 @@ public class GolangBuildInfoTest extends AbstractGhidraHeadlessIntegrationTest {
 
 		GolangBuildInfo go_build_info=new GolangBuildInfo(go_bin);
 
-		assertEquals(go_build_info.get_go_version(), Optional.ofNullable(expected_go_version));
+		assertEquals(go_build_info.get_go_version(), expected_go_version);
 		assertEquals(go_build_info.get_module_version(), Optional.ofNullable(expected_module_version));
 	}
 

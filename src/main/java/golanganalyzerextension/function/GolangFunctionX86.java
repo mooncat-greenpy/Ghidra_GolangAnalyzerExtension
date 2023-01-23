@@ -51,12 +51,14 @@ public class GolangFunctionX86 extends GolangFunction {
 			if(inst.getMnemonicString().equals("PUSH") || inst.getMnemonicString().equals("XCHG")) {
 				continue;
 			}
+			Register bp_reg=go_bin.get_register("BP").orElse(null);
+			Register xmm15_reg=go_bin.get_register("XMM15").orElse(null);
 			if(!builtin_reg_state.containsKey(reg.getBaseRegister()) &&
 					inst.toString().contains(reg.toString()) &&
 					(reg.getTypeFlags()&(Register.TYPE_PC|Register.TYPE_SP))==0 &&
 					!reg.toString().contains("SP") &&
 					// XMM15 is used as a zero register.
-					!go_bin.compare_register(reg, go_bin.get_register("BP")) && !go_bin.compare_register(reg, go_bin.get_register("XMM15"))) {
+					(bp_reg==null || !go_bin.compare_register(reg, bp_reg)) && (xmm15_reg==null || !go_bin.compare_register(reg, xmm15_reg))) {
 				builtin_reg_state.put(reg.getBaseRegister(), REG_FLAG.READ);
 				reg_arg.add(reg);
 			}
@@ -128,7 +130,16 @@ public class GolangFunctionX86 extends GolangFunction {
 	}
 	@Override
 	boolean check_memcopy() {
-		Instruction inst=go_bin.get_instruction(get_func().getEntryPoint());
+		Register si_reg=go_bin.get_register("SI").orElse(null);
+		Register di_reg=go_bin.get_register("DI").orElse(null);
+		if(si_reg==null || di_reg==null) {
+			return false;
+		}
+
+		Instruction inst=go_bin.get_instruction(get_func().getEntryPoint()).orElse(null);
+		if(inst==null) {
+			return false;
+		}
 		MEMCPY_FUNC_STAGE stage=MEMCPY_FUNC_STAGE.GET_SRC;
 		Register dst_reg=null;
 		Register src_reg=null;
@@ -155,7 +166,7 @@ public class GolangFunctionX86 extends GolangFunction {
 					return false;
 				}
 				tmp_reg1=op1[0].toString();
-				if(!(op2[0] instanceof Register) || !go_bin.compare_register((Register)op2[0], go_bin.get_register("SI"))) {
+				if(!(op2[0] instanceof Register) || !go_bin.compare_register((Register)op2[0], si_reg)) {
 					return false;
 				}
 				src_reg=(Register)op2[0];
@@ -165,7 +176,7 @@ public class GolangFunctionX86 extends GolangFunction {
 				if(!mnemonic.equals("ADD")) {
 					return false;
 				}
-				if(!(op1[0] instanceof Register) || !go_bin.compare_register((Register)op1[0], go_bin.get_register("SI"))) {
+				if(!(op1[0] instanceof Register) || !go_bin.compare_register((Register)op1[0], si_reg)) {
 					return false;
 				}
 				if(!(op2[0] instanceof Scalar)) {
@@ -178,7 +189,7 @@ public class GolangFunctionX86 extends GolangFunction {
 				if(!mnemonic.contains("MOV")) {
 					return false;
 				}
-				if(!(op1[0] instanceof Register) || !go_bin.compare_register((Register)op1[0], go_bin.get_register("DI"))) {
+				if(!(op1[0] instanceof Register) || !go_bin.compare_register((Register)op1[0], di_reg)) {
 					return false;
 				}
 				if(!op2[0].toString().equals(tmp_reg1)) {
@@ -198,7 +209,7 @@ public class GolangFunctionX86 extends GolangFunction {
 				if(!mnemonic.equals("ADD")) {
 					return false;
 				}
-				if(!(op1[0] instanceof Register) || !go_bin.compare_register((Register)op1[0], go_bin.get_register("DI"))) {
+				if(!(op1[0] instanceof Register) || !go_bin.compare_register((Register)op1[0], di_reg)) {
 					return false;
 				}
 				if(!(op2[0] instanceof Scalar)) {
@@ -235,7 +246,16 @@ public class GolangFunctionX86 extends GolangFunction {
 
 	@Override
 	boolean check_memset() {
-		Instruction inst=go_bin.get_instruction(get_func().getEntryPoint());
+		Register di_reg=go_bin.get_register("DI").orElse(null);
+		Register eax_reg=go_bin.get_register("EAX").orElse(null);
+		if(di_reg==null || eax_reg==null) {
+			return false;
+		}
+
+		Instruction inst=go_bin.get_instruction(get_func().getEntryPoint()).orElse(null);
+		if(inst==null) {
+			return false;
+		}
 		Register dst_reg=null;
 		Register src_reg=null;
 		DataType inner_datatype=null;
@@ -252,13 +272,13 @@ public class GolangFunctionX86 extends GolangFunction {
 			}
 			Object op1[]=inst.getOpObjects(0);
 			if(op1.length>=2 && mnemonic.equals("STOSD")) {
-				if(!(op1[1] instanceof Register) || !go_bin.compare_register((Register)op1[1], go_bin.get_register("DI"))) {
+				if(!(op1[1] instanceof Register) || !go_bin.compare_register((Register)op1[1], di_reg)) {
 					return false;
 				}
 				if(start<0) {
 					start=0;
 					dst_reg=(Register)op1[1];
-					src_reg=go_bin.get_register("EAX");
+					src_reg=eax_reg;
 					inner_datatype=go_bin.get_unsigned_number_datatype(src_reg.getBitLength()/8);
 				}
 				size+=4;
@@ -273,7 +293,7 @@ public class GolangFunctionX86 extends GolangFunction {
 				return false;
 			}
 			if(mnemonic.equals("MOVUPS")) {
-				if(!(op1[0] instanceof Register) || !go_bin.compare_register((Register)op1[0], go_bin.get_register("DI"))) {
+				if(!(op1[0] instanceof Register) || !go_bin.compare_register((Register)op1[0], di_reg)) {
 					return false;
 				}
 				if(!(op2[0] instanceof Register) || !op2[0].toString().contains("XMM")) {
@@ -300,10 +320,10 @@ public class GolangFunctionX86 extends GolangFunction {
 				if(op2.length<2) {
 					return false;
 				}
-				if(!go_bin.compare_register((Register)op1[0], go_bin.get_register("DI"))) {
+				if(!go_bin.compare_register((Register)op1[0], di_reg)) {
 					return false;
 				}
-				if(!go_bin.compare_register((Register)op2[0], go_bin.get_register("DI"))) {
+				if(!go_bin.compare_register((Register)op2[0], di_reg)) {
 					return false;
 				}
 				if(!(op2[1] instanceof Scalar)) {

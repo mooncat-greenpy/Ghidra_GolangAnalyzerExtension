@@ -49,15 +49,15 @@ public class UncommonTypeTest extends AbstractGhidraHeadlessIntegrationTest {
 	static Stream<Arguments> test_get_pkg_path_params() throws Throwable {
 		return Stream.of(
 				Arguments.of("reflect", 4, false, new HashMap<String, String>(){{
-					put("0x004a94b0", "3a110000 0700 0000 1c000000");
+					put("0x004a94b0", "3a110000 0000 0000 1c000000");
 					put("0x0049313a", "0000077265666c656374");
 				}}),
 				Arguments.of("reflect", 8, false, new HashMap<String, String>(){{
-					put("0x004a94b0", "3a110000 0700 0000 1c000000");
+					put("0x004a94b0", "3a110000 0000 0000 1c000000");
 					put("0x0049313a", "0000077265666c656374");
 				}}),
 				Arguments.of("reflect", 8, false, new HashMap<String, String>(){{
-					put("0x004a94b0", "3a110000 0700 0000 1c000000");
+					put("0x004a94b0", "3a110000 0000 0000 1c000000");
 					put("0x0049313a", "00077265666c656374");
 					// go version 1.17
 					put("0x529000", "ff20476f206275696c64696e663a 08 00 7872530000000000 9872530000000000");
@@ -94,8 +94,8 @@ public class UncommonTypeTest extends AbstractGhidraHeadlessIntegrationTest {
 		for(int i=0; i<method_list.size(); i++) {
 			assertEquals(method_list.get(i).get_name(), name_list.get(i));
 			assertEquals((Long)method_list.get(i).get_type_offset(), type_offset_list.get(i));
-			assertEquals((Long)method_list.get(i).get_interface_method_addr().getOffset(), func_addr_value_list.get(i));
-			assertEquals((Long)method_list.get(i).get_normal_method_addr().getOffset(), func_addr_value_list.get(i));
+			assertEquals((Long)method_list.get(i).get_interface_method_addr().orElse(go_bin.get_address(0)).getOffset(), func_addr_value_list.get(i));
+			assertEquals((Long)method_list.get(i).get_normal_method_addr().orElse(go_bin.get_address(0)).getOffset(), func_addr_value_list.get(i));
 		}
 	}
 

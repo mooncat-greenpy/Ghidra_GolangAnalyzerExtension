@@ -4,8 +4,10 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import golanganalyzerextension.exceptions.InvalidBinaryStructureException;
 import golanganalyzerextension.exceptions.InvalidGolangVersionFormatException;
 import golanganalyzerextension.gobinary.GolangBinary;
+import golanganalyzerextension.log.Logger;
 
 public class GolangVersionExtractor {
 	private static final String DEFAULT_GO_VERSION="go0.0.0";
@@ -43,15 +45,19 @@ public class GolangVersionExtractor {
 	}
 
 	private boolean scan_build_info(GolangBinary go_bin) {
-		GolangBuildInfo go_build_info=new GolangBuildInfo(go_bin);
-		Optional<String> go_version_opt=go_build_info.get_go_version();
-		if(go_version_opt.isEmpty()) {
+		String tmp_go_version;
+		try {
+			GolangBuildInfo go_build_info=new GolangBuildInfo(go_bin);
+			tmp_go_version=go_build_info.get_go_version();
+		} catch (InvalidBinaryStructureException e) {
+			Logger.append_message(String.format("Failed to scan build info: message=%s", e.getMessage()));
 			return false;
 		}
-		if(!GolangVersion.is_go_version(go_version_opt.get())) {
+
+		if(!GolangVersion.is_go_version(tmp_go_version)) {
 			return false;
 		}
-		go_version=go_version_opt.get();
+		go_version=tmp_go_version;
 		return true;
 	}
 
