@@ -40,7 +40,7 @@ public class GolangAnalyzerExtensionPlugin extends ProgramPlugin implements Gola
 	private Map<Long, GolangString> string_map;
 
 	public GolangAnalyzerExtensionPlugin(PluginTool tool) {
-		super(tool, false, true);
+		super(tool);
 
 		go_bin=null;
 		func_list=new ArrayList<>();

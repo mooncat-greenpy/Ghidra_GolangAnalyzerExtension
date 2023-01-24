@@ -13,7 +13,6 @@ import ghidra.program.model.address.AddressOutOfBoundsException;
 import ghidra.program.model.address.AddressSet;
 import ghidra.program.model.data.ByteDataType;
 import ghidra.program.model.data.DataType;
-import ghidra.program.model.data.DataTypeConflictException;
 import ghidra.program.model.data.Integer16DataType;
 import ghidra.program.model.data.Integer3DataType;
 import ghidra.program.model.data.Integer5DataType;
@@ -449,7 +448,7 @@ public class GolangBinary {
 		clear_data(addr, datatype.getLength());
 		try {
 			program.getListing().createData(addr, datatype);
-		} catch (CodeUnitInsertionException | DataTypeConflictException e) {
+		} catch (CodeUnitInsertionException e) {
 			throw new BinaryAccessException(String.format("Create data: addr=%s, datatype=%s, message=%s", addr, datatype, e.getMessage()));
 		}
 	}
