@@ -31,6 +31,7 @@ import golanganalyzerextension.viewer.GolangAnalyzerExtensionProvider;
 )
 //@formatter:on
 public class GolangAnalyzerExtensionPlugin extends ProgramPlugin implements GolangAnalyzerExtensionService {
+	// TODO: Fix
 	private GolangAnalyzerExtensionProvider gae_provider;
 
 	private GolangBinary go_bin;
@@ -40,7 +41,7 @@ public class GolangAnalyzerExtensionPlugin extends ProgramPlugin implements Gola
 	private Map<Long, GolangString> string_map;
 
 	public GolangAnalyzerExtensionPlugin(PluginTool tool) {
-		super(tool);
+		super(tool, true, false);
 
 		go_bin=null;
 		func_list=new ArrayList<>();

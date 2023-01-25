@@ -591,6 +591,7 @@ public class GolangBinary {
 			return gopclntab_section.getStart();
 		}
 
+		// TODO: Fix
 		// debug/gosym/pclntab.go
 		byte go12_magic[]={(byte)0xfb,(byte)0xff,(byte)0xff,(byte)0xff};
 		byte magic_mask[]={(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff};
