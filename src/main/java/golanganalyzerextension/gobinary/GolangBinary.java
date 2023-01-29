@@ -365,7 +365,7 @@ public class GolangBinary {
 	}
 
 	public String read_string(Address addr, int size) throws BinaryAccessException, InvalidBinaryStructureException {
-		if(size>0x1000) {
+		if(size>0x1000 || size<=0) {
 			throw new InvalidBinaryStructureException(String.format("Too large string size: addr=%s, size=%d", addr, size));
 		}
 		try {

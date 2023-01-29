@@ -74,8 +74,8 @@ public class GolangDatatype {
 			parse_basic_info(offset);;
 
 			datatype=new StructureDataType(name, (int)size>=0?(int)size:0);
-		} catch (BinaryAccessException e) {
-			throw new InvalidBinaryStructureException(String.format("Invalid type structure: type_addr=%s, offset=%x", type_base_addr, offset));
+		} catch (IllegalArgumentException | BinaryAccessException e) {
+			throw new InvalidBinaryStructureException(String.format("Invalid type structure: type_addr=%s, offset=%x, message=%s", type_base_addr, offset, e.getMessage()));
 		}
 	}
 
