@@ -93,11 +93,7 @@ public class StructureManager {
 
 	private boolean init_basig_golang_datatype() {
 		ByteBuffer buffer=ByteBuffer.allocate(Long.BYTES);
-		Address gopclntab_base=go_bin.get_gopclntab_base().orElse(null);
-		if(gopclntab_base==null) {
-			return false;
-		}
-		buffer.putLong(gopclntab_base.getOffset());
+		buffer.putLong(go_bin.get_pcheader_base().getOffset());
 		buffer.flip();
 		buffer.order(ByteOrder.LITTLE_ENDIAN);
 		long reverse=buffer.getLong();

@@ -46,9 +46,9 @@ public class StringExtractorTest {
 
 	@ParameterizedTest
 	@MethodSource("test_string_extractor_params")
-	public void test_string_extractor(Map<Long, String> expected, int pointer_size, Map<String, String> bytes_map) throws Exception {
+	public void test_string_extractor(Map<Long, String> expected, Map<String, String> bytes_map) throws Exception {
 		initialize(bytes_map);
-		GolangBinary go_bin=new GolangBinary(new GolangBinary(program, TaskMonitor.DUMMY), null, null, null, null, null, 0, 0, pointer_size, null);
+		GolangBinary go_bin=new GolangBinary(program, TaskMonitor.DUMMY);
 		GolangAnalyzerExtensionService service=new GolangAnalyzerExtensionDummyService();
 
 		StringExtractor string_extractor=new StringExtractor(go_bin, service);
@@ -69,10 +69,13 @@ public class StringExtractorTest {
 						new HashMap<Long, String>(){{
 							put((long)0x05001000, "name");
 						}},
-						4,
 						new HashMap<String, String>(){{
 							put("0x05001000", "00200005 04000000");
 							put("0x05002000", "6e616d656e616d65");
+
+							put("0x00600000", "fbffffff 00 00 01 04 00000000");
+							put("0x0060000c", "00104000 00200000");
+							put("0x00602000", "00104000");
 						}}
 				),
 				Arguments.of(
@@ -80,11 +83,14 @@ public class StringExtractorTest {
 							put((long)0x05001000, "name");
 							put((long)0x05001008, "test");
 						}},
-						4,
 						new HashMap<String, String>(){{
 							put("0x05001000", "00200005 04000000 00300005 04000000");
 							put("0x05002000", "6e616d656e616d65");
 							put("0x05003000", "7465737474657374");
+
+							put("0x00600000", "fbffffff 00 00 01 04 00000000");
+							put("0x0060000c", "00104000 00200000");
+							put("0x00602000", "00104000");
 						}}
 				),
 				Arguments.of(
@@ -92,56 +98,74 @@ public class StringExtractorTest {
 							put((long)0x05001000, "name");
 							put((long)0x0500100c, "test");
 						}},
-						4,
 						new HashMap<String, String>(){{
 							put("0x05001000", "00200005 04000000 00200005 00300005 04000000");
 							put("0x05002000", "6e616d656e616d65");
 							put("0x05003000", "7465737474657374");
+
+							put("0x00600000", "fbffffff 00 00 01 04 00000000");
+							put("0x0060000c", "00104000 00200000");
+							put("0x00602000", "00104000");
 						}}
 				),
 				Arguments.of(
 						new HashMap<Long, String>(){{
 							put((long)0x05001000, "name");
 						}},
-						8,
 						new HashMap<String, String>(){{
 							put("0x05001000", "0020000500000000 0400000000000000");
 							put("0x05002000", "6e616d656e616d65");
+
+							put("0x00600000", "fbffffff 00 00 01 08 0000000000000000");
+							put("0x00600010", "0010400000000000 0020000000000000");
+							put("0x00602000", "0010400000000000");
 						}}
 				),
 				Arguments.of(
 						new HashMap<Long, String>(){{
 						}},
-						4,
 						new HashMap<String, String>(){{
 							put("0x05001000", "00200005 04000000");
+
+							put("0x00600000", "fbffffff 00 00 01 04 00000000");
+							put("0x0060000c", "00104000 00200000");
+							put("0x00602000", "00104000");
 						}}
 				),
 				Arguments.of(
 						new HashMap<Long, String>(){{
 						}},
-						4,
 						new HashMap<String, String>(){{
 							put("0x05001000", "00200005 000000ff");
 							put("0x05002000", "6e616d656e616d65");
+
+							put("0x00600000", "fbffffff 00 00 01 04 00000000");
+							put("0x0060000c", "00104000 00200000");
+							put("0x00602000", "00104000");
 						}}
 				),
 				Arguments.of(
 						new HashMap<Long, String>(){{
 						}},
-						4,
 						new HashMap<String, String>(){{
 							put("0x05001000", "00200005 00001000");
 							put("0x05002000", "6e616d656e616d65");
+
+							put("0x00600000", "fbffffff 00 00 01 04 00000000");
+							put("0x0060000c", "00104000 00200000");
+							put("0x00602000", "00104000");
 						}}
 				),
 				Arguments.of(
 						new HashMap<Long, String>(){{
 						}},
-						4,
 						new HashMap<String, String>(){{
 							put("0x05001000", "00200005 04000000 04000000");
 							put("0x05002000", "6e616d656e616d65");
+
+							put("0x00600000", "fbffffff 00 00 01 04 00000000");
+							put("0x0060000c", "00104000 00200000");
+							put("0x00602000", "00104000");
 						}}
 				)
 			);
@@ -149,9 +173,9 @@ public class StringExtractorTest {
 
 	@ParameterizedTest
 	@MethodSource("test_search_inst_params")
-	public void test_search_inst(Map<Long, String> expected, String lang_name, int pointer_size, Map<String, String> bytes_map) throws Exception {
+	public void test_search_inst(Map<Long, String> expected, String lang_name, Map<String, String> bytes_map) throws Exception {
 		initialize_with_func(lang_name, bytes_map);
-		GolangBinary go_bin=new GolangBinary(new GolangBinary(program, TaskMonitor.DUMMY), null, null, null, null, null, 0, 0, pointer_size, null);
+		GolangBinary go_bin=new GolangBinary(program, TaskMonitor.DUMMY);
 		GolangAnalyzerExtensionService service=new GolangAnalyzerExtensionDummyService();
 
 		StringExtractor string_extractor=new StringExtractor(go_bin, service);
@@ -180,7 +204,6 @@ public class StringExtractorTest {
 							put((long)0x05001000, "name");
 						}},
 						ProgramBuilder._X64,
-						8,
 						new HashMap<String, String>(){{
 							put("0x401000",
 									"488b15f9ffbf04"     // mov rdx, qword ptr ds:[0x5001000]
@@ -188,6 +211,10 @@ public class StringExtractorTest {
 									+ "48c7400804000000" // mov qword ptr ds:[rax+0x8], 0x4
 									+ "c3");             // ret
 							put("0x05001000", "6e616d656e616d65");
+
+							put("0x00600000", "fbffffff 00 00 01 08 0000000000000000");
+							put("0x00600010", "0010400000000000 0020000000000000");
+							put("0x00602000", "0010400000000000");
 						}}
 				),
 				Arguments.of(
@@ -195,7 +222,6 @@ public class StringExtractorTest {
 							put((long)0x05001000, "name");
 						}},
 						ProgramBuilder._X64,
-						8,
 						new HashMap<String, String>(){{
 							put("0x401000",
 									"488b15f9ffbf04"           // mov rdx, qword ptr ds:[0x5001000]
@@ -203,6 +229,10 @@ public class StringExtractorTest {
 									+ "48c7800801000004000000" // mov qword ptr ds:[rax+0x108], 0x4
 									+ "c3");                   // ret
 							put("0x05001000", "6e616d656e616d65");
+
+							put("0x00600000", "fbffffff 00 00 01 08 0000000000000000");
+							put("0x00600010", "0010400000000000 0020000000000000");
+							put("0x00602000", "0010400000000000");
 						}}
 				),
 				Arguments.of(
@@ -210,7 +240,6 @@ public class StringExtractorTest {
 							put((long)0x05001000, "name");
 						}},
 						ProgramBuilder._X64,
-						8,
 						new HashMap<String, String>(){{
 							put("0x401000",
 									"488d15f9ffbf04"     // lea rdx, ds:[0x0000000005001000]
@@ -218,13 +247,16 @@ public class StringExtractorTest {
 									+ "48c7400804000000" // mov qword ptr ds:[rax+0x8], 0x4
 									+ "c3");             // ret
 							put("0x05001000", "6e616d656e616d65");
+
+							put("0x00600000", "fbffffff 00 00 01 08 0000000000000000");
+							put("0x00600010", "0010400000000000 0020000000000000");
+							put("0x00602000", "0010400000000000");
 						}}
 				),
 				Arguments.of(
 						new HashMap<Long, String>(){{
 						}},
 						ProgramBuilder._X64,
-						8,
 						new HashMap<String, String>(){{
 							put("0x401000",
 									"488d15f9ffbf04"     // lea rdx, ds:[0x0000000005001000]
@@ -233,13 +265,16 @@ public class StringExtractorTest {
 									+ "48c7400804000000" // mov qword ptr ds:[rax+0x8], 0x4
 									+ "c3");             // ret
 							put("0x05001000", "6e616d656e616d65");
+
+							put("0x00600000", "fbffffff 00 00 01 08 0000000000000000");
+							put("0x00600010", "0010400000000000 0020000000000000");
+							put("0x00602000", "0010400000000000");
 						}}
 				),
 				Arguments.of(
 						new HashMap<Long, String>(){{
 						}},
 						ProgramBuilder._X64,
-						8,
 						new HashMap<String, String>(){{
 							put("0x401000",
 									"488d15f9ffbf04"     // lea rdx, ds:[0x0000000005001000]
@@ -248,6 +283,10 @@ public class StringExtractorTest {
 									+ "48c7400804000000" // mov qword ptr ds:[rax+0x8], 0x4
 									+ "c3");             // ret
 							put("0x05001000", "6e616d656e616d65");
+
+							put("0x00600000", "fbffffff 00 00 01 08 0000000000000000");
+							put("0x00600010", "0010400000000000 0020000000000000");
+							put("0x00602000", "0010400000000000");
 						}}
 				),
 				Arguments.of(
@@ -255,13 +294,16 @@ public class StringExtractorTest {
 							put((long)0x05001000, "name");
 						}},
 						ProgramBuilder._X64,
-						8,
 						new HashMap<String, String>(){{
 							put("0x821000",
 									"488d0df9ff7d04"     // lea rcx, ds:[0x0000000005001000]
 									+ "bf04000000"       // mov edi, 4
 									+ "c3");             // ret
 							put("0x05001000", "6e616d656e616d65");
+
+							put("0x00600000", "fbffffff 00 00 01 08 0000000000000000");
+							put("0x00600010", "0010400000000000 0020000000000000");
+							put("0x00602000", "0010400000000000");
 						}}
 				),
 				/*Arguments.of(
@@ -283,7 +325,6 @@ public class StringExtractorTest {
 							put((long)0x05001000, "name");
 						}},
 						ProgramBuilder._X86,
-						4,
 						new HashMap<String, String>(){{
 							put("0xe31000",
 									"8d1500100005"       // lea edx, ds:[0x05001000]
@@ -291,6 +332,10 @@ public class StringExtractorTest {
 									+ "c744240c04000000" // mov dword ptr ss:[esp+0xC], 0x4
 									+ "c3");             // ret
 							put("0x05001000", "6e616d656e616d65");
+
+							put("0x00600000", "fbffffff 00 00 01 04 00000000");
+							put("0x0060000c", "00104000 00200000");
+							put("0x00602000", "00104000");
 						}}
 				)/*,
 				Arguments.of(

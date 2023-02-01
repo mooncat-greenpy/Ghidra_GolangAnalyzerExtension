@@ -10,6 +10,7 @@ import ghidra.program.model.address.AddressSetView;
 import ghidra.program.model.listing.Program;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.task.TaskMonitor;
+import golanganalyzerextension.exceptions.InvalidBinaryStructureException;
 import golanganalyzerextension.gobinary.GolangBinary;
 import golanganalyzerextension.log.Logger;
 import golanganalyzerextension.service.GolangAnalyzerExtensionDummyService;
@@ -91,10 +92,6 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 		Logger.set_logger(log, debugmode_option);
 		try {
 			GolangBinary go_bin=new GolangBinary(program, monitor);
-			if(!go_bin.is_ok()) {
-				Logger.append_message(String.format("Failed to init GolangBinary"));
-				return false;
-			}
 
 			GolangAnalyzerExtensionService service=null;
 			for(Object obj : program.getConsumerList()) {
@@ -119,7 +116,9 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 
 			StringExtractor str_extractor=new StringExtractor(go_bin, service);
 			str_extractor.modify();
-		}catch(Exception e) {
+		} catch(InvalidBinaryStructureException e) {
+			Logger.append_message(e.getMessage());
+		} catch(Exception e) {
 			Logger.append_message(String.format("Error: %s", e.getMessage()));
 			return false;
 		}

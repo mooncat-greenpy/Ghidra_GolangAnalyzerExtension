@@ -103,21 +103,18 @@ public class FunctionModifier {
 		}
 
 		int pointer_size=go_bin.get_pointer_size();
-		Address gopclntab_base=go_bin.get_gopclntab_base().orElse(null);
-		if(gopclntab_base==null) {
-			return false;
-		}
+		Address pcheader_base=go_bin.get_pcheader_base();
 
 		try {
-			func_num=go_bin.get_address_value(gopclntab_base, 8, pointer_size);
+			func_num=go_bin.get_address_value(pcheader_base, 8, pointer_size);
 			file_name_list=new ArrayList<>();
 			if(is_go116) {
 				return true;
 			}
-			Address func_list_base=go_bin.get_address(gopclntab_base, 8+pointer_size);
+			Address func_list_base=go_bin.get_address(pcheader_base, 8+pointer_size);
 
 			long file_name_table_offset=go_bin.get_address_value(func_list_base, func_num*pointer_size*2+pointer_size, pointer_size);
-			Address file_name_table=go_bin.get_address(gopclntab_base, file_name_table_offset);
+			Address file_name_table=go_bin.get_address(pcheader_base, file_name_table_offset);
 			long file_name_table_size=go_bin.get_address_value(file_name_table, 4);
 			if(file_name_table_size==0) {
 				return false;
@@ -128,7 +125,7 @@ public class FunctionModifier {
 				if(file_name_offset==0) {
 					return false;
 				}
-				Address file_name_addr=go_bin.get_address(gopclntab_base, file_name_offset);
+				Address file_name_addr=go_bin.get_address(pcheader_base, file_name_offset);
 				file_name_list.add(go_bin.create_string_data(file_name_addr).orElse(String.format("not_found_%x", file_name_addr.getOffset())));
 			}
 
@@ -136,7 +133,7 @@ public class FunctionModifier {
 
 			return true;
 		} catch (BinaryAccessException e) {
-			Logger.append_message(String.format("Failed to init file name list: pcheader_addr=%s, message=%s", gopclntab_base, e.getMessage()));
+			Logger.append_message(String.format("Failed to init file name list: pcheader_addr=%s, message=%s", pcheader_base, e.getMessage()));
 			return false;
 		}
 	}
@@ -152,23 +149,20 @@ public class FunctionModifier {
 		}
 
 		int pointer_size=go_bin.get_pointer_size();
-		Address gopclntab_base=go_bin.get_gopclntab_base().orElse(null);
-		if(gopclntab_base==null) {
-			return false;
-		}
+		Address pcheader_base=go_bin.get_pcheader_base();
 
 		gofunc_list=new ArrayList<>();
 		Address func_list_base;
 		try {
 			if(is_go118) {
-				func_list_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*7, pointer_size));
+				func_list_base=go_bin.get_address(pcheader_base, go_bin.get_address_value(pcheader_base, 8+pointer_size*7, pointer_size));
 			}else if(is_go116) {
-				func_list_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*6, pointer_size));
+				func_list_base=go_bin.get_address(pcheader_base, go_bin.get_address_value(pcheader_base, 8+pointer_size*6, pointer_size));
 			}else {
-				func_list_base=go_bin.get_address(gopclntab_base, 8+pointer_size);
+				func_list_base=go_bin.get_address(pcheader_base, 8+pointer_size);
 			}
 		} catch (BinaryAccessException e) {
-			Logger.append_message(String.format("Failed to init funcs: pcheader_addr=%s, message=%s", gopclntab_base, e.getMessage()));
+			Logger.append_message(String.format("Failed to init funcs: pcheader_addr=%s, message=%s", pcheader_base, e.getMessage()));
 			return false;
 		}
 
@@ -181,24 +175,24 @@ public class FunctionModifier {
 			try {
 				func_addr_value=go_bin.get_address_value(func_list_base, i*(is_go118?4:pointer_size)*2, is_go118?4:pointer_size);
 				if(is_go118) {
-					func_addr_value+=go_bin.get_address_value(gopclntab_base, 8+pointer_size*2, pointer_size);
+					func_addr_value+=go_bin.get_address_value(pcheader_base, 8+pointer_size*2, pointer_size);
 				}
 				func_info_offset=go_bin.get_address_value(func_list_base, i*(is_go118?4:pointer_size)*2+(is_go118?4:pointer_size), is_go118?4:pointer_size);
 
 				if(is_go116) {
 					func_info_addr=go_bin.get_address(func_list_base, func_info_offset);
 				}else {
-					func_info_addr=go_bin.get_address(gopclntab_base, func_info_offset);
+					func_info_addr=go_bin.get_address(pcheader_base, func_info_offset);
 				}
 
 				func_entry_value=go_bin.get_address_value(func_info_addr, is_go118?4:pointer_size);
 				func_end_value=go_bin.get_address_value(func_list_base, i*(is_go118?4:pointer_size)*2+(is_go118?4:pointer_size)*2, is_go118?4:pointer_size);
 				if(is_go118) {
-					func_entry_value+=go_bin.get_address_value(gopclntab_base, 8+pointer_size*2, pointer_size);
-					func_end_value+=go_bin.get_address_value(gopclntab_base, 8+pointer_size*2, pointer_size);
+					func_entry_value+=go_bin.get_address_value(pcheader_base, 8+pointer_size*2, pointer_size);
+					func_end_value+=go_bin.get_address_value(pcheader_base, 8+pointer_size*2, pointer_size);
 				}
 			} catch (BinaryAccessException e) {
-				Logger.append_message(String.format("Failed to init func: pcheader_addr=%s, func_list_base=%s, i=%d, message=%s", gopclntab_base, func_list_base, i, e.getMessage()));
+				Logger.append_message(String.format("Failed to init func: pcheader_addr=%s, func_list_base=%s, i=%d, message=%s", pcheader_base, func_list_base, i, e.getMessage()));
 				return false;
 			}
 

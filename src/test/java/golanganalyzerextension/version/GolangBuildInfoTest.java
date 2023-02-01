@@ -27,6 +27,9 @@ public class GolangBuildInfoTest extends AbstractGhidraHeadlessIntegrationTest {
 
 	protected void initialize(Map<String, String> bytes_map) throws Exception {
 		ProgramBuilder builder=new ProgramBuilder("test", ProgramBuilder._X86, null);
+		bytes_map.put("0x00600000", "fbffffff 00 00 01 04 00000000");
+		bytes_map.put("0x0060000c", "00104000 00200000");
+		bytes_map.put("0x00602000", "00104000");
 		for(Map.Entry<String, String> entry : bytes_map.entrySet()) {
 			builder.setBytes(entry.getKey(), entry.getValue());
 		}

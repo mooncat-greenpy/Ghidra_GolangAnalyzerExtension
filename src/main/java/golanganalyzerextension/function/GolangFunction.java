@@ -283,11 +283,8 @@ public class GolangFunction {
 		try {
 			entry_addr_value=go_bin.get_address_value(info_addr, is_go118?4:go_bin.get_pointer_size());
 			if(is_go118) {
-				Address gopclntab_base=go_bin.get_gopclntab_base().orElse(null);
-				if(gopclntab_base==null) {
-					return false;
-				}
-				entry_addr_value+=go_bin.get_address_value(gopclntab_base, 8+go_bin.get_pointer_size()*2, go_bin.get_pointer_size());
+				Address pcheader_base=go_bin.get_pcheader_base();
+				entry_addr_value+=go_bin.get_address_value(pcheader_base, 8+go_bin.get_pointer_size()*2, go_bin.get_pointer_size());
 			}
 			func_addr=go_bin.get_address(entry_addr_value);
 		} catch (BinaryAccessException e) {
@@ -331,21 +328,18 @@ public class GolangFunction {
 		}
 
 		int pointer_size=go_bin.get_pointer_size();
-		Address gopclntab_base=go_bin.get_gopclntab_base().orElse(null);
-		if(gopclntab_base==null) {
-			return false;
-		}
+		Address pcheader_base=go_bin.get_pcheader_base();
 		Address func_name_addr;
 		try {
 			int func_name_offset=(int)go_bin.get_address_value(info_addr, is_go118?4:pointer_size, 4);
 			if(is_go118) {
-				Address func_name_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*3, pointer_size));
+				Address func_name_base=go_bin.get_address(pcheader_base, go_bin.get_address_value(pcheader_base, 8+pointer_size*3, pointer_size));
 				func_name_addr=go_bin.get_address(func_name_base, func_name_offset);
 			}else if(is_go116) {
-				Address func_name_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*2, pointer_size));
+				Address func_name_base=go_bin.get_address(pcheader_base, go_bin.get_address_value(pcheader_base, 8+pointer_size*2, pointer_size));
 				func_name_addr=go_bin.get_address(func_name_base, func_name_offset);
 			}else {
-				func_name_addr=go_bin.get_address(gopclntab_base, func_name_offset);
+				func_name_addr=go_bin.get_address(pcheader_base, func_name_offset);
 			}
 		} catch (BinaryAccessException e) {
 			Logger.append_message(String.format("Failed to get func name addr: info_addr=%s, message=%s", info_addr, e.getMessage()));
@@ -373,22 +367,18 @@ public class GolangFunction {
 		file_line_comment_map = new HashMap<>();
 
 		int pointer_size=go_bin.get_pointer_size();
-		Address gopclntab_base=go_bin.get_gopclntab_base().orElse(null);
-		if(gopclntab_base==null) {
-			return false;
-		}
-
+		Address pcheader_base=go_bin.get_pcheader_base();
 		Address pcln_base;
 		try {
 			int pcln_offset=(int)go_bin.get_address_value(info_addr, (is_go118?4:pointer_size)+5*4, 4);
 			if(is_go118) {
-				pcln_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*6, pointer_size));
+				pcln_base=go_bin.get_address(pcheader_base, go_bin.get_address_value(pcheader_base, 8+pointer_size*6, pointer_size));
 				pcln_base=go_bin.get_address(pcln_base, pcln_offset);
 			}else if(is_go116) {
-				pcln_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*5, pointer_size));
+				pcln_base=go_bin.get_address(pcheader_base, go_bin.get_address_value(pcheader_base, 8+pointer_size*5, pointer_size));
 				pcln_base=go_bin.get_address(pcln_base, pcln_offset);
 			}else {
-				pcln_base=go_bin.get_address(gopclntab_base, pcln_offset);
+				pcln_base=go_bin.get_address(pcheader_base, pcln_offset);
 			}
 		} catch (BinaryAccessException e) {
 			Logger.append_message(String.format("Failed to get pcln base: info_addr=%s, message=%s", info_addr, e.getMessage()));
@@ -441,21 +431,18 @@ public class GolangFunction {
 		}
 
 		int pointer_size=go_bin.get_pointer_size();
-		Address gopclntab_base=go_bin.get_gopclntab_base().orElse(null);
-		if(gopclntab_base==null) {
-			return false;
-		}
+		Address pcheader_base=go_bin.get_pcheader_base();
 		Address pcsp_base;
 		try {
 			int pcsp_offset=(int)go_bin.get_address_value(info_addr, (is_go118?4:pointer_size)+3*4, 4);
 			if(is_go118) {
-				pcsp_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*6, pointer_size));
+				pcsp_base=go_bin.get_address(pcheader_base, go_bin.get_address_value(pcheader_base, 8+pointer_size*6, pointer_size));
 				pcsp_base=go_bin.get_address(pcsp_base, pcsp_offset);
 			}else if(is_go116) {
-				pcsp_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*5, pointer_size));
+				pcsp_base=go_bin.get_address(pcheader_base, go_bin.get_address_value(pcheader_base, 8+pointer_size*5, pointer_size));
 				pcsp_base=go_bin.get_address(pcsp_base, pcsp_offset);
 			}else {
-				pcsp_base=go_bin.get_address(gopclntab_base, pcsp_offset);
+				pcsp_base=go_bin.get_address(pcheader_base, pcsp_offset);
 			}
 		} catch (BinaryAccessException e) {
 			Logger.append_message(String.format("Failed to get pcsp base: info_addr=%s, message=%s", info_addr, e.getMessage()));
@@ -514,21 +501,18 @@ public class GolangFunction {
 		}
 
 		int pointer_size=go_bin.get_pointer_size();
-		Address gopclntab_base=go_bin.get_gopclntab_base().orElse(null);
-		if(gopclntab_base==null) {
-			return null;
-		}
+		Address pcheader_base=go_bin.get_pcheader_base();
 		Address pcfile_base;
 		try {
 			int pcfile_offset=(int)go_bin.get_address_value(info_addr, (is_go118?4:pointer_size)+4*4, 4);
 			if(is_go118) {
-				pcfile_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*6, pointer_size));
+				pcfile_base=go_bin.get_address(pcheader_base, go_bin.get_address_value(pcheader_base, 8+pointer_size*6, pointer_size));
 				pcfile_base=go_bin.get_address(pcfile_base, pcfile_offset);
 			}else if(is_go116) {
-				pcfile_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*5, pointer_size));
+				pcfile_base=go_bin.get_address(pcheader_base, go_bin.get_address_value(pcheader_base, 8+pointer_size*5, pointer_size));
 				pcfile_base=go_bin.get_address(pcfile_base, pcfile_offset);
 			}else {
-				pcfile_base=go_bin.get_address(gopclntab_base, pcfile_offset);
+				pcfile_base=go_bin.get_address(pcheader_base, pcfile_offset);
 			}
 		} catch (BinaryAccessException e) {
 			Logger.append_message(String.format("Failed to get pcfile base: info_addr=%s, message=%s", info_addr, e.getMessage()));
@@ -567,21 +551,21 @@ public class GolangFunction {
 						int cu_offset=(int)go_bin.get_address_value(info_addr, (is_go118?4:pointer_size)+4*7, 4);
 						Address cutab_base;
 						if(is_go118) {
-							cutab_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*4, pointer_size));
+							cutab_base=go_bin.get_address(pcheader_base, go_bin.get_address_value(pcheader_base, 8+pointer_size*4, pointer_size));
 						}else {
-							cutab_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*3, pointer_size));
+							cutab_base=go_bin.get_address(pcheader_base, go_bin.get_address_value(pcheader_base, 8+pointer_size*3, pointer_size));
 						}
 
 						long file_no_offset=go_bin.get_address_value(cutab_base, (cu_offset+file_no)*4, 4);
 						Address file_base;
 						if(is_go118) {
-							file_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*5, pointer_size));
+							file_base=go_bin.get_address(pcheader_base, go_bin.get_address_value(pcheader_base, 8+pointer_size*5, pointer_size));
 						}else {
-							file_base=go_bin.get_address(gopclntab_base, go_bin.get_address_value(gopclntab_base, 8+pointer_size*4, pointer_size));
+							file_base=go_bin.get_address(pcheader_base, go_bin.get_address_value(pcheader_base, 8+pointer_size*4, pointer_size));
 						}
 						file_name_addr=go_bin.get_address(file_base, file_no_offset);
 					} catch (BinaryAccessException e) {
-						Logger.append_message(String.format("Failed to get file name addr: gopclntab_base=%s, pcfile_base=%s, file_no=%x, message=%s", gopclntab_base, pcfile_base, file_no, e.getMessage()));
+						Logger.append_message(String.format("Failed to get file name addr: pcheader_addr=%s, pcfile_base=%s, file_no=%x, message=%s", pcheader_base, pcfile_base, file_no, e.getMessage()));
 						return null;
 					}
 
