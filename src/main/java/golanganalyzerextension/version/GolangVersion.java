@@ -16,6 +16,9 @@ public class GolangVersion {
 	private int[][] version_data;
 
 	public GolangVersion(String go_version) throws InvalidGolangVersionFormatException {
+		if(!is_go_version(go_version)) {
+			throw new InvalidGolangVersionFormatException(String.format("Invalid Go version: str=%s", go_version));
+		}
 		version_str=go_version;
 		version_data=new int[PART_NUM][VALUE_NUM];
 		parse_version_str();

@@ -4,6 +4,13 @@ package golanganalyzerextension.gobinary;
 import java.math.BigInteger;
 import java.util.Optional;
 
+import db.DBRecord;
+import db.Field;
+import db.IllegalFieldAccessException;
+import db.IntField;
+import db.LongField;
+import db.Schema;
+import db.StringField;
 import ghidra.app.cmd.function.CreateFunctionCmd;
 import ghidra.program.disassemble.Disassembler;
 import ghidra.program.disassemble.DisassemblerMessageListener;
@@ -48,6 +55,7 @@ import ghidra.util.exception.InvalidInputException;
 import ghidra.util.task.TaskMonitor;
 import golanganalyzerextension.exceptions.InvalidBinaryStructureException;
 import golanganalyzerextension.exceptions.InvalidGolangVersionFormatException;
+import golanganalyzerextension.gobinary.PcHeader.GO_VERSION;
 import golanganalyzerextension.gobinary.exceptions.BinaryAccessException;
 import golanganalyzerextension.log.Logger;
 import golanganalyzerextension.version.GolangVersion;
@@ -86,38 +94,56 @@ public class GolangBinary {
 		this.go_version=obj.go_version;
 	}
 
-	public GolangBinary(GolangBinary obj, Program program, TaskMonitor monitor, Listing program_listing, Memory memory, PcHeader pc_header, GolangVersion go_version) {
-		if(program==null) {
-			this.program=obj.program;
-		} else {
-			this.program=program;
-		}
-		if(monitor==null) {
-			this.monitor=obj.monitor;
-		} else {
-			this.monitor=monitor;
-		}
-		if(program_listing==null) {
-			this.program_listing=obj.program_listing;
-		} else {
-			this.program_listing=program_listing;
-		}
-		if(memory==null) {
-			this.memory=obj.memory;
-		} else {
-			this.memory=memory;
-		}
+	private static final int RECORD_PCHEADER_ADDR_INDEX=0;
+	private static final int RECORD_PCHEADER_VERSION_INDEX=1;
+	private static final int RECORD_GO_VERSION_INDEX=2;
+	public static final int RECORD_KEY=0;
+	public static final Schema SCHEMA=new Schema(0, "GolangBinary",
+			new Field[] {
+					LongField.INSTANCE,
+					IntField.INSTANCE,
+					StringField.INSTANCE,
+					},
+			new String[] {
+					"PcheaderAddr",
+					"PcheaderVersion",
+					"GoVersion",
+					}
+	);
 
-		if(pc_header==null) {
-			this.pcheader=obj.pcheader;
-		} else {
-			this.pcheader=pc_header;
+	public GolangBinary(Program program, TaskMonitor monitor, DBRecord record) throws IllegalArgumentException {
+		this.program=program;
+		this.monitor=monitor;
+		this.program_listing=program.getListing();
+		this.memory=program.getMemory();
+
+		if(!record.hasSameSchema(SCHEMA)) {
+			throw new IllegalArgumentException("Invalid DBRecord schema");
 		}
-		if(go_version==null) {
-			this.go_version=obj.go_version;
-		} else {
-			this.go_version=go_version;
+		long pcheader_addr_value;
+		int pcheader_version_num;
+		String go_version_str;
+		try {
+			pcheader_addr_value=record.getLongValue(RECORD_PCHEADER_ADDR_INDEX);
+			pcheader_version_num=record.getIntValue(RECORD_PCHEADER_VERSION_INDEX);
+			go_version_str=record.getString(RECORD_GO_VERSION_INDEX);
+		} catch(IllegalFieldAccessException e) {
+			throw new IllegalArgumentException(String.format("Invalid DBRecord field: message=%s", e.getMessage()));
 		}
+		try {
+			this.pcheader=new PcHeader(this, get_address(pcheader_addr_value), GO_VERSION.from_integer(pcheader_version_num));
+			this.go_version=new GolangVersion(go_version_str);
+		} catch(InvalidBinaryStructureException | BinaryAccessException | InvalidGolangVersionFormatException e) {
+			throw new IllegalArgumentException(String.format("Invalid GolangBinary arg: pcheader_addr=%x, pcheader_version=%x, go_version=%s, message=%s", pcheader_addr_value, pcheader_version_num, go_version_str, e.getMessage()));
+		}
+	}
+
+	public DBRecord get_record() throws IllegalFieldAccessException {
+		DBRecord record=SCHEMA.createRecord(RECORD_KEY);
+		record.setLongValue(RECORD_PCHEADER_ADDR_INDEX, pcheader.get_addr().getOffset());
+		record.setIntValue(RECORD_PCHEADER_VERSION_INDEX, GO_VERSION.to_integer(pcheader.get_go_version()));
+		record.setString(RECORD_GO_VERSION_INDEX, go_version.get_version_str());
+		return record;
 	}
 
 	public String get_name() {

@@ -1,10 +1,16 @@
 package golanganalyzerextension.service;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import db.DBHandle;
+import db.DBRecord;
+import db.IllegalFieldAccessException;
+import db.Schema;
+import db.Table;
 import ghidra.app.CorePluginPackage;
 import ghidra.app.plugin.PluginCategoryNames;
 import ghidra.app.plugin.ProgramPlugin;
@@ -12,7 +18,9 @@ import ghidra.app.services.GoToService;
 import ghidra.framework.plugintool.PluginInfo;
 import ghidra.framework.plugintool.PluginTool;
 import ghidra.framework.plugintool.util.PluginStatus;
+import ghidra.program.database.ProgramDB;
 import ghidra.program.model.listing.Program;
+import ghidra.util.task.TaskMonitor;
 import golanganalyzerextension.datatype.GolangDatatype;
 import golanganalyzerextension.function.GolangFunction;
 import golanganalyzerextension.gobinary.GolangBinary;
@@ -31,6 +39,9 @@ import golanganalyzerextension.viewer.GolangAnalyzerExtensionProvider;
 )
 //@formatter:on
 public class GolangAnalyzerExtensionPlugin extends ProgramPlugin implements GolangAnalyzerExtensionService {
+
+	private static final String GOLANG_BINARY_TABLE_NAME="GAE_GolangBinary";
+
 	// TODO: Fix
 	private GolangAnalyzerExtensionProvider gae_provider;
 
@@ -75,15 +86,66 @@ public class GolangAnalyzerExtensionPlugin extends ProgramPlugin implements Gola
 		gae_provider.setVisible(true);
 	}
 
+	private Table get_table(String name) {
+		if(currentProgram==null) {
+			return null;
+		}
+		ProgramDB program_db=(ProgramDB)currentProgram;
+		DBHandle db_handle=program_db.getDBHandle();
+		return db_handle.getTable(name);
+	}
+
+	private Table create_table(String name, Schema schema) {
+		if(currentProgram==null) {
+			return null;
+		}
+		ProgramDB program_db=(ProgramDB)currentProgram;
+		DBHandle db_handle=program_db.getDBHandle();
+		try {
+			Table table=db_handle.getTable(name);
+			if(table==null) {
+				table=db_handle.createTable(name, schema);
+			} else {
+				db_handle.deleteTable(name);
+				table=db_handle.createTable(name, schema);
+			}
+			return table;
+		} catch (IOException e) {
+		}
+		return null;
+	}
 
 	@Override
 	public GolangBinary get_binary() {
+		if(go_bin!=null) {
+			return go_bin;
+		}
+
+		Table table=get_table(GOLANG_BINARY_TABLE_NAME);
+		if(table==null) {
+			return null;
+		}
+		try {
+			if(!table.hasRecord(GolangBinary.RECORD_KEY)) {
+				return null;
+			}
+			DBRecord record=table.getRecord(GolangBinary.RECORD_KEY);
+			go_bin=new GolangBinary(currentProgram, TaskMonitor.DUMMY, record);
+		} catch (IOException | IllegalArgumentException e) {
+			return null;
+		}
 		return go_bin;
 	}
 
 	@Override
 	public void store_binary(GolangBinary bin) {
 		go_bin=bin;
+
+		Table table=create_table(GOLANG_BINARY_TABLE_NAME, GolangBinary.SCHEMA);
+		try {
+			table.putRecord(bin.get_record());
+		} catch (IOException | IllegalFieldAccessException e) {
+		}
 	}
 
 	@Override

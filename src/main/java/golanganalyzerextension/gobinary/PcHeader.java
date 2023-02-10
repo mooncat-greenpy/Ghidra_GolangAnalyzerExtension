@@ -17,33 +17,53 @@ public class PcHeader {
 	private Address addr;
 	private int quantum;
 	private int pointer_size;
+	private GO_VERSION go_version;
 
-	private enum GO_VERSION {
+	public enum GO_VERSION {
 		GO_12,
 		GO_116,
-		GO_118_120,
+		GO_118,
+		GO_120;
+
+		public static GO_VERSION from_integer(int num) throws IllegalArgumentException {
+			switch(num) {
+			case 12:
+				return GO_12;
+			case 116:
+				return GO_116;
+			case 118:
+				return GO_118;
+			case 120:
+				return GO_120;
+			}
+
+			throw new IllegalArgumentException(String.format("Invalid PcHeader.GO_VERSION: num=%d", num));
+		}
+
+		public static int to_integer(GO_VERSION go_version) {
+			switch(go_version) {
+			case GO_12:
+				return 12;
+			case GO_116:
+				return 116;
+			case GO_118:
+				return 118;
+			default:
+				return 120;
+			}
+		}
 	}
 
 	public PcHeader(GolangBinary go_bin) throws InvalidBinaryStructureException {
 		this.go_bin=go_bin;
 
-		this.addr=null;
-		if(addr==null) {
-			addr=search_by_magic(GO_12_MAGIC, GO_VERSION.GO_12);
-		}
-		if(addr==null) {
-			addr=search_by_magic(GO_116_MAGIC, GO_VERSION.GO_116);
-		}
-		if(addr==null) {
-			addr=search_by_magic(GO_118_MAGIC, GO_VERSION.GO_118_120);
-		}
-		if(addr==null) {
-			addr=search_by_magic(GO_120_MAGIC, GO_VERSION.GO_118_120);
-		}
+		this.addr=search_by_magic();
+	}
 
-		if(addr==null) {
-			throw new InvalidBinaryStructureException("Not found pcHeader");
-		}
+	public PcHeader(GolangBinary go_bin, Address target_addr, GO_VERSION go_version) throws InvalidBinaryStructureException {
+		this.go_bin=go_bin;
+
+		this.addr=search_by_magic(target_addr, go_version);
 	}
 
 	public Address get_addr() {
@@ -58,12 +78,48 @@ public class PcHeader {
 		return pointer_size;
 	}
 
-	private Address search_by_magic(byte[] magic, GO_VERSION go_version) {
-		// debug/gosym/pclntab.go
-		boolean is_go118=go_version.equals(GO_VERSION.GO_118_120);
-		boolean is_go116=go_version.equals(GO_VERSION.GO_116);
+	public GO_VERSION get_go_version() {
+		return go_version;
+	}
 
-		Address tmp_addr=null;
+	private Address search_by_magic() {
+		Address result_addr=null;
+		if(result_addr==null) {
+			result_addr=search_by_magic(null, GO_VERSION.GO_12);
+		}
+		if(result_addr==null) {
+			result_addr=search_by_magic(null, GO_VERSION.GO_116);
+		}
+		if(result_addr==null) {
+			result_addr=search_by_magic(null, GO_VERSION.GO_118);
+		}
+		if(result_addr==null) {
+			result_addr=search_by_magic(null, GO_VERSION.GO_120);
+		}
+
+		if(result_addr==null) {
+			throw new InvalidBinaryStructureException("Not found pcHeader");
+		}
+		return result_addr;
+	}
+
+	private Address search_by_magic(Address target_addr, GO_VERSION target_go_version) {
+		// debug/gosym/pclntab.go
+		boolean is_go118=target_go_version.equals(GO_VERSION.GO_118) | target_go_version.equals(GO_VERSION.GO_120);
+		boolean is_go116=target_go_version.equals(GO_VERSION.GO_116);
+
+		byte[] magic;
+		if(target_go_version.equals(GO_VERSION.GO_12)) {
+			magic=GO_12_MAGIC;
+		} else if(target_go_version.equals(GO_VERSION.GO_116)) {
+			magic=GO_116_MAGIC;
+		} else if(target_go_version.equals(GO_VERSION.GO_118)) {
+			magic=GO_118_MAGIC;
+		} else {
+			magic=GO_120_MAGIC;
+		}
+
+		Address tmp_addr=target_addr;
 		while(true) {
 			tmp_addr=go_bin.find_memory(tmp_addr, magic, MAGIC_MASK).orElse(null);
 			if(tmp_addr==null) {
@@ -97,6 +153,7 @@ public class PcHeader {
 
 				if((quantum==1 || quantum==2 || quantum==4) && (pointer_size==4 || pointer_size==8) &&
 						func_addr_value==func_entry_value && (is_go118 || func_addr_value!=0)) {
+					go_version=target_go_version;
 					return tmp_addr;
 				}
 			} catch (BinaryAccessException e) {
