@@ -88,14 +88,7 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 			current_program.addListener(this);
 		}
 
-		if (isVisible()) {
-			function_model.setProgram(program);
-			function_model.reload();
-			filename_model.setProgram(program);
-			filename_model.reload();
-			datatype_model.setProgram(program);
-			datatype_model.reload();
-		}
+		refresh_panel();
 	}
 
 	@Override
@@ -164,15 +157,17 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 		refresh_button = new JButton(Icons.REFRESH_ICON);
 		refresh_button.setText("Refresh");
 		refresh_button.addActionListener(e -> {
-			function_model.update_table(current_program);
-			filename_model.update_table(current_program);
-			datatype_model.update_table(current_program);
-			toggle_show_info_panel();
-			toggle_show_info_panel();
+			refresh_panel();
 		});
 		panel.add(refresh_button);
 
 		return panel;
+	}
+
+	private void refresh_panel() {
+		update_table_program();
+		toggle_show_info_panel();
+		toggle_show_info_panel();
 	}
 
 	private class FunctionTable extends GhidraTable {
@@ -275,6 +270,12 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 		tabbed_pane.add("filenames", filename_panel);
 		tabbed_pane.add("datatypes", datatype_panel);
 		return tabbed_pane;
+	}
+
+	private void update_table_program() {
+		function_model.update_table(current_program);
+		filename_model.update_table(current_program);
+		datatype_model.update_table(current_program);
 	}
 
 	private void toggle_show_info_panel() {
