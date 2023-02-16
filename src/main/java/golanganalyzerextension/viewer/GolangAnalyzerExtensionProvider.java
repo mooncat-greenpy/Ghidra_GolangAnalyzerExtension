@@ -14,7 +14,7 @@ import ghidra.program.model.listing.Program;
 import ghidra.util.layout.VerticalLayout;
 import ghidra.util.table.*;
 import golanganalyzerextension.datatype.GolangDatatype;
-import golanganalyzerextension.function.GolangFunction;
+import golanganalyzerextension.function.GolangFunctionRecord;
 import golanganalyzerextension.gobinary.GolangBinary;
 import golanganalyzerextension.service.GolangAnalyzerExtensionPlugin;
 import resources.Icons;
@@ -32,8 +32,8 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 
 	private GhidraTable function_table;
 	private FunctionTableModel function_model;
-	private GhidraThreadedTablePanel<GolangFunction> function_threaded_table_panel;
-	private GhidraTableFilterPanel<GolangFunction> function_filter_panel;
+	private GhidraThreadedTablePanel<GolangFunctionRecord> function_threaded_table_panel;
+	private GhidraTableFilterPanel<GolangFunctionRecord> function_filter_panel;
 
 	private GhidraTable filename_table;
 	private FilenameTableModel filename_model;
@@ -176,7 +176,7 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 	}
 
 	private class FunctionTable extends GhidraTable {
-		public FunctionTable(ThreadedTableModel<GolangFunction, ?> model) {
+		public FunctionTable(ThreadedTableModel<GolangFunctionRecord, ?> model) {
 			super(model);
 		}
 	}
@@ -197,7 +197,7 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 		function_model = new FunctionTableModel(tool, current_program, null, gae_plugin);
 		function_threaded_table_panel = new GhidraThreadedTablePanel<>(function_model, 1000) {
 			@Override
-			protected GTable createTable(ThreadedTableModel<GolangFunction, ?> model) {
+			protected GTable createTable(ThreadedTableModel<GolangFunctionRecord, ?> model) {
 				return new FunctionTable(model);
 			}
 		};

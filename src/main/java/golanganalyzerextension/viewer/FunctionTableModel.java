@@ -16,11 +16,11 @@ import ghidra.util.table.AddressBasedTableModel;
 import ghidra.util.table.field.AbstractProgramBasedDynamicTableColumn;
 import ghidra.util.table.field.AddressBasedLocation;
 import ghidra.util.task.TaskMonitor;
-import golanganalyzerextension.function.GolangFunction;
+import golanganalyzerextension.function.GolangFunctionRecord;
 import golanganalyzerextension.service.GolangAnalyzerExtensionPlugin;
 import golanganalyzerextension.service.GolangAnalyzerExtensionService;
 
-class FunctionTableModel extends AddressBasedTableModel<GolangFunction> {
+class FunctionTableModel extends AddressBasedTableModel<GolangFunctionRecord> {
 	private PluginTool plugin_tool;
 	// private GolangAnalyzerExtensionPlugin gae_plugin;
 	// private FunctionDetailProvider function_detail_provider;
@@ -42,7 +42,7 @@ class FunctionTableModel extends AddressBasedTableModel<GolangFunction> {
 
 		AddressSet address_set = new AddressSet();
 		for (int row : rows) {
-			GolangFunction gofunc = getRowObject(row);
+			GolangFunctionRecord gofunc = getRowObject(row);
 			Address addr = gofunc.get_func_addr();
 			if (addr != null) {
 				address_set.addRange(addr, addr);
@@ -53,7 +53,7 @@ class FunctionTableModel extends AddressBasedTableModel<GolangFunction> {
 
 	@Override
 	public Address getAddress(int row) {
-		GolangFunction gofunc = getRowObject(row);
+		GolangFunctionRecord gofunc = getRowObject(row);
 		/*function_detail_provider=new FunctionDetailProvider(gae_plugin, gofunc);
 		function_detail_provider.getTool().showComponentProvider(function_detail_provider, true);
 		function_detail_provider.toFront();*/
@@ -61,22 +61,22 @@ class FunctionTableModel extends AddressBasedTableModel<GolangFunction> {
 	}
 
 	@Override
-	protected void doLoad(Accumulator<GolangFunction> accumulator, TaskMonitor monitor)
+	protected void doLoad(Accumulator<GolangFunctionRecord> accumulator, TaskMonitor monitor)
 			throws CancelledException {
-		List<GolangFunction> func_list=null;
+		List<GolangFunctionRecord> func_list=null;
 		GolangAnalyzerExtensionService service=plugin_tool.getService(GolangAnalyzerExtensionService.class);
 		func_list=service.get_function_list();
 		if(func_list==null) {
 			return;
 		}
-		for(GolangFunction gofunc : func_list) {
+		for(GolangFunctionRecord gofunc : func_list) {
 			accumulator.add(gofunc);
 		}
 	}
 
 	@Override
-	protected TableColumnDescriptor<GolangFunction> createTableColumnDescriptor() {
-		TableColumnDescriptor<GolangFunction> descriptor = new TableColumnDescriptor<>();
+	protected TableColumnDescriptor<GolangFunctionRecord> createTableColumnDescriptor() {
+		TableColumnDescriptor<GolangFunctionRecord> descriptor = new TableColumnDescriptor<>();
 		// Error: empty
 		// descriptor.addVisibleColumn(DiscoverableTableUtils.adaptColumForModel(this, new AddressTableColumn()), 0, true);
 		descriptor.addVisibleColumn(new FunctionAddressTableColumn());
@@ -92,14 +92,14 @@ class FunctionTableModel extends AddressBasedTableModel<GolangFunction> {
 //==================================================================================================
 
 	private static class FunctionAddressTableColumn
-			extends AbstractProgramBasedDynamicTableColumn<GolangFunction, AddressBasedLocation> {
+			extends AbstractProgramBasedDynamicTableColumn<GolangFunctionRecord, AddressBasedLocation> {
 		@Override
 		public String getColumnName() {
 			return "Location";
 		}
 
 		@Override
-		public AddressBasedLocation getValue(GolangFunction rowObject, Settings settings, Program pgm,
+		public AddressBasedLocation getValue(GolangFunctionRecord rowObject, Settings settings, Program pgm,
 				ServiceProvider serviceProvider) throws IllegalArgumentException {
 			return new AddressBasedLocation(pgm, rowObject.get_func_addr());
 		}
@@ -111,14 +111,14 @@ class FunctionTableModel extends AddressBasedTableModel<GolangFunction> {
 	}
 
 	private static class FunctionNameTableColumn
-			extends AbstractProgramBasedDynamicTableColumn<GolangFunction, String> {
+			extends AbstractProgramBasedDynamicTableColumn<GolangFunctionRecord, String> {
 		@Override
 		public String getColumnName() {
 			return "Function Name";
 		}
 
 		@Override
-		public String getValue(GolangFunction rowObject, Settings settings, Program program,
+		public String getValue(GolangFunctionRecord rowObject, Settings settings, Program program,
 				ServiceProvider services) throws IllegalArgumentException {
 			return rowObject.get_func_name();
 		}
@@ -130,14 +130,14 @@ class FunctionTableModel extends AddressBasedTableModel<GolangFunction> {
 	}
 
 	private static class FunctionArgsSizeTableColumn
-			extends AbstractProgramBasedDynamicTableColumn<GolangFunction, Integer> {
+			extends AbstractProgramBasedDynamicTableColumn<GolangFunctionRecord, Integer> {
 		@Override
 		public String getColumnName() {
 			return "Args Size";
 		}
 
 		@Override
-		public Integer getValue(GolangFunction rowObject, Settings settings, Program program,
+		public Integer getValue(GolangFunctionRecord rowObject, Settings settings, Program program,
 				ServiceProvider services) throws IllegalArgumentException {
 			return (int)rowObject.get_arg_size();
 		}
@@ -149,14 +149,14 @@ class FunctionTableModel extends AddressBasedTableModel<GolangFunction> {
 	}
 
 	private static class FunctionSizeTableColumn
-			extends AbstractProgramBasedDynamicTableColumn<GolangFunction, Integer> {
+			extends AbstractProgramBasedDynamicTableColumn<GolangFunctionRecord, Integer> {
 		@Override
 		public String getColumnName() {
 			return "Size";
 		}
 
 		@Override
-		public Integer getValue(GolangFunction rowObject, Settings settings, Program program,
+		public Integer getValue(GolangFunctionRecord rowObject, Settings settings, Program program,
 				ServiceProvider services) throws IllegalArgumentException {
 			return (int)rowObject.get_func_size();
 		}

@@ -18,14 +18,14 @@ import ghidra.framework.plugintool.ComponentProviderAdapter;
 import ghidra.program.model.listing.Parameter;
 import ghidra.util.layout.VerticalLayout;
 import golanganalyzerextension.function.FileLine;
-import golanganalyzerextension.function.GolangFunction;
+import golanganalyzerextension.function.GolangFunctionRecord;
 import golanganalyzerextension.service.GolangAnalyzerExtensionPlugin;
 
 class FunctionDetailProvider extends ComponentProviderAdapter {
 
 	private JPanel main_panel;
 
-	FunctionDetailProvider(GolangAnalyzerExtensionPlugin tool, GolangFunction gofunc) {
+	FunctionDetailProvider(GolangAnalyzerExtensionPlugin tool, GolangFunctionRecord gofunc) {
 		super(tool.getTool(), "GolangFunctionDetail", tool.getName());
 
 		main_panel=create_main_panel(gofunc);
@@ -34,7 +34,7 @@ class FunctionDetailProvider extends ComponentProviderAdapter {
 		addToTool();
 	}
 
-	private JPanel create_main_panel(GolangFunction gofunc) {
+	private JPanel create_main_panel(GolangFunctionRecord gofunc) {
 		JPanel panel=new JPanel(new BorderLayout());
 		panel.add(create_info_panel(gofunc), BorderLayout.WEST);
 
@@ -47,7 +47,7 @@ class FunctionDetailProvider extends ComponentProviderAdapter {
 		return panel;
 	}
 
-	private JPanel create_info_panel(GolangFunction gofunc) {
+	private JPanel create_info_panel(GolangFunctionRecord gofunc) {
 		JPanel panel = new JPanel(new VerticalLayout(0));
 		panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
@@ -61,19 +61,19 @@ class FunctionDetailProvider extends ComponentProviderAdapter {
 		JLabel end_address_panel=new JLabel(String.format("End address: %x", gofunc.get_func_addr().getOffset()+gofunc.get_func_size()));
 		end_address_panel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
 		panel.add(end_address_panel);
-		JLabel args_length_panel=new JLabel(String.format("Args Num: %d", gofunc.get_params().size()));
+		JLabel args_length_panel=new JLabel(String.format("Args Num: %d", gofunc.get_params().length));
 		args_length_panel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
 		panel.add(args_length_panel);
 
 		return panel;
 	}
 
-	private JScrollPane create_params_table(GolangFunction gofunc) {
-		List<Parameter> params=gofunc.get_params();
+	private JScrollPane create_params_table(GolangFunctionRecord gofunc) {
+		Parameter[] params=gofunc.get_params();
 		String[] columns={"Name", "Datatype", "Length"};
-		Object[][] data=new Object[params.size()][3];
-		for(int i=0; i<params.size(); i++) {
-			Parameter p=params.get(i);
+		Object[][] data=new Object[params.length][3];
+		for(int i=0; i<params.length; i++) {
+			Parameter p=params[i];
 			Object[] row={p.getName(), p.getDataType().getName(), p.getLength()};
 			data[i]=row;
 		}
@@ -82,7 +82,7 @@ class FunctionDetailProvider extends ComponentProviderAdapter {
 		return new JScrollPane(table);
 	}
 
-	private JScrollPane create_file_line_table(GolangFunction gofunc) {
+	private JScrollPane create_file_line_table(GolangFunctionRecord gofunc) {
 		Map<Integer, FileLine> file_line_map=gofunc.get_file_line_comment_map();
 		List<Integer> key_list=new ArrayList<Integer>(file_line_map.keySet());
 		key_list.sort(null);

@@ -7,13 +7,14 @@ import java.util.Map;
 
 import golanganalyzerextension.datatype.GolangDatatype;
 import golanganalyzerextension.function.GolangFunction;
+import golanganalyzerextension.function.GolangFunctionRecord;
 import golanganalyzerextension.gobinary.GolangBinary;
 import golanganalyzerextension.string.GolangString;
 
 public class GolangAnalyzerExtensionDummyService implements GolangAnalyzerExtensionService {
 
 	private GolangBinary go_bin;
-	private List<GolangFunction> func_list;
+	private List<GolangFunctionRecord> func_list;
 	private List<String> filename_list;
 	private Map<Long, GolangDatatype> datatype_map;
 	private Map<Long, GolangString> string_map;
@@ -37,13 +38,16 @@ public class GolangAnalyzerExtensionDummyService implements GolangAnalyzerExtens
 	}
 
 	@Override
-	public List<GolangFunction> get_function_list() {
+	public List<GolangFunctionRecord> get_function_list() {
 		return func_list;
 	}
 
 	@Override
 	public void store_function_list(List<GolangFunction> list) {
-		func_list=list;
+		func_list=new ArrayList<>();
+		for(GolangFunction go_func : list) {
+			func_list.add(new GolangFunctionRecord(go_func));
+		}
 	}
 
 	@Override

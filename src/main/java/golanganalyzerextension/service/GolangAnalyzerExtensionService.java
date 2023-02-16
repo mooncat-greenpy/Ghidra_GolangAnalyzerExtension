@@ -6,6 +6,7 @@ import java.util.Map;
 import ghidra.framework.plugintool.ServiceInfo;
 import golanganalyzerextension.datatype.GolangDatatype;
 import golanganalyzerextension.function.GolangFunction;
+import golanganalyzerextension.function.GolangFunctionRecord;
 import golanganalyzerextension.gobinary.GolangBinary;
 import golanganalyzerextension.string.GolangString;
 
@@ -19,7 +20,7 @@ public interface GolangAnalyzerExtensionService {
 	public GolangBinary get_binary();
 	public void store_binary(GolangBinary bin);
 
-	public List<GolangFunction> get_function_list();
+	public List<GolangFunctionRecord> get_function_list();
 	public void store_function_list(List<GolangFunction> list);
 
 	public List<String> get_filename_list();

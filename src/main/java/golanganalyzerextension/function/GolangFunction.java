@@ -146,6 +146,10 @@ public class GolangFunction {
 		return file_line_comment_map;
 	}
 
+	public Map<Integer, Long> get_frame_map() {
+		return frame_map;
+	}
+
 	boolean check_memcopy() {
 		return false;
 	}

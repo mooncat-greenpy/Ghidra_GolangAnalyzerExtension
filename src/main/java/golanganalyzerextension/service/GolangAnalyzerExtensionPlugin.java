@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import db.DBHandle;
+import db.DBLongIterator;
 import db.DBRecord;
 import db.IllegalFieldAccessException;
 import db.Schema;
@@ -23,7 +24,9 @@ import ghidra.program.model.listing.Program;
 import ghidra.util.task.TaskMonitor;
 import golanganalyzerextension.datatype.GolangDatatype;
 import golanganalyzerextension.function.GolangFunction;
+import golanganalyzerextension.function.GolangFunctionRecord;
 import golanganalyzerextension.gobinary.GolangBinary;
+import golanganalyzerextension.log.Logger;
 import golanganalyzerextension.string.GolangString;
 import golanganalyzerextension.viewer.GolangAnalyzerExtensionProvider;
 
@@ -41,12 +44,13 @@ import golanganalyzerextension.viewer.GolangAnalyzerExtensionProvider;
 public class GolangAnalyzerExtensionPlugin extends ProgramPlugin implements GolangAnalyzerExtensionService {
 
 	private static final String GOLANG_BINARY_TABLE_NAME="GAE_GolangBinary";
+	private static final String GOLANG_FUNCTION_TABLE_NAME="GAE_GolangFunction";
 
 	// TODO: Fix
 	private GolangAnalyzerExtensionProvider gae_provider;
 
 	private GolangBinary go_bin;
-	private List<GolangFunction> func_list;
+	private List<GolangFunctionRecord> func_list;
 	private List<String> filename_list;
 	private Map<Long, GolangDatatype> datatype_map;
 	private Map<Long, GolangString> string_map;
@@ -149,13 +153,43 @@ public class GolangAnalyzerExtensionPlugin extends ProgramPlugin implements Gola
 	}
 
 	@Override
-	public List<GolangFunction> get_function_list() {
+	public List<GolangFunctionRecord> get_function_list() {
+		if(func_list.size()>0) {
+			return func_list;
+		}
+
+		Table table=get_table(GOLANG_FUNCTION_TABLE_NAME);
+		if(table==null) {
+			return func_list;
+		}
+		List<GolangFunctionRecord> tmp_func_list=new ArrayList<>();
+		try {
+			DBLongIterator iter=table.longKeyIterator();
+			while(iter.hasNext()) {
+				tmp_func_list.add(new GolangFunctionRecord(get_binary(), table.getRecord(iter.next())));
+			}
+		} catch (IOException | IllegalArgumentException e) {
+			Logger.append_message(String.format("Failed to get GolangFunction from table: message=%s", e.getMessage()));;
+		}
+		func_list=tmp_func_list;
 		return func_list;
 	}
 
 	@Override
 	public void store_function_list(List<GolangFunction> list) {
-		func_list=list;
+		List<GolangFunctionRecord> tmp_func_list=new ArrayList<>();
+
+		Table table=create_table(GOLANG_FUNCTION_TABLE_NAME, GolangFunctionRecord.SCHEMA);
+		for(GolangFunction go_func : list) {
+			GolangFunctionRecord record=new GolangFunctionRecord(go_func);
+			tmp_func_list.add(record);
+			try {
+				table.putRecord(record.get_record());
+			} catch (IOException | IllegalFieldAccessException e) {
+				Logger.append_message(String.format("Failed to put GolangFunction to table: message=%s", e.getMessage()));;
+			}
+		}
+		func_list=tmp_func_list;
 	}
 
 	@Override

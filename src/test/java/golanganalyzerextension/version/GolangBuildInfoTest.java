@@ -48,7 +48,6 @@ public class GolangBuildInfoTest extends AbstractGhidraHeadlessIntegrationTest {
 			go_build_info=new GolangBuildInfo(go_bin);
 			Method method=GolangBuildInfo.class.getDeclaredMethod("get_build_info_addr");
 			method.setAccessible(true);
-			@SuppressWarnings("unchecked")
 			Address addr=(Address)method.invoke(go_build_info);
 			assertEquals(addr, go_bin.get_address(0x529000));
 		} catch (InvalidBinaryStructureException e) {

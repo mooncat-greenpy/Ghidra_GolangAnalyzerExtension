@@ -19,7 +19,7 @@ import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.symbol.Reference;
 import golanganalyzerextension.function.FileLine;
-import golanganalyzerextension.function.GolangFunction;
+import golanganalyzerextension.function.GolangFunctionRecord;
 import golanganalyzerextension.gobinary.GolangBinary;
 import golanganalyzerextension.gobinary.exceptions.BinaryAccessException;
 import golanganalyzerextension.service.GolangAnalyzerExtensionPlugin;
@@ -47,7 +47,7 @@ class FileDetailProvider extends ComponentProviderAdapter {
 			return panel;
 		}
 
-		private void add_func_to_line_fl_map(String file_name, GolangFunction func, Map<Long, List<FileLine>> line_fl_map) {
+		private void add_func_to_line_fl_map(String file_name, GolangFunctionRecord func, Map<Long, List<FileLine>> line_fl_map) {
 			Map<Integer, FileLine> file_line_map=func.get_file_line_comment_map();
 			if(!file_line_map.containsKey(0) || !file_name.equals(file_line_map.get(0).get_file_name())) {
 				return;
@@ -77,7 +77,7 @@ class FileDetailProvider extends ComponentProviderAdapter {
 			}
 
 			Map<Long, List<FileLine>> line_fl_map=new HashMap<>();
-			for(GolangFunction func : gae_tool.get_function_list()) {
+			for(GolangFunctionRecord func : gae_tool.get_function_list()) {
 				add_func_to_line_fl_map(file_name, func, line_fl_map);
 			}
 
@@ -94,8 +94,13 @@ class FileDetailProvider extends ComponentProviderAdapter {
 			int idx=0;
 			for(Object key : map_key) {
 				for(FileLine file_line : line_fl_map.get(key)) {
-					Function func=go_bin.get_function(file_line.get_func_addr()).orElse(null);
-					String func_name=String.format("FUN_%x", file_line.get_func_addr().getOffset());
+					Function func;
+					try {
+						func=go_bin.get_function(go_bin.get_address(file_line.get_func_addr())).orElse(null);
+					} catch (BinaryAccessException e) {
+						func=null;
+					}
+					String func_name=String.format("FUN_%x", file_line.get_func_addr());
 					if(func!=null) {
 						func_name=func.getName();
 					}
@@ -107,7 +112,7 @@ class FileDetailProvider extends ComponentProviderAdapter {
 					Address file_line_addr;
 					Instruction inst;
 					try {
-						file_line_addr = go_bin.get_address(file_line.get_func_addr(), file_line.get_offset());
+						file_line_addr = go_bin.get_address(file_line.get_func_addr()+file_line.get_offset());
 						inst=go_bin.get_instruction(file_line_addr).orElse(null);
 					} catch (BinaryAccessException e) {
 						file_line_addr=null;

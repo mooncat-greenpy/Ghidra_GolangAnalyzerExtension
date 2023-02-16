@@ -2,10 +2,15 @@ package golanganalyzerextension.function;
 
 import static org.junit.Assert.assertEquals;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -41,7 +46,7 @@ public class FileLineTest extends AbstractGhidraHeadlessIntegrationTest {
 
 		FileLine file_line=new FileLine(go_bin.get_address(addr_value), offset, 0, "", 0);
 
-		assertEquals(file_line.get_func_addr().getOffset()+file_line.get_offset(), addr_value+offset);
+		assertEquals(file_line.get_func_addr()+file_line.get_offset(), addr_value+offset);
 	}
 
 	static Stream<Arguments> test_get_address_params() throws Throwable {
@@ -103,5 +108,22 @@ public class FileLineTest extends AbstractGhidraHeadlessIntegrationTest {
 				Arguments.of("cpu/cpu.go", 1),
 				Arguments.of("runtime/runtime.go", 10)
 			);
+	}
+
+	@Test
+	public void test_serialize() throws Exception {
+		initialize(new HashMap<String, String>());
+		GolangBinary go_bin=new GolangBinary(program, TaskMonitor.DUMMY);
+
+		FileLine file_line=new FileLine(go_bin.get_address(0x401000), 0, 0, "test.go", 4);
+		ByteArrayOutputStream byte_out = new ByteArrayOutputStream();
+		ObjectOutputStream out = new ObjectOutputStream(byte_out);
+		out.writeObject(file_line);
+		byte[] bytes=byte_out.toByteArray();
+		ByteArrayInputStream byte_in = new ByteArrayInputStream(bytes);
+		ObjectInputStream in = new ObjectInputStream(byte_in);
+		FileLine file_line2=(FileLine)in.readObject();
+
+		assertEquals(file_line.toString(), file_line2.toString());
 	}
 }

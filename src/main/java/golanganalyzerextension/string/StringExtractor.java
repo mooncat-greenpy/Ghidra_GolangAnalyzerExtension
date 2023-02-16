@@ -11,7 +11,7 @@ import ghidra.program.model.mem.MemoryBlock;
 import ghidra.program.model.scalar.Scalar;
 import ghidra.program.model.symbol.RefType;
 import golanganalyzerextension.exceptions.InvalidBinaryStructureException;
-import golanganalyzerextension.function.GolangFunction;
+import golanganalyzerextension.function.GolangFunctionRecord;
 import golanganalyzerextension.gobinary.GolangBinary;
 import golanganalyzerextension.gobinary.exceptions.BinaryAccessException;
 import golanganalyzerextension.log.Logger;
@@ -87,7 +87,7 @@ public class StringExtractor {
 	}
 
 	private void search_inst() {
-		for(GolangFunction go_func : service.get_function_list()) {
+		for(GolangFunctionRecord go_func : service.get_function_list()) {
 			search_function(go_func.get_func_addr(), (int)go_func.get_func_size());
 		}
 	}
