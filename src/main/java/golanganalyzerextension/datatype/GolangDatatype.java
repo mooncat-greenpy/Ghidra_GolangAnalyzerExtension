@@ -191,6 +191,10 @@ public class GolangDatatype {
 		return struct_datatype;
 	}
 
+	public String get_category_path() {
+		return String.format("/Golang_%s", get_kind().name());
+	}
+
 	public List<Long> get_dependence_type_key_list(){
 		return dependence_type_key_list;
 	}

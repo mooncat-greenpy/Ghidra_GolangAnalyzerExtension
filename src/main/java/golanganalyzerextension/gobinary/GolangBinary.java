@@ -19,7 +19,10 @@ import ghidra.program.model.address.AddressFormatException;
 import ghidra.program.model.address.AddressOutOfBoundsException;
 import ghidra.program.model.address.AddressSet;
 import ghidra.program.model.data.ByteDataType;
+import ghidra.program.model.data.Category;
+import ghidra.program.model.data.CategoryPath;
 import ghidra.program.model.data.DataType;
+import ghidra.program.model.data.DataTypeManager;
 import ghidra.program.model.data.Integer16DataType;
 import ghidra.program.model.data.Integer3DataType;
 import ghidra.program.model.data.Integer5DataType;
@@ -30,6 +33,7 @@ import ghidra.program.model.data.LongLongDataType;
 import ghidra.program.model.data.ShortDataType;
 import ghidra.program.model.data.SignedByteDataType;
 import ghidra.program.model.data.StringDataType;
+import ghidra.program.model.data.Structure;
 import ghidra.program.model.data.UnsignedInteger16DataType;
 import ghidra.program.model.data.UnsignedInteger3DataType;
 import ghidra.program.model.data.UnsignedInteger5DataType;
@@ -270,6 +274,29 @@ public class GolangBinary {
 			}
 		}
 		return Optional.empty();
+	}
+
+	public Optional<Structure> get_datatype(String path, String name) {
+		DataTypeManager datatype_manager=program.getDataTypeManager();
+		CategoryPath category_path=new CategoryPath(path);
+		if(!datatype_manager.containsCategory(category_path)) {
+			return Optional.empty();
+		}
+		Category category=datatype_manager.getCategory(category_path);
+		// ghidra.program.database.data.StructureDB
+		return Optional.ofNullable((Structure)category.getDataType(name));
+	}
+
+	public void add_datatype(String path, DataType datatype) {
+		DataTypeManager datatype_manager=program.getDataTypeManager();
+		CategoryPath category_path=new CategoryPath(path);
+		Category category;
+		if(datatype_manager.containsCategory(category_path)) {
+			category=datatype_manager.getCategory(category_path);
+		} else {
+			category=datatype_manager.createCategory(category_path);
+		}
+		category.addDataType(datatype, null);
 	}
 
 	public DataType get_unsigned_number_datatype(int size) {
