@@ -15,12 +15,12 @@ import ghidra.util.exception.CancelledException;
 import ghidra.util.table.AddressBasedTableModel;
 import ghidra.util.table.field.AbstractProgramBasedDynamicTableColumn;
 import ghidra.util.task.TaskMonitor;
-import golanganalyzerextension.datatype.GolangDatatype;
+import golanganalyzerextension.datatype.GolangDatatypeRecord;
 import golanganalyzerextension.datatype.Kind;
 import golanganalyzerextension.service.GolangAnalyzerExtensionPlugin;
 import golanganalyzerextension.service.GolangAnalyzerExtensionService;
 
-public class DatatypeTableModel extends AddressBasedTableModel<GolangDatatype> {
+public class DatatypeTableModel extends AddressBasedTableModel<GolangDatatypeRecord> {
 	private PluginTool plugin_tool;
 	// private GolangAnalyzerExtensionPlugin gae_plugin;
 	// private DatatypeDetailProvider datatype_detail_provider;
@@ -41,7 +41,7 @@ public class DatatypeTableModel extends AddressBasedTableModel<GolangDatatype> {
 	public ProgramSelection getProgramSelection(int[] rows) {
 		AddressSet address_set = new AddressSet();
 		for (int row : rows) {
-			GolangDatatype go_datatype = getRowObject(row);
+			GolangDatatypeRecord go_datatype = getRowObject(row);
 			Address addr = go_datatype.get_addr();
 			if (addr != null) {
 				address_set.addRange(addr, addr);
@@ -52,7 +52,7 @@ public class DatatypeTableModel extends AddressBasedTableModel<GolangDatatype> {
 
 	@Override
 	public Address getAddress(int row) {
-		GolangDatatype go_datatype = getRowObject(row);
+		GolangDatatypeRecord go_datatype = getRowObject(row);
 		/*datatype_detail_provider=new DatatypeDetailProvider(gae_plugin, go_datatype);
 		datatype_detail_provider.getTool().showComponentProvider(datatype_detail_provider, true);
 		datatype_detail_provider.toFront();*/
@@ -60,22 +60,22 @@ public class DatatypeTableModel extends AddressBasedTableModel<GolangDatatype> {
 	}
 
 	@Override
-	protected void doLoad(Accumulator<GolangDatatype> accumulator, TaskMonitor monitor)
+	protected void doLoad(Accumulator<GolangDatatypeRecord> accumulator, TaskMonitor monitor)
 			throws CancelledException {
-		Map<Long, GolangDatatype> datatype_map=null;
+		Map<Long, GolangDatatypeRecord> datatype_map=null;
 		GolangAnalyzerExtensionService service=plugin_tool.getService(GolangAnalyzerExtensionService.class);
 		datatype_map=service.get_datatype_map();
 		if(datatype_map==null) {
 			return;
 		}
-		for(Map.Entry<Long, GolangDatatype> entry : datatype_map.entrySet()) {
+		for(Map.Entry<Long, GolangDatatypeRecord> entry : datatype_map.entrySet()) {
 			accumulator.add(entry.getValue());
 		}
 	}
 
 	@Override
-	protected TableColumnDescriptor<GolangDatatype> createTableColumnDescriptor() {
-		TableColumnDescriptor<GolangDatatype> descriptor = new TableColumnDescriptor<>();
+	protected TableColumnDescriptor<GolangDatatypeRecord> createTableColumnDescriptor() {
+		TableColumnDescriptor<GolangDatatypeRecord> descriptor = new TableColumnDescriptor<>();
 		descriptor.addVisibleColumn(new DatatypeNameTableColumn());
 		descriptor.addVisibleColumn(new DatatypeSizeTableColumn());
 		descriptor.addVisibleColumn(new DatatypeKindTableColumn());
@@ -89,14 +89,14 @@ public class DatatypeTableModel extends AddressBasedTableModel<GolangDatatype> {
 
 
 	private static class DatatypeNameTableColumn
-			extends AbstractProgramBasedDynamicTableColumn<GolangDatatype, String> {
+			extends AbstractProgramBasedDynamicTableColumn<GolangDatatypeRecord, String> {
 		@Override
 		public String getColumnName() {
 			return "Struct Name";
 		}
 
 		@Override
-		public String getValue(GolangDatatype rowObject, Settings settings, Program program,
+		public String getValue(GolangDatatypeRecord rowObject, Settings settings, Program program,
 				ServiceProvider services) throws IllegalArgumentException {
 			return rowObject.get_name();
 		}
@@ -108,14 +108,14 @@ public class DatatypeTableModel extends AddressBasedTableModel<GolangDatatype> {
 	}
 
 	private static class DatatypeSizeTableColumn
-			extends AbstractProgramBasedDynamicTableColumn<GolangDatatype, Integer> {
+			extends AbstractProgramBasedDynamicTableColumn<GolangDatatypeRecord, Integer> {
 		@Override
 		public String getColumnName() {
 			return "Size";
 		}
 
 		@Override
-		public Integer getValue(GolangDatatype rowObject, Settings settings, Program program,
+		public Integer getValue(GolangDatatypeRecord rowObject, Settings settings, Program program,
 				ServiceProvider services) throws IllegalArgumentException {
 
 			return (int)rowObject.get_size();
@@ -128,14 +128,14 @@ public class DatatypeTableModel extends AddressBasedTableModel<GolangDatatype> {
 	}
 
 	private static class DatatypeKindTableColumn
-			extends AbstractProgramBasedDynamicTableColumn<GolangDatatype, Kind> {
+			extends AbstractProgramBasedDynamicTableColumn<GolangDatatypeRecord, Kind> {
 		@Override
 		public String getColumnName() {
 			return "Kind";
 		}
 
 		@Override
-		public Kind getValue(GolangDatatype rowObject, Settings settings,
+		public Kind getValue(GolangDatatypeRecord rowObject, Settings settings,
 				Program program, ServiceProvider services) throws IllegalArgumentException {
 
 			return rowObject.get_kind();

@@ -13,7 +13,7 @@ import ghidra.framework.plugintool.ComponentProviderAdapter;
 import ghidra.program.model.listing.Program;
 import ghidra.util.layout.VerticalLayout;
 import ghidra.util.table.*;
-import golanganalyzerextension.datatype.GolangDatatype;
+import golanganalyzerextension.datatype.GolangDatatypeRecord;
 import golanganalyzerextension.function.GolangFunctionRecord;
 import golanganalyzerextension.gobinary.GolangBinary;
 import golanganalyzerextension.service.GolangAnalyzerExtensionPlugin;
@@ -42,8 +42,8 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 
 	private GhidraTable datatype_table;
 	private DatatypeTableModel datatype_model;
-	private GhidraThreadedTablePanel<GolangDatatype> datatype_threaded_table_panel;
-	private GhidraTableFilterPanel<GolangDatatype> datatype_filter_panel;
+	private GhidraThreadedTablePanel<GolangDatatypeRecord> datatype_threaded_table_panel;
+	private GhidraTableFilterPanel<GolangDatatypeRecord> datatype_filter_panel;
 
 	private JPanel info_panel;
 	private JButton function_toggle_show_info_panel_button;
@@ -183,7 +183,7 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 	}
 
 	private class DatatypeTable extends GhidraTable {
-		public DatatypeTable(ThreadedTableModel<GolangDatatype, ?> model) {
+		public DatatypeTable(ThreadedTableModel<GolangDatatypeRecord, ?> model) {
 			super(model);
 		}
 	}
@@ -221,7 +221,7 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 		datatype_model = new DatatypeTableModel(tool, current_program, null, gae_plugin);
 		datatype_threaded_table_panel = new GhidraThreadedTablePanel<>(datatype_model, 1000) {
 			@Override
-			protected GTable createTable(ThreadedTableModel<GolangDatatype, ?> model) {
+			protected GTable createTable(ThreadedTableModel<GolangDatatypeRecord, ?> model) {
 				return new DatatypeTable(model);
 			}
 		};

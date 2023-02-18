@@ -71,7 +71,7 @@ public class StructureManager {
 		String comment="Name: "+go_datatype.get_name()+"\n";
 
 		comment+=go_datatype.get_kind().name()+":\n";
-		DataTypeComponent[] components=go_datatype.get_datatype().getComponents();
+		DataTypeComponent[] components=go_datatype.get_struct_datatype().getComponents();
 		final int MAX_FIELD_NUM=100;
 		for(int i=0; i<components.length && i<MAX_FIELD_NUM; i++) {
 			DataTypeComponent field=components[i];

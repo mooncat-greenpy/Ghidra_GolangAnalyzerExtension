@@ -5,6 +5,7 @@ import java.util.Map;
 
 import ghidra.framework.plugintool.ServiceInfo;
 import golanganalyzerextension.datatype.GolangDatatype;
+import golanganalyzerextension.datatype.GolangDatatypeRecord;
 import golanganalyzerextension.function.GolangFunction;
 import golanganalyzerextension.function.GolangFunctionRecord;
 import golanganalyzerextension.gobinary.GolangBinary;
@@ -27,7 +28,7 @@ public interface GolangAnalyzerExtensionService {
 	public void store_filename_list(List<String> list);
 	public void add_filename(String filename);
 
-	public Map<Long, GolangDatatype> get_datatype_map();
+	public Map<Long, GolangDatatypeRecord> get_datatype_map();
 	public void store_datatype_map(Map<Long, GolangDatatype> map);
 
 	public Map<Long, GolangString> get_string_map();

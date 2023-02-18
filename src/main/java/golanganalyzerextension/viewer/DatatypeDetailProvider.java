@@ -15,9 +15,9 @@ import javax.swing.JTable;
 
 import ghidra.framework.plugintool.ComponentProviderAdapter;
 import ghidra.program.model.data.DataTypeComponent;
-import ghidra.program.model.data.StructureDataType;
+import ghidra.program.model.data.Structure;
 import ghidra.util.layout.VerticalLayout;
-import golanganalyzerextension.datatype.GolangDatatype;
+import golanganalyzerextension.datatype.GolangDatatypeRecord;
 import golanganalyzerextension.datatype.UncommonType;
 import golanganalyzerextension.datatype.UncommonType.UncommonMethod;
 import golanganalyzerextension.service.GolangAnalyzerExtensionPlugin;
@@ -27,7 +27,7 @@ class DatatypeDetailProvider extends ComponentProviderAdapter {
 	private GolangAnalyzerExtensionPlugin gae_tool;
 	private JPanel main_panel;
 
-	DatatypeDetailProvider(GolangAnalyzerExtensionPlugin tool, GolangDatatype go_datatype) {
+	DatatypeDetailProvider(GolangAnalyzerExtensionPlugin tool, GolangDatatypeRecord go_datatype) {
 		super(tool.getTool(), "DatatypeDetail", tool.getName());
 
 		gae_tool=tool;
@@ -37,7 +37,7 @@ class DatatypeDetailProvider extends ComponentProviderAdapter {
 		addToTool();
 	}
 
-	private JPanel create_main_panel(GolangDatatype go_datatype) {
+	private JPanel create_main_panel(GolangDatatypeRecord go_datatype) {
 		JPanel panel = new JPanel(new BorderLayout());
 		panel.add(create_info_panel(go_datatype), BorderLayout.WEST);
 
@@ -50,7 +50,7 @@ class DatatypeDetailProvider extends ComponentProviderAdapter {
 		return panel;
 	}
 
-	private JPanel create_info_panel(GolangDatatype go_datatype) {
+	private JPanel create_info_panel(GolangDatatypeRecord go_datatype) {
 		JPanel panel = new JPanel(new VerticalLayout(0));
 		panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
@@ -67,13 +67,13 @@ class DatatypeDetailProvider extends ComponentProviderAdapter {
 		return panel;
 	}
 
-	private JScrollPane create_datatype_table(GolangDatatype go_datatype) {		
+	private JScrollPane create_datatype_table(GolangDatatypeRecord go_datatype) {
 		if(gae_tool==null) {
 			return new JScrollPane();
 		}
 
 		String[] columns={"Offset", "Datatype", "Name", "Comment", "Length"};
-		StructureDataType datatype=go_datatype.get_datatype();
+		Structure datatype=go_datatype.get_struct();
 		Object[][] data=new Object[datatype.getNumComponents()][5];
 		for(int i=0; i<datatype.getNumComponents(); i++) {
 			DataTypeComponent dtc=datatype.getComponent(i);
@@ -91,7 +91,7 @@ class DatatypeDetailProvider extends ComponentProviderAdapter {
 	    return new JScrollPane(table);
 	}
 
-	private JScrollPane create_uncommon_table(GolangDatatype go_datatype) {
+	private JScrollPane create_uncommon_table(GolangDatatypeRecord go_datatype) {
 		Optional<UncommonType> uncommon_type_opt=go_datatype.get_uncommon_type();
 
 		String[] columns={"Method name", "Method type", "Ifn", "Tfn"};
@@ -104,7 +104,7 @@ class DatatypeDetailProvider extends ComponentProviderAdapter {
 			data=new Object[uncommon_method_list.size()][4];
 			for(int i=0; i<uncommon_method_list.size(); i++) {
 				UncommonMethod method=uncommon_method_list.get(i);
-				GolangDatatype datatype=gae_tool.get_datatype_map().get(method.get_type_offset());
+				GolangDatatypeRecord datatype=gae_tool.get_datatype_map().get(method.get_type_offset());
 				String mtyp_str="";
 				if(datatype!=null) {
 					mtyp_str=datatype.get_name();

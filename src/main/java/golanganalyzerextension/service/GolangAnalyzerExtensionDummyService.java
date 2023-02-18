@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import golanganalyzerextension.datatype.GolangDatatype;
+import golanganalyzerextension.datatype.GolangDatatypeRecord;
 import golanganalyzerextension.function.GolangFunction;
 import golanganalyzerextension.function.GolangFunctionRecord;
 import golanganalyzerextension.gobinary.GolangBinary;
@@ -16,7 +17,7 @@ public class GolangAnalyzerExtensionDummyService implements GolangAnalyzerExtens
 	private GolangBinary go_bin;
 	private List<GolangFunctionRecord> func_list;
 	private List<String> filename_list;
-	private Map<Long, GolangDatatype> datatype_map;
+	private Map<Long, GolangDatatypeRecord> datatype_map;
 	private Map<Long, GolangString> string_map;
 
 	public GolangAnalyzerExtensionDummyService() {
@@ -68,13 +69,17 @@ public class GolangAnalyzerExtensionDummyService implements GolangAnalyzerExtens
 		filename_list.add(filename);
 	}
 	@Override
-	public Map<Long, GolangDatatype> get_datatype_map() {
+	public Map<Long, GolangDatatypeRecord> get_datatype_map() {
 		return datatype_map;
 	}
 
 	@Override
 	public void store_datatype_map(Map<Long, GolangDatatype> map) {
-		datatype_map=map;
+		datatype_map=new HashMap<>();
+		for(GolangDatatype go_datatype : map.values()) {
+			GolangDatatypeRecord record=new GolangDatatypeRecord(go_datatype);
+			datatype_map.put(record.get_type_offset(), record);
+		}
 	}
 
 	@Override

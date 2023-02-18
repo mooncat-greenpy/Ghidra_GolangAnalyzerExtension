@@ -23,6 +23,7 @@ import ghidra.program.database.ProgramDB;
 import ghidra.program.model.listing.Program;
 import ghidra.util.task.TaskMonitor;
 import golanganalyzerextension.datatype.GolangDatatype;
+import golanganalyzerextension.datatype.GolangDatatypeRecord;
 import golanganalyzerextension.function.GolangFunction;
 import golanganalyzerextension.function.GolangFunctionRecord;
 import golanganalyzerextension.gobinary.GolangBinary;
@@ -45,6 +46,7 @@ public class GolangAnalyzerExtensionPlugin extends ProgramPlugin implements Gola
 
 	private static final String GOLANG_BINARY_TABLE_NAME="GAE_GolangBinary";
 	private static final String GOLANG_FUNCTION_TABLE_NAME="GAE_GolangFunction";
+	private static final String GOLANG_DATATYPE_TABLE_NAME="GAE_GolangDatatype";
 
 	// TODO: Fix
 	private GolangAnalyzerExtensionProvider gae_provider;
@@ -52,7 +54,7 @@ public class GolangAnalyzerExtensionPlugin extends ProgramPlugin implements Gola
 	private GolangBinary go_bin;
 	private List<GolangFunctionRecord> func_list;
 	private List<String> filename_list;
-	private Map<Long, GolangDatatype> datatype_map;
+	private Map<Long, GolangDatatypeRecord> datatype_map;
 	private Map<Long, GolangString> string_map;
 
 	public GolangAnalyzerExtensionPlugin(PluginTool tool) {
@@ -115,6 +117,7 @@ public class GolangAnalyzerExtensionPlugin extends ProgramPlugin implements Gola
 			}
 			return table;
 		} catch (IOException e) {
+			Logger.append_message(String.format("Failed to create table: name=%s, message=%s", name, e.getMessage()));
 		}
 		return null;
 	}
@@ -146,6 +149,9 @@ public class GolangAnalyzerExtensionPlugin extends ProgramPlugin implements Gola
 		go_bin=bin;
 
 		Table table=create_table(GOLANG_BINARY_TABLE_NAME, GolangBinary.SCHEMA);
+		if(table==null) {
+			return;
+		}
 		try {
 			table.putRecord(bin.get_record());
 		} catch (IOException | IllegalFieldAccessException e) {
@@ -180,6 +186,9 @@ public class GolangAnalyzerExtensionPlugin extends ProgramPlugin implements Gola
 		List<GolangFunctionRecord> tmp_func_list=new ArrayList<>();
 
 		Table table=create_table(GOLANG_FUNCTION_TABLE_NAME, GolangFunctionRecord.SCHEMA);
+		if(table==null) {
+			return;
+		}
 		for(GolangFunction go_func : list) {
 			GolangFunctionRecord record=new GolangFunctionRecord(go_func);
 			tmp_func_list.add(record);
@@ -211,13 +220,51 @@ public class GolangAnalyzerExtensionPlugin extends ProgramPlugin implements Gola
 	}
 
 	@Override
-	public Map<Long, GolangDatatype> get_datatype_map() {
+	public Map<Long, GolangDatatypeRecord> get_datatype_map() {
+		if(datatype_map.size()>0) {
+			return datatype_map;
+		}
+
+		Table table=get_table(GOLANG_DATATYPE_TABLE_NAME);
+		if(table==null) {
+			return datatype_map;
+		}
+		Map<Long, GolangDatatypeRecord> tmp_datatype_map=new HashMap<>();
+		try {
+			DBLongIterator iter=table.longKeyIterator();
+			while(iter.hasNext()) {
+				try {
+					GolangDatatypeRecord record=new GolangDatatypeRecord(get_binary(), table.getRecord(iter.next()));
+					tmp_datatype_map.put(record.get_type_offset(), record);
+				} catch (IllegalArgumentException e) {
+					Logger.append_message(String.format("Failed to get GolangDatatype from table: message=%s", e.getMessage()));;
+				}
+			}
+		} catch (IOException e) {
+			Logger.append_message(String.format("Failed to get GolangDatatype from table: message=%s", e.getMessage()));;
+		}
+		datatype_map=tmp_datatype_map;
 		return datatype_map;
 	}
 
 	@Override
 	public void store_datatype_map(Map<Long, GolangDatatype> map) {
-		datatype_map=map;
+		Map<Long, GolangDatatypeRecord> tmp_datatype_map=new HashMap<>();
+
+		Table table=create_table(GOLANG_DATATYPE_TABLE_NAME, GolangDatatypeRecord.SCHEMA);
+		if(table==null) {
+			return;
+		}
+		for(GolangDatatype go_datatype : map.values()) {
+			GolangDatatypeRecord record=new GolangDatatypeRecord(go_datatype);
+			tmp_datatype_map.put(record.get_type_offset(), record);
+			try {
+				table.putRecord(record.get_record());
+			} catch (IOException | IllegalFieldAccessException e) {
+				Logger.append_message(String.format("Failed to put GolangDatatype to table: message=%s", e.getMessage()));;
+			}
+		}
+		datatype_map=tmp_datatype_map;
 	}
 
 	@Override

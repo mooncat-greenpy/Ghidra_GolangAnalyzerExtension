@@ -158,6 +158,10 @@ public class GolangDatatype {
 		return go_datatype;
 	}
 
+	public long get_type_offset() {
+		return key;
+	}
+
 	public Address get_addr() {
 		return addr;
 	}
@@ -182,7 +186,11 @@ public class GolangDatatype {
 		return datatype;
 	}
 
-	public StructureDataType get_datatype() {
+	public DataType get_datatype() {
+		return datatype;
+	}
+
+	public StructureDataType get_struct_datatype() {
 		if(datatype instanceof StructureDataType) {
 			return (StructureDataType)datatype;
 		}

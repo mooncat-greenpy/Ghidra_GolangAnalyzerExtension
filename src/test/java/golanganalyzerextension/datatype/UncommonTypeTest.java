@@ -2,12 +2,17 @@ package golanganalyzerextension.datatype;
 
 import static org.junit.Assert.assertEquals;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -106,8 +111,8 @@ public class UncommonTypeTest extends AbstractGhidraHeadlessIntegrationTest {
 		for(int i=0; i<method_list.size(); i++) {
 			assertEquals(method_list.get(i).get_name(), name_list.get(i));
 			assertEquals((Long)method_list.get(i).get_type_offset(), type_offset_list.get(i));
-			assertEquals((Long)method_list.get(i).get_interface_method_addr().orElse(go_bin.get_address(0)).getOffset(), func_addr_value_list.get(i));
-			assertEquals((Long)method_list.get(i).get_normal_method_addr().orElse(go_bin.get_address(0)).getOffset(), func_addr_value_list.get(i));
+			assertEquals((Long)method_list.get(i).get_interface_method_addr().orElse((long)0), func_addr_value_list.get(i));
+			assertEquals((Long)method_list.get(i).get_normal_method_addr().orElse((long)0), func_addr_value_list.get(i));
 		}
 	}
 
@@ -139,5 +144,30 @@ public class UncommonTypeTest extends AbstractGhidraHeadlessIntegrationTest {
 					put("0x00602000", "0010400000000000");
 				}})
 			);
+	}
+
+	@Test
+	public void test_serialize() throws Exception {
+		initialize(new HashMap<String, String>(){{
+			put("0x004a94b0", "00000000 90725300 cc944a00 00000000 00000000");
+			put("0x00537290", "3a314900 07000000");
+			put("0x0049313a", "7265666c656374");
+
+			put("0x00600000", "fbffffff 00 00 01 04 00000000");
+			put("0x0060000c", "00104000 00200000");
+			put("0x00602000", "00104000");
+		}});
+		GolangBinary go_bin=new GolangBinary(program, TaskMonitor.DUMMY);
+
+		UncommonType uncommon_type=new UncommonType(go_bin, go_bin.get_address(0x004a94b0), go_bin.get_address(0x00492000), true);
+		ByteArrayOutputStream byte_out = new ByteArrayOutputStream();
+		ObjectOutputStream out = new ObjectOutputStream(byte_out);
+		out.writeObject(uncommon_type);
+		byte[] bytes=byte_out.toByteArray();
+		ByteArrayInputStream byte_in = new ByteArrayInputStream(bytes);
+		ObjectInputStream in = new ObjectInputStream(byte_in);
+		UncommonType uncommon_type2=(UncommonType)in.readObject();
+
+		assertEquals(uncommon_type.get_pkg_path(), uncommon_type2.get_pkg_path());
 	}
 }
