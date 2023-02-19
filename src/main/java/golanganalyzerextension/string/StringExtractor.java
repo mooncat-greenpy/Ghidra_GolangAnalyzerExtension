@@ -73,7 +73,7 @@ public class StringExtractor {
 
 					search_addr=go_bin.get_address(search_addr, pointer_size);
 				} catch (InvalidBinaryStructureException e) {
-					Logger.append_message(String.format("Failed to search string in memory: message=%s", e.getMessage()));
+					// Logger.append_message(String.format("Failed to search string in memory: message=%s", e.getMessage()));
 				} catch (BinaryAccessException e) {
 					return;
 				}
@@ -190,7 +190,7 @@ public class StringExtractor {
 						GolangString str=GolangString.create_string(go_bin, data, string_len);
 						string_map.put(data.getOffset(), str);
 					} catch (InvalidBinaryStructureException e) {
-						Logger.append_message(String.format("Failed to get string: %s", e.getMessage()));
+						// Logger.append_message(String.format("Failed to get string: %s", e.getMessage()));
 					}
 				}
 			} else if (is_move_reg_to_addr_reg_scalar(check_inst)) {
@@ -202,7 +202,7 @@ public class StringExtractor {
 						GolangString str=GolangString.create_string(go_bin, data, string_len);
 						string_map.put(data.getOffset(), str);
 					} catch (InvalidBinaryStructureException e) {
-						Logger.append_message(String.format("Failed to get string: %s", e.getMessage()));
+						// Logger.append_message(String.format("Failed to get string: %s", e.getMessage()));
 					}
 				}
 			} else if (check_inst.getFlowType().isCall() || check_inst.getFlowType().isTerminal()) {
@@ -213,7 +213,7 @@ public class StringExtractor {
 							GolangString str=GolangString.create_string(go_bin, arg_str_addr, string_len);
 							string_map.put(arg_str_addr.getOffset(), str);
 						} catch (InvalidBinaryStructureException e) {
-							Logger.append_message(String.format("Failed to get string: %s", e.getMessage()));
+							// Logger.append_message(String.format("Failed to get string: %s", e.getMessage()));
 						}
 					}
 				}

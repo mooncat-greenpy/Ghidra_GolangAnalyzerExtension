@@ -384,7 +384,7 @@ public class GolangBinary {
 			int tmp_len=str.length();
 			str=str.replaceAll("[^\\x09\\x0a\\x0d\\x20-\\x7e]", "");
 			if(str.length()!=tmp_len) {
-				Logger.append_message(String.format("Invalid char: %x %x %s", addr.getOffset(), size, str));
+				// Logger.append_message(String.format("Invalid char: %x %x %s", addr.getOffset(), size, str));
 			}
 			return str;
 		} catch (MemoryAccessException e) {
@@ -537,7 +537,7 @@ public class GolangBinary {
 
 	public void create_label(Address addr, String str) throws BinaryAccessException {
 		try {
-			str=str.replace(" ", "_");
+			str=str.replaceAll("[ \n\t]", "_");
 			program.getSymbolTable().createLabel(addr, str, ghidra.program.model.symbol.SourceType.USER_DEFINED);
 		} catch (IllegalArgumentException | InvalidInputException e) {
 			throw new BinaryAccessException(String.format("Create label: addr=%s, label=%s", addr, str));
