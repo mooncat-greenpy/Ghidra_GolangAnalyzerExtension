@@ -52,6 +52,7 @@ public class GolangAnalyzerExtensionPlugin extends ProgramPlugin implements Gola
 	private static final String GOLANG_DATATYPE_TABLE_NAME="GAE_GolangDatatype";
 
 	// TODO: Fix
+	// - Save GolangString to DBRecord
 	private GolangAnalyzerExtensionProvider gae_provider;
 
 	private GolangBinary go_bin;
@@ -60,7 +61,9 @@ public class GolangAnalyzerExtensionPlugin extends ProgramPlugin implements Gola
 	private Map<Long, GolangDatatypeRecord> datatype_map;
 	private Map<Long, GolangString> string_map;
 
+	@SuppressWarnings("removal")
 	public GolangAnalyzerExtensionPlugin(PluginTool tool) {
+		// Support 10.1.3 ~
 		super(tool, true, false);
 
 		go_bin=null;

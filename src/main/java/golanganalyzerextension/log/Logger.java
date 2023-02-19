@@ -16,6 +16,7 @@ public class Logger {
 	}
 
 	public static void append_message(String str) {
+		// TODO: Log level
 		if (logger==null) {
 			return;
 		}
