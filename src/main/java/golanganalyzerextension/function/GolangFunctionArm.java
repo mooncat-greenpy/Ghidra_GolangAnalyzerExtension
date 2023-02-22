@@ -22,7 +22,7 @@ import golanganalyzerextension.service.GolangAnalyzerExtensionService;
 
 public class GolangFunctionArm extends GolangFunction {
 
-	private static final String[] reg_arg_str={};
+	private static final String[] reg_arg_str={"x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15"};
 
 	GolangFunctionArm(GolangBinary go_bin, GolangAnalyzerExtensionService service, Address func_info_addr, long func_size, boolean disasm_option, boolean extended_option) {
 		super(go_bin, service, func_info_addr, func_size, disasm_option, extended_option);
@@ -90,6 +90,14 @@ public class GolangFunctionArm extends GolangFunction {
 			return "";
 		}
 		return reg_arg_str[arg_count];
+	}
+
+	@Override
+	boolean check_inst_reg_arg(Instruction inst, Map<Register, REG_FLAG> builtin_reg_state) {
+		if(go_bin.lt_go_version("go1.18beta1")) {
+			return false;
+		}
+		return true;
 	}
 
 	enum MEMCPY_FUNC_STAGE {
