@@ -85,9 +85,14 @@ public class GolangFunctionX86 extends GolangFunction {
 
 	@Override
 	boolean check_inst_reg_arg(Instruction inst, Map<Register, REG_FLAG> builtin_reg_state) {
-		if(go_bin.lt_go_version("go1.17beta1")) {
+		if(go_bin.lt_go_version("go1.17beta1") || go_bin.get_pointer_size()!=8) {
 			return false;
 		}
+		FileLine file_line=file_line_comment_map.get(0);
+		if(file_line==null || !file_line.get_file_name().endsWith(".s")) {
+			return true;
+		}
+
 		String mnemonic=inst.getMnemonicString();
 		if(!mnemonic.equals("MOV") || inst.getNumOperands()<2) {
 			return false;

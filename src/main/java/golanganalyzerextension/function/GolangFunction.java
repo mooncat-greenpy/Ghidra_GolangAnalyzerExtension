@@ -203,6 +203,10 @@ public class GolangFunction {
 
 		init_frame_map();
 
+		if(args_num<=0) {
+			return true;
+		}
+		// TODO: Define each function if necessary
 		boolean is_reg_arg=false;
 		Map<Register, REG_FLAG> builtin_reg_state=new HashMap<>();
 		List<Register> builtin_reg_arg=new ArrayList<>();
@@ -311,10 +315,10 @@ public class GolangFunction {
 		if(!init_func_name()) {
 			return false;
 		}
-		if(!init_params()) {
+		if(!init_file_line_map()) {
 			return false;
 		}
-		if(!init_file_line_map()) {
+		if(!init_params()) {
 			return false;
 		}
 

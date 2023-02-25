@@ -94,7 +94,7 @@ public class GolangFunctionArm extends GolangFunction {
 
 	@Override
 	boolean check_inst_reg_arg(Instruction inst, Map<Register, REG_FLAG> builtin_reg_state) {
-		if(go_bin.lt_go_version("go1.18beta1")) {
+		if(go_bin.lt_go_version("go1.18beta1") || go_bin.get_pointer_size()!=8) {
 			return false;
 		}
 		return true;
