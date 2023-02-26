@@ -483,6 +483,14 @@ public class GolangBinary {
 		return program.getLanguage().getProcessor().toString().equals("ARM") || program.getLanguage().getProcessor().toString().equals("AARCH64");
 	}
 
+	public boolean is_ppc() {
+		return program.getLanguage().getProcessor().toString().equals("PowerPC");
+	}
+
+	public boolean is_riscv() {
+		return program.getLanguage().getProcessor().toString().equals("RISCV");
+	}
+
 	public void disassemble(Address addr, long size) throws BinaryAccessException {
 		Address addr_end=get_address(addr, size);
 

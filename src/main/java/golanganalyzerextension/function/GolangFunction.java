@@ -103,6 +103,10 @@ public class GolangFunction {
 			return new GolangFunctionX86(go_bin, service, func_info_addr, func_size, disasm_option, extended_option);
 		}else if(go_bin.is_arm()) {
 			return new GolangFunctionArm(go_bin, service, func_info_addr, func_size, disasm_option, extended_option);
+		}else if(go_bin.is_ppc()) {
+			return new GolangFunctionPpc(go_bin, service, func_info_addr, func_size, disasm_option, extended_option);
+		}else if(go_bin.is_riscv()) {
+			return new GolangFunctionRiscv(go_bin, service, func_info_addr, func_size, disasm_option, extended_option);
 		}else {
 			return new GolangFunction(go_bin, service, func_info_addr, func_size, disasm_option, extended_option);
 		}
@@ -113,6 +117,10 @@ public class GolangFunction {
 			return new GolangFunctionX86(go_bin, service, func, disasm_option, extended_option);
 		}else if(go_bin.is_arm()) {
 			return new GolangFunctionArm(go_bin, service, func, disasm_option, extended_option);
+		}else if(go_bin.is_ppc()) {
+			return new GolangFunctionPpc(go_bin, service, func, disasm_option, extended_option);
+		}else if(go_bin.is_riscv()) {
+			return new GolangFunctionRiscv(go_bin, service, func, disasm_option, extended_option);
 		}else {
 			return new GolangFunction(go_bin, service, func, disasm_option, extended_option);
 		}
@@ -182,6 +190,10 @@ public class GolangFunction {
 		return "";
 	}
 
+	int get_arg_stack_base() {
+		return 0;
+	}
+
 	boolean check_inst_reg_arg(Instruction inst, Map<Register, REG_FLAG> builtin_reg_state) {
 		return false;
 	}
@@ -230,6 +242,7 @@ public class GolangFunction {
 
 		try {
 			params=new ArrayList<>();
+			int stack_base=get_arg_stack_base();
 			int stack_count=0;
 			for(int i=0;i<args_num && i<50;i++) {
 				int size=pointer_size;
@@ -268,7 +281,7 @@ public class GolangFunction {
 				}
 				Parameter add_param;
 				if(reg==null) {
-					add_param=new ParameterImpl(String.format("param_%d", i+1), datatype, (stack_count+1)*pointer_size, func.getProgram(), SourceType.USER_DEFINED);
+					add_param=new ParameterImpl(String.format("param_%d", i+1), datatype, stack_base+(stack_count+1)*pointer_size, func.getProgram(), SourceType.USER_DEFINED);
 					stack_count++;
 				}else {
 					add_param=new ParameterImpl(String.format("param_%d", i+1), datatype, reg, func.getProgram(), SourceType.USER_DEFINED);
