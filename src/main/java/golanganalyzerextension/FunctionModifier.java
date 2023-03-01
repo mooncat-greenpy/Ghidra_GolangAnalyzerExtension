@@ -113,7 +113,7 @@ public class FunctionModifier {
 			}
 			Address func_list_base=go_bin.get_address(pcheader_base, 8+pointer_size);
 
-			long file_name_table_offset=go_bin.get_address_value(func_list_base, func_num*pointer_size*2+pointer_size, pointer_size);
+			long file_name_table_offset=go_bin.get_address_value(func_list_base, func_num*pointer_size*2+pointer_size, 4);
 			Address file_name_table=go_bin.get_address(pcheader_base, file_name_table_offset);
 			long file_name_table_size=go_bin.get_address_value(file_name_table, 4);
 			if(file_name_table_size==0) {
