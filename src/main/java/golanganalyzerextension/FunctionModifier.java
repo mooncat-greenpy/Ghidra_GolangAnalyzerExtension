@@ -242,7 +242,7 @@ public class FunctionModifier {
 		try {
 			func.setName(func_name, SourceType.USER_DEFINED);
 		}catch(Exception e) {
-			Logger.append_message(String.format("Failed to set function name: %s", e.getMessage()));
+			Logger.append_message(String.format("Failed to set function name: addr=%s, message=%s", gofunc.get_func_addr(), e.getMessage()));
 		}
 	}
 

@@ -6,10 +6,14 @@ import golanganalyzerextension.gobinary.exceptions.BinaryAccessException;
 
 public class PcHeader {
 
-	private static final byte[] GO_12_MAGIC={(byte)0xfb,(byte)0xff,(byte)0xff,(byte)0xff};
-	private static final byte[] GO_116_MAGIC={(byte)0xfa,(byte)0xff,(byte)0xff,(byte)0xff};
-	private static final byte[] GO_118_MAGIC={(byte)0xf0,(byte)0xff,(byte)0xff,(byte)0xff};
-	private static final byte[] GO_120_MAGIC={(byte)0xf1,(byte)0xff,(byte)0xff,(byte)0xff};
+	private static final byte[] GO_12_MAGIC_LITTLE={(byte)0xfb,(byte)0xff,(byte)0xff,(byte)0xff};
+	private static final byte[] GO_12_MAGIC_BIG={(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xfb};
+	private static final byte[] GO_116_MAGIC_LITTLE={(byte)0xfa,(byte)0xff,(byte)0xff,(byte)0xff};
+	private static final byte[] GO_116_MAGIC_BIG={(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xfa};
+	private static final byte[] GO_118_MAGIC_LITTLE={(byte)0xf0,(byte)0xff,(byte)0xff,(byte)0xff};
+	private static final byte[] GO_118_MAGIC_BIG={(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xf0};
+	private static final byte[] GO_120_MAGIC_LITTLE={(byte)0xf1,(byte)0xff,(byte)0xff,(byte)0xff};
+	private static final byte[] GO_120_MAGIC_BIG={(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xf1};
 	private static final byte[] MAGIC_MASK={(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff};
 
 	private GolangBinary go_bin;
@@ -18,6 +22,7 @@ public class PcHeader {
 	private int quantum;
 	private int pointer_size;
 	private GO_VERSION go_version;
+	private boolean little_endian;
 
 	public enum GO_VERSION {
 		GO_12,
@@ -60,10 +65,10 @@ public class PcHeader {
 		this.addr=search_by_magic();
 	}
 
-	public PcHeader(GolangBinary go_bin, Address target_addr, GO_VERSION go_version) throws InvalidBinaryStructureException {
+	public PcHeader(GolangBinary go_bin, Address target_addr, GO_VERSION go_version, boolean little_endian) throws InvalidBinaryStructureException {
 		this.go_bin=go_bin;
 
-		this.addr=search_by_magic(target_addr, go_version);
+		this.addr=search_by_magic(target_addr, go_version, little_endian);
 	}
 
 	public Address get_addr() {
@@ -82,19 +87,35 @@ public class PcHeader {
 		return go_version;
 	}
 
+	public boolean is_little_endian() {
+		return little_endian;
+	}
+
 	private Address search_by_magic() {
 		Address result_addr=null;
 		if(result_addr==null) {
-			result_addr=search_by_magic(null, GO_VERSION.GO_12);
+			result_addr=search_by_magic(null, GO_VERSION.GO_12, true);
 		}
 		if(result_addr==null) {
-			result_addr=search_by_magic(null, GO_VERSION.GO_116);
+			result_addr=search_by_magic(null, GO_VERSION.GO_12, false);
 		}
 		if(result_addr==null) {
-			result_addr=search_by_magic(null, GO_VERSION.GO_118);
+			result_addr=search_by_magic(null, GO_VERSION.GO_116, true);
 		}
 		if(result_addr==null) {
-			result_addr=search_by_magic(null, GO_VERSION.GO_120);
+			result_addr=search_by_magic(null, GO_VERSION.GO_116, false);
+		}
+		if(result_addr==null) {
+			result_addr=search_by_magic(null, GO_VERSION.GO_118, true);
+		}
+		if(result_addr==null) {
+			result_addr=search_by_magic(null, GO_VERSION.GO_118, false);
+		}
+		if(result_addr==null) {
+			result_addr=search_by_magic(null, GO_VERSION.GO_120, true);
+		}
+		if(result_addr==null) {
+			result_addr=search_by_magic(null, GO_VERSION.GO_120, false);
 		}
 
 		if(result_addr==null) {
@@ -103,20 +124,36 @@ public class PcHeader {
 		return result_addr;
 	}
 
-	private Address search_by_magic(Address target_addr, GO_VERSION target_go_version) {
+	private Address search_by_magic(Address target_addr, GO_VERSION target_go_version, boolean target_little_endian) {
 		// debug/gosym/pclntab.go
 		boolean is_go118=target_go_version.equals(GO_VERSION.GO_118) | target_go_version.equals(GO_VERSION.GO_120);
 		boolean is_go116=target_go_version.equals(GO_VERSION.GO_116);
 
 		byte[] magic;
 		if(target_go_version.equals(GO_VERSION.GO_12)) {
-			magic=GO_12_MAGIC;
+			if(target_little_endian) {
+				magic=GO_12_MAGIC_LITTLE;
+			} else {
+				magic=GO_12_MAGIC_BIG;
+			}
 		} else if(target_go_version.equals(GO_VERSION.GO_116)) {
-			magic=GO_116_MAGIC;
+			if(target_little_endian) {
+				magic=GO_116_MAGIC_LITTLE;
+			} else {
+				magic=GO_116_MAGIC_BIG;
+			}
 		} else if(target_go_version.equals(GO_VERSION.GO_118)) {
-			magic=GO_118_MAGIC;
+			if(target_little_endian) {
+				magic=GO_118_MAGIC_LITTLE;
+			} else {
+				magic=GO_118_MAGIC_BIG;
+			}
 		} else {
-			magic=GO_120_MAGIC;
+			if(target_little_endian) {
+				magic=GO_120_MAGIC_LITTLE;
+			} else {
+				magic=GO_120_MAGIC_BIG;
+			}
 		}
 
 		Address tmp_addr=target_addr;
@@ -154,6 +191,7 @@ public class PcHeader {
 				if((quantum==1 || quantum==2 || quantum==4) && (pointer_size==4 || pointer_size==8) &&
 						func_addr_value==func_entry_value && (is_go118 || func_addr_value!=0)) {
 					go_version=target_go_version;
+					little_endian=target_little_endian;
 					return tmp_addr;
 				}
 			} catch (BinaryAccessException e) {

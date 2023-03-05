@@ -61,10 +61,6 @@ class GolangBuildInfo {
 			byte str_size=(byte)go_bin.get_address_value(base_addr, 32, 1);
 			return go_bin.read_string(go_bin.get_address(base_addr, 33), str_size);
 		}
-		boolean is_big_endian=endian!=0;
-		if(is_big_endian) {
-			throw new InvalidBinaryStructureException("Go version is big endian");
-		}
 
 		return go_bin.read_string_struct(go_bin.get_address_value(base_addr, 16, size), size);
 	}

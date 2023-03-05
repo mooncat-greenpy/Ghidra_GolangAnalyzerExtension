@@ -57,31 +57,46 @@ class SysTheVersion {
 			long addr_value=sys_the_version_addr.getOffset();
 			byte[] addr_bytes=new byte[go_bin.get_pointer_size()];
 			byte[] addr_mask=new byte[go_bin.get_pointer_size()];
-			for(int i=0; i<go_bin.get_pointer_size(); i++) {
-				addr_bytes[i]=(byte)(addr_value&0xff);
-				addr_value>>=8;
-				addr_mask[i]=(byte)0xff;
+			if(go_bin.is_little_endian()) {
+				for(int i=0; i<go_bin.get_pointer_size(); i++) {
+					addr_bytes[i]=(byte)(addr_value&0xff);
+					addr_value>>=8;
+					addr_mask[i]=(byte)0xff;
+				}
+			} else {
+				for(int i=go_bin.get_pointer_size()-1; i>=0; i--) {
+					addr_bytes[i]=(byte)(addr_value&0xff);
+					addr_value>>=8;
+					addr_mask[i]=(byte)0xff;
+				}
 			}
-			Address string_struct_addr=null;
-			while(true) {
-				string_struct_addr=go_bin.find_memory(string_struct_addr, addr_bytes, addr_mask).orElse(null);
-				if(string_struct_addr==null) {
-					break;
-				}
-				if(check_string_struct(string_struct_addr, sys_the_version_opt.get())) {
-					return sys_the_version_opt;
-				}
-				try {
-					string_struct_addr=go_bin.get_address(string_struct_addr, 4);
-				} catch (BinaryAccessException e) {
-					break;
-				}
+			if(check_string_struct(sys_the_version_opt.get(), addr_bytes, addr_mask)) {
+				return sys_the_version_opt;
 			}
 		}
 		return Optional.empty();
 	}
 
-	private boolean check_string_struct(Address string_struct_addr, String sys_the_version) {
+	private boolean check_string_struct(String sys_the_version, byte[] addr_bytes, byte[] addr_mask) {
+		Address string_struct_addr=null;
+		while(true) {
+			string_struct_addr=go_bin.find_memory(string_struct_addr, addr_bytes, addr_mask).orElse(null);
+			if(string_struct_addr==null) {
+				break;
+			}
+			if(is_sys_the_version_string_struct(string_struct_addr, sys_the_version)) {
+				return true;
+			}
+			try {
+				string_struct_addr=go_bin.get_address(string_struct_addr, 4);
+			} catch (BinaryAccessException e) {
+				break;
+			}
+		}
+		return false;
+	}
+
+	private boolean is_sys_the_version_string_struct(Address string_struct_addr, String sys_the_version) {
 		Address size_addr;
 		long size;
 		try {

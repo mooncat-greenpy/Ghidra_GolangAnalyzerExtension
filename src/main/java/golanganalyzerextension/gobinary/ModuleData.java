@@ -22,7 +22,7 @@ public class ModuleData {
 		this.base_addr=base_addr;
 
 		if(!parse()) {
-			throw new InvalidBinaryStructureException("Parsing module data");
+			throw new InvalidBinaryStructureException(String.format("Parsing module data: addr=%s", base_addr));
 		}
 	}
 

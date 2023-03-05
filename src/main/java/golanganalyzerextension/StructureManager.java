@@ -1,8 +1,5 @@
 package golanganalyzerextension;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.*;
 import ghidra.program.model.listing.Program;
@@ -89,24 +86,30 @@ public class StructureManager {
 	}
 
 	private boolean init_basig_golang_datatype() {
-		ByteBuffer buffer=ByteBuffer.allocate(Long.BYTES);
-		buffer.putLong(go_bin.get_pcheader_base().getOffset());
-		buffer.flip();
-		buffer.order(ByteOrder.LITTLE_ENDIAN);
-		long reverse=buffer.getLong();
-		buffer=ByteBuffer.allocate(Long.BYTES);
-		buffer.putLong(reverse);
-		byte gopclntab_base_bytes[]=buffer.array();
-
 		int pointer_size=go_bin.get_pointer_size();
+
+		byte gopclntab_base_bytes[]=new byte[pointer_size];
+		byte gopclntab_base_mask[]=new byte[pointer_size];
+		long gopclntab_base_value=go_bin.get_pcheader_base().getOffset();
+		if(go_bin.is_little_endian()) {
+			for(int i=0; i<pointer_size; i++) {
+				gopclntab_base_bytes[i]=(byte)(gopclntab_base_value&0xff);
+				gopclntab_base_value>>=8;
+				gopclntab_base_mask[i]=(byte)0xff;
+			}
+		} else {
+			for(int i=pointer_size-1; i>=0; i--) {
+				gopclntab_base_bytes[i]=(byte)(gopclntab_base_value&0xff);
+				gopclntab_base_value>>=8;
+				gopclntab_base_mask[i]=(byte)0xff;
+			}
+		}
+
 		Address base_addr=null;
 		while(true) {
 			try {
-				if(pointer_size==4) {
-					base_addr=go_bin.find_memory(base_addr, gopclntab_base_bytes, new byte[] {(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x00}).orElse(null);
-				}else {
-					base_addr=go_bin.find_memory(base_addr, gopclntab_base_bytes, new byte[] {(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff,(byte)0xff}).orElse(null);
-				}
+				base_addr=go_bin.find_memory(base_addr, gopclntab_base_bytes, gopclntab_base_mask).orElse(null);
+
 				if(base_addr==null) {
 					break;
 				}

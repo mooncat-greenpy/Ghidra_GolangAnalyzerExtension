@@ -4,6 +4,7 @@ package golanganalyzerextension.gobinary;
 import java.math.BigInteger;
 import java.util.Optional;
 
+import db.BooleanField;
 import db.DBRecord;
 import db.Field;
 import db.IllegalFieldAccessException;
@@ -100,17 +101,20 @@ public class GolangBinary {
 
 	private static final int RECORD_PCHEADER_ADDR_INDEX=0;
 	private static final int RECORD_PCHEADER_VERSION_INDEX=1;
-	private static final int RECORD_GO_VERSION_INDEX=2;
+	private static final int RECORD_PCHEADER_LITTLE_ENDIAN_INDEX=2;
+	private static final int RECORD_GO_VERSION_INDEX=3;
 	public static final int RECORD_KEY=0;
 	public static final Schema SCHEMA=new Schema(0, "GolangBinary",
 			new Field[] {
 					LongField.INSTANCE,
 					IntField.INSTANCE,
+					BooleanField.INSTANCE,
 					StringField.INSTANCE,
 					},
 			new String[] {
 					"PcheaderAddr",
 					"PcheaderVersion",
+					"PcheaderLittleEndian",
 					"GoVersion",
 					}
 	);
@@ -126,16 +130,18 @@ public class GolangBinary {
 		}
 		long pcheader_addr_value;
 		int pcheader_version_num;
+		boolean pcheader_little_endian;
 		String go_version_str;
 		try {
 			pcheader_addr_value=record.getLongValue(RECORD_PCHEADER_ADDR_INDEX);
 			pcheader_version_num=record.getIntValue(RECORD_PCHEADER_VERSION_INDEX);
+			pcheader_little_endian=record.getBooleanValue(RECORD_PCHEADER_LITTLE_ENDIAN_INDEX);
 			go_version_str=record.getString(RECORD_GO_VERSION_INDEX);
 		} catch(IllegalFieldAccessException e) {
 			throw new IllegalArgumentException(String.format("Invalid DBRecord field: message=%s", e.getMessage()));
 		}
 		try {
-			this.pcheader=new PcHeader(this, get_address(pcheader_addr_value), GO_VERSION.from_integer(pcheader_version_num));
+			this.pcheader=new PcHeader(this, get_address(pcheader_addr_value), GO_VERSION.from_integer(pcheader_version_num), pcheader_little_endian);
 			this.go_version=new GolangVersion(go_version_str);
 		} catch(InvalidBinaryStructureException | BinaryAccessException | InvalidGolangVersionFormatException e) {
 			throw new IllegalArgumentException(String.format("Invalid GolangBinary arg: pcheader_addr=%x, pcheader_version=%x, go_version=%s, message=%s", pcheader_addr_value, pcheader_version_num, go_version_str, e.getMessage()));
@@ -146,6 +152,7 @@ public class GolangBinary {
 		DBRecord record=SCHEMA.createRecord(RECORD_KEY);
 		record.setLongValue(RECORD_PCHEADER_ADDR_INDEX, pcheader.get_addr().getOffset());
 		record.setIntValue(RECORD_PCHEADER_VERSION_INDEX, GO_VERSION.to_integer(pcheader.get_go_version()));
+		record.setBooleanValue(RECORD_PCHEADER_LITTLE_ENDIAN_INDEX, pcheader.is_little_endian());
 		record.setString(RECORD_GO_VERSION_INDEX, go_version.get_version_str());
 		return record;
 	}
@@ -595,6 +602,10 @@ public class GolangBinary {
 
 	public int get_quantum() {
 		return pcheader.get_quantum();
+	}
+
+	public boolean is_little_endian() {
+		return pcheader.is_little_endian();
 	}
 
 	public String get_go_version() {
