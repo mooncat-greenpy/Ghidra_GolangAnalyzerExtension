@@ -170,7 +170,7 @@ public class StructureManager {
 			try {
 				analyze_type(type_base_addr, dependence_type_key, is_go16);
 			} catch(InvalidBinaryStructureException e) {
-				Logger.append_message(String.format("Failed to analyze dependence type: addr=%s, offset=%x, message=%s", type_base_addr, offset, e.getMessage()));
+				Logger.append_message(String.format("Failed to analyze dependence type: addr=%s, offset=%x, depend=%x, message=%s", type_base_addr, offset, dependence_type_key, e.getMessage()));
 			}
 		}
 		go_datatype.make_datatype(datatype_holder);

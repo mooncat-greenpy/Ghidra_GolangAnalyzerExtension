@@ -218,7 +218,7 @@ public class GolangDatatype {
 						String.format("%x", type_base_addr.getOffset()+ptr_to_this_off));
 			}
 		} catch (BinaryAccessException e) {
-			Logger.append_message(String.format("Failed to create datatype: addr=%s, name=%s, message%s", addr, get_name(), e.getMessage()));
+			Logger.append_message(String.format("Failed to create datatype: addr=%s, name=%s, message=%s", addr, get_name(), e.getMessage()));
 		}
 	}
 
@@ -232,9 +232,15 @@ public class GolangDatatype {
 			String str;
 			if(is_go117) {
 				int str_size=(int)(go_bin.get_address_value(address, 1, 1));
+				if(str_size==0) {
+					return "";
+				}
 				str=go_bin.read_string(go_bin.get_address(address, 2), str_size);
 			}else {
 				int str_size=(int)(go_bin.get_address_value(address, 1, 1)<<8)+(int)(go_bin.get_address_value(address, 2, 1));
+				if(str_size==0) {
+					return "";
+				}
 				str=go_bin.read_string(go_bin.get_address(address, 3), str_size);
 			}
 			if(str.length()>0 && check_tflag(flag, Tflag.ExtraStar)) {
@@ -320,7 +326,7 @@ public class GolangDatatype {
 		try {
 			parse_uncommon();
 		} catch (InvalidBinaryStructureException e) {
-			Logger.append_message(String.format("Failed to get UncommonType: type_addr=%x message=%s", type_base_addr.getOffset(), e.getMessage()));
+			Logger.append_message(String.format("Failed to get UncommonType: type_addr=%s, offset=%x, uncommon_addr=%s, message=%s", type_base_addr, key, uncommon_base_addr, e.getMessage()));
 		}
 	}
 

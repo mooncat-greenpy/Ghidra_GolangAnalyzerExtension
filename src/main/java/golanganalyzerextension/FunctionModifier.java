@@ -120,7 +120,7 @@ public class FunctionModifier {
 				return false;
 			}
 
-			for(int i=1;i<file_name_table_size;i++) {
+			for(int i=1;i<file_name_table_size+1;i++) {
 				long file_name_offset=go_bin.get_address_value(file_name_table, 4*i,4);
 				if(file_name_offset==0) {
 					return false;
@@ -234,7 +234,7 @@ public class FunctionModifier {
 
 	private void rename_func(GolangFunction gofunc) {
 		Function func=gofunc.get_func();
-		String func_name=gofunc.get_func_name();
+		String func_name=gofunc.get_func_name().replace(" ", "_");
 
 		if(func.getName().equals(func_name)) {
 			return;

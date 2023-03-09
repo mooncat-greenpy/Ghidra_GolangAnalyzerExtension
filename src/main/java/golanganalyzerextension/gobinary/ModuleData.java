@@ -274,7 +274,7 @@ public class ModuleData {
 			return false;
 		}
 
-		if(!is_golang_type(tmp_type_addr, go_bin.get_address_value(tmp_typelink_addr, 0, 4), true)) {
+		if(!is_golang_type(tmp_type_addr, go_bin.get_address_value(tmp_typelink_addr, 0, pointer_size), true)) {
 			return false;
 		}
 

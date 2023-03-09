@@ -19,7 +19,11 @@ public class UncommonType implements Serializable {
 		try {
 			if(is_go16) {
 				long pkgpath_addr_value=go_bin.get_address_value(base_addr, go_bin.get_pointer_size(), go_bin.get_pointer_size());
-				this.pkg_path=go_bin.read_string_struct(go_bin.get_address(pkgpath_addr_value), go_bin.get_pointer_size());
+				if(pkgpath_addr_value!=0) {
+					this.pkg_path=go_bin.read_string_struct(go_bin.get_address(pkgpath_addr_value), go_bin.get_pointer_size());
+				} else {
+					this.pkg_path="";
+				}
 			} else {
 				long pkg_path_offset=go_bin.get_address_value(base_addr, 0, 4);
 				Address pkg_path_addr=go_bin.get_address(type_base_addr, pkg_path_offset);
@@ -52,9 +56,15 @@ public class UncommonType implements Serializable {
 			String str;
 			if(is_go117) {
 				int str_size=(int)(go_bin.get_address_value(address, 1, 1));
+				if(str_size==0) {
+					return "";
+				}
 				str=go_bin.read_string(go_bin.get_address(address, 2), str_size);
 			}else {
 				int str_size=(int)(go_bin.get_address_value(address, 1, 1)<<8)+(int)(go_bin.get_address_value(address, 2, 1));
+				if(str_size==0) {
+					return "";
+				}
 				str=go_bin.read_string(go_bin.get_address(address, 3), str_size);
 			}
 			return str;

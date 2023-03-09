@@ -595,7 +595,7 @@ public class GolangFunction {
 					return file_name;
 				}
 				if((int)file_no-1<0 || file_name_list.size()<=(int)file_no-1) {
-					Logger.append_message(String.format("File name list index out of range: %x", (int)file_no-1));
+					Logger.append_message(String.format("File name list index out of range: func_addr=%s, index=%x", func_addr, (int)file_no-1));
 					return null;
 				}
 				return file_name_list.get((int)file_no-1);
