@@ -54,6 +54,10 @@ public class StructGolangDatatype extends GolangDatatype {
 
 	@Override
 	void parse_datatype() throws BinaryAccessException {
+		if(is_go16) {
+			parse_datatype_go16();
+			return;
+		}
 		int pointer_size=go_bin.get_pointer_size();
 
 		long pkg_path_addr_value=go_bin.get_address_value(ext_base_addr, pointer_size);
@@ -78,6 +82,29 @@ public class StructGolangDatatype extends GolangDatatype {
 
 		if(check_tflag(tflag, Tflag.Uncommon)) {
 			uncommon_base_addr=go_bin.get_address(ext_base_addr, pointer_size*4);
+		}
+	}
+
+	private void parse_datatype_go16() throws BinaryAccessException {
+		int pointer_size=go_bin.get_pointer_size();
+
+		long fields_addr_value=go_bin.get_address_value(ext_base_addr, pointer_size);
+		long fields_len=go_bin.get_address_value(ext_base_addr, pointer_size, pointer_size);
+
+		pkg_name="";
+		field_list=new ArrayList<StructField>();
+		for(int i=0;i<fields_len;i++) {
+			long field_name_addr_value=go_bin.get_address_value(type_base_addr, fields_addr_value+i*5*pointer_size-type_base_addr.getOffset(), pointer_size);
+			long field_type_addr_value=go_bin.get_address_value(type_base_addr, fields_addr_value+i*5*pointer_size-type_base_addr.getOffset()+pointer_size*2, pointer_size);
+			long field_type_key=field_type_addr_value-type_base_addr.getOffset();
+			long offset_embed=go_bin.get_address_value(type_base_addr, fields_addr_value+i*5*pointer_size-type_base_addr.getOffset()+pointer_size*4, pointer_size);
+
+			String field_name="";
+			if(field_name_addr_value!=0) {
+				field_name=go_bin.read_string_struct(go_bin.get_address(type_base_addr, field_name_addr_value-type_base_addr.getOffset()), pointer_size);
+			}
+			dependence_type_key_list.add(field_type_key);
+			field_list.add(new StructField(go_bin, field_name, field_type_key, (int)offset_embed));
 		}
 	}
 }

@@ -42,6 +42,10 @@ public class InterfaceGolangDatatype extends GolangDatatype {
 
 	@Override
 	void parse_datatype() throws BinaryAccessException {
+		if(is_go16) {
+			parse_datatype_go16();
+			return;
+		}
 		int pointer_size=go_bin.get_pointer_size();
 
 		long pkg_path_addr_value=go_bin.get_address_value(ext_base_addr, pointer_size);
@@ -72,6 +76,31 @@ public class InterfaceGolangDatatype extends GolangDatatype {
 
 		if(check_tflag(tflag, Tflag.Uncommon)) {
 			uncommon_base_addr=go_bin.get_address(ext_base_addr, pointer_size*4);
+		}
+	}
+
+	private void parse_datatype_go16() throws BinaryAccessException {
+		int pointer_size=go_bin.get_pointer_size();
+
+		long methods_addr_value=go_bin.get_address_value(ext_base_addr, pointer_size);
+		long methods_len=go_bin.get_address_value(ext_base_addr, pointer_size, pointer_size);
+
+		pkg_name="";
+		method_name_list = new ArrayList<String>();
+		method_type_key_list = new ArrayList<Long>();
+		for(int i=0;i<methods_len;i++) {
+			long method_name_addr_value=go_bin.get_address_value(type_base_addr, methods_addr_value+i*3*pointer_size-type_base_addr.getOffset(), 4);
+			long method_type_addr_value=go_bin.get_address_value(type_base_addr, methods_addr_value+i*3*pointer_size-type_base_addr.getOffset()+pointer_size*2, 4);
+			String method_name="";
+			if(method_name_addr_value!=0) {
+				method_name=go_bin.read_string_struct(go_bin.get_address(method_name_addr_value), pointer_size);
+			}
+			if(method_type_addr_value!=0)
+			{
+				dependence_type_key_list.add(method_type_addr_value);
+			}
+			method_name_list.add(method_name);
+			method_type_key_list.add(method_type_addr_value);
 		}
 	}
 }
