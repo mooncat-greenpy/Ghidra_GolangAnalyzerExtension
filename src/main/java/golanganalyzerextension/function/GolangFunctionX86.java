@@ -22,12 +22,12 @@ public class GolangFunctionX86 extends GolangFunction {
 
 	private static final String[] reg_arg_str={"RAX", "RBX", "RCX", "RDI", "RSI", "R8", "R9", "R10", "R11"};
 
-	GolangFunctionX86(GolangBinary go_bin, GolangAnalyzerExtensionService service, Address func_info_addr, long func_size, boolean disasm_option, boolean extended_option) {
-		super(go_bin, service, func_info_addr, func_size, disasm_option, extended_option);
+	GolangFunctionX86(GolangBinary go_bin, GolangAnalyzerExtensionService service, Address func_info_addr, long func_size, boolean disasm_option) {
+		super(go_bin, service, func_info_addr, func_size, disasm_option);
 	}
 
-	GolangFunctionX86(GolangBinary go_bin, GolangAnalyzerExtensionService service, Function func, boolean disasm_option, boolean extended_option) {
-		super(go_bin, service, func, disasm_option, extended_option);
+	GolangFunctionX86(GolangBinary go_bin, GolangAnalyzerExtensionService service, Function func, boolean disasm_option) {
+		super(go_bin, service, func, disasm_option);
 	}
 
 	@Override

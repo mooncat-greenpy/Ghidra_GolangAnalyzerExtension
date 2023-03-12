@@ -13,12 +13,12 @@ public class GolangFunctionPpc extends GolangFunction {
 
 	private static final String[] reg_arg_str={"r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r14", "r15", "r16", "r17"};
 
-	GolangFunctionPpc(GolangBinary go_bin, GolangAnalyzerExtensionService service, Address func_info_addr, long func_size, boolean disasm_option, boolean extended_option) {
-		super(go_bin, service, func_info_addr, func_size, disasm_option, extended_option);
+	GolangFunctionPpc(GolangBinary go_bin, GolangAnalyzerExtensionService service, Address func_info_addr, long func_size, boolean disasm_option) {
+		super(go_bin, service, func_info_addr, func_size, disasm_option);
 	}
 
-	GolangFunctionPpc(GolangBinary go_bin, GolangAnalyzerExtensionService service, Function func, boolean disasm_option, boolean extended_option) {
-		super(go_bin, service, func, disasm_option, extended_option);
+	GolangFunctionPpc(GolangBinary go_bin, GolangAnalyzerExtensionService service, Function func, boolean disasm_option) {
+		super(go_bin, service, func, disasm_option);
 	}
 
 	@Override

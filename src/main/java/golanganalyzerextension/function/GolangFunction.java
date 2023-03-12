@@ -37,7 +37,6 @@ public class GolangFunction {
 	List<String> file_name_list;
 
 	boolean disasm_option;
-	boolean extended_option;
 
 	Address info_addr;
 	long func_size;
@@ -50,13 +49,12 @@ public class GolangFunction {
 	Map<Integer, FileLine> file_line_comment_map;
 	Map<Integer, Long> frame_map;
 
-	GolangFunction(GolangBinary go_bin, GolangAnalyzerExtensionService service, Address func_info_addr, long func_size, boolean disasm_option, boolean extended_option) {
+	GolangFunction(GolangBinary go_bin, GolangAnalyzerExtensionService service, Address func_info_addr, long func_size, boolean disasm_option) {
 		this.go_bin=go_bin;
 		this.service=service;
 		this.file_name_list=service.get_filename_list();
 
 		this.disasm_option=disasm_option;
-		this.extended_option=extended_option;
 
 		this.info_addr=func_info_addr;
 		this.func_size=func_size;
@@ -70,13 +68,12 @@ public class GolangFunction {
 		}
 	}
 
-	GolangFunction(GolangBinary go_bin, GolangAnalyzerExtensionService service, Function func, boolean disasm_option, boolean extended_option) {
+	GolangFunction(GolangBinary go_bin, GolangAnalyzerExtensionService service, Function func, boolean disasm_option) {
 		this.go_bin=go_bin;
 		this.service=service;
 		this.file_name_list=new ArrayList<>();
 
 		this.disasm_option=disasm_option;
-		this.extended_option=extended_option;
 
 		this.info_addr=null;
 		this.func_size=0;
@@ -98,31 +95,31 @@ public class GolangFunction {
 		throw new InvalidBinaryStructureException("Failed to check_memcopy and check_memset");
 	}
 
-	public static GolangFunction create_function(GolangBinary go_bin, GolangAnalyzerExtensionService service, Address func_info_addr, long func_size, boolean disasm_option, boolean extended_option) throws InvalidBinaryStructureException {
+	public static GolangFunction create_function(GolangBinary go_bin, GolangAnalyzerExtensionService service, Address func_info_addr, long func_size, boolean disasm_option) throws InvalidBinaryStructureException {
 		if(go_bin.is_x86()) {
-			return new GolangFunctionX86(go_bin, service, func_info_addr, func_size, disasm_option, extended_option);
+			return new GolangFunctionX86(go_bin, service, func_info_addr, func_size, disasm_option);
 		}else if(go_bin.is_arm()) {
-			return new GolangFunctionArm(go_bin, service, func_info_addr, func_size, disasm_option, extended_option);
+			return new GolangFunctionArm(go_bin, service, func_info_addr, func_size, disasm_option);
 		}else if(go_bin.is_ppc()) {
-			return new GolangFunctionPpc(go_bin, service, func_info_addr, func_size, disasm_option, extended_option);
+			return new GolangFunctionPpc(go_bin, service, func_info_addr, func_size, disasm_option);
 		}else if(go_bin.is_riscv()) {
-			return new GolangFunctionRiscv(go_bin, service, func_info_addr, func_size, disasm_option, extended_option);
+			return new GolangFunctionRiscv(go_bin, service, func_info_addr, func_size, disasm_option);
 		}else {
-			return new GolangFunction(go_bin, service, func_info_addr, func_size, disasm_option, extended_option);
+			return new GolangFunction(go_bin, service, func_info_addr, func_size, disasm_option);
 		}
 	}
 
-	public static GolangFunction create_function_in_function(GolangBinary go_bin, GolangAnalyzerExtensionService service, Function func, boolean disasm_option, boolean extended_option) throws InvalidBinaryStructureException {
+	public static GolangFunction create_function_in_function(GolangBinary go_bin, GolangAnalyzerExtensionService service, Function func, boolean disasm_option) throws InvalidBinaryStructureException {
 		if(go_bin.is_x86()) {
-			return new GolangFunctionX86(go_bin, service, func, disasm_option, extended_option);
+			return new GolangFunctionX86(go_bin, service, func, disasm_option);
 		}else if(go_bin.is_arm()) {
-			return new GolangFunctionArm(go_bin, service, func, disasm_option, extended_option);
+			return new GolangFunctionArm(go_bin, service, func, disasm_option);
 		}else if(go_bin.is_ppc()) {
-			return new GolangFunctionPpc(go_bin, service, func, disasm_option, extended_option);
+			return new GolangFunctionPpc(go_bin, service, func, disasm_option);
 		}else if(go_bin.is_riscv()) {
-			return new GolangFunctionRiscv(go_bin, service, func, disasm_option, extended_option);
+			return new GolangFunctionRiscv(go_bin, service, func, disasm_option);
 		}else {
-			return new GolangFunction(go_bin, service, func, disasm_option, extended_option);
+			return new GolangFunction(go_bin, service, func, disasm_option);
 		}
 	}
 
@@ -167,9 +164,6 @@ public class GolangFunction {
 	}
 
 	void disassemble() {
-		if(!disasm_option) {
-			return;
-		}
 		try {
 			go_bin.disassemble(func_addr, func_size);
 		} catch (BinaryAccessException e) {
@@ -225,7 +219,7 @@ public class GolangFunction {
 		boolean is_checked_builtin_reg=false;
 		Instruction inst=go_bin.get_instruction(func_addr).orElse(null);
 		while(inst!=null && inst.getAddress().getOffset()<func_addr.getOffset()+func_size) {
-			if(extended_option && !is_checked_builtin_reg) {
+			if(!is_checked_builtin_reg) {
 				is_checked_builtin_reg=check_inst_builtin_reg_arg(inst, builtin_reg_state, builtin_reg_arg);
 			}
 			if(!is_reg_arg) {

@@ -32,11 +32,10 @@ public class FunctionModifier {
 	private boolean param_option;
 	private boolean comment_option;
 	private boolean disasm_option;
-	private boolean extended_option;
 
 	private boolean ok;
 
-	public FunctionModifier(GolangBinary go_bin, GolangAnalyzerExtensionService service, boolean rename_option, boolean param_option, boolean comment_option, boolean disasm_option, boolean extended_option) {
+	public FunctionModifier(GolangBinary go_bin, GolangAnalyzerExtensionService service, boolean rename_option, boolean param_option, boolean comment_option, boolean disasm_option) {
 		this.go_bin=go_bin;
 		this.service=service;
 
@@ -48,7 +47,6 @@ public class FunctionModifier {
 		this.param_option=param_option;
 		this.comment_option=comment_option;
 		this.disasm_option=disasm_option;
-		this.extended_option=extended_option;
 
 		this.ok=false;
 
@@ -63,9 +61,7 @@ public class FunctionModifier {
 			return;
 		}
 
-		if(extended_option) {
-			init_hardcode_functions();
-		}
+		init_hardcode_functions();
 
 		service.store_function_list(gofunc_list);
 
@@ -206,7 +202,7 @@ public class FunctionModifier {
 			}
 
 			try {
-				GolangFunction gofunc=GolangFunction.create_function(go_bin, service, func_info_addr, func_end_value-func_entry_value, disasm_option, extended_option);
+				GolangFunction gofunc=GolangFunction.create_function(go_bin, service, func_info_addr, func_end_value-func_entry_value, disasm_option);
 				gofunc_list.add(gofunc);
 			} catch (InvalidBinaryStructureException e) {
 				Logger.append_message(String.format("Failed to create function: %s", e.getMessage()));
@@ -223,7 +219,7 @@ public class FunctionModifier {
 				continue;
 			}
 			try {
-				GolangFunction gofunc=GolangFunction.create_function_in_function(go_bin, service, func, disasm_option, extended_option);
+				GolangFunction gofunc=GolangFunction.create_function_in_function(go_bin, service, func, disasm_option);
 				gofunc_list.add(gofunc);
 			} catch (InvalidBinaryStructureException e) {
 				Logger.append_message(String.format("Failed to create hardcode function: %s", e.getMessage()));

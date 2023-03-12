@@ -19,21 +19,8 @@ import golanganalyzerextension.string.StringExtractor;
 
 
 public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
-	private static final String RENAME_FUNC="Rename functions";
-	private static final String MODIFY_ARG="Modify arguments";
-	private static final String ADD_COMMENT="Add comments";
-	private static final String DISASM_FUNC="Disassemble functions";
-	private static final String ADD_DATATYPE="Add datatypes";
-	private static final String EXTENDED_ANALYSIS="Extended analysis";
-	private static final String DEBUG_MODE="Debug mode";
 
-	private boolean rename_option;
-	private boolean param_option;
-	private boolean comment_option;
-	private boolean disasm_option;
-	private boolean datatype_option;
-	private boolean extended_option;
-	private boolean debugmode_option;
+	AnalyzerOption analyzer_option;
 
 	public GolangAnalyzerExtensionAnalyzer() {
 
@@ -41,13 +28,7 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 		setPriority(AnalysisPriority.LOW_PRIORITY);
 		setSupportsOneTimeAnalysis(true);
 
-		rename_option=true;
-		param_option=true;
-		comment_option=true;
-		disasm_option=false;
-		datatype_option=true;
-		extended_option=true;
-		debugmode_option=false;
+		analyzer_option=new AnalyzerOption();
 	}
 
 	@Override
@@ -65,31 +46,19 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 	@Override
 	public void registerOptions(Options options, Program program) {
 
-		options.registerOption(RENAME_FUNC, rename_option, null, "Rename functions");
-		options.registerOption(MODIFY_ARG, param_option, null, "Modify function arguments");
-		options.registerOption(ADD_COMMENT, comment_option, null, "Add source file and line information to comments");
-		options.registerOption(DISASM_FUNC, disasm_option, null, "Disassemble function");
-		options.registerOption(ADD_DATATYPE, datatype_option, null, "Add data type");
-		options.registerOption(EXTENDED_ANALYSIS, extended_option, null, "Analyze functions in detail");
-		options.registerOption(DEBUG_MODE, debugmode_option, null, "Debug mode");
+		analyzer_option.register(options);
 	}
 
 	@Override
 	public void optionsChanged(Options options, Program program) {
 
-		rename_option=options.getBoolean(RENAME_FUNC, rename_option);
-		param_option=options.getBoolean(MODIFY_ARG, param_option);
-		comment_option=options.getBoolean(ADD_COMMENT, comment_option);
-		disasm_option=options.getBoolean(DISASM_FUNC, disasm_option);
-		datatype_option=options.getBoolean(ADD_DATATYPE, datatype_option);
-		extended_option=options.getBoolean(EXTENDED_ANALYSIS, extended_option);
-		debugmode_option=options.getBoolean(DEBUG_MODE, debugmode_option);
+		analyzer_option.change(options);
 	}
 
 	@Override
 	public boolean added(Program program, AddressSetView set, TaskMonitor monitor, MessageLog log)
 			throws CancelledException {
-		Logger.set_logger(log, debugmode_option);
+		Logger.set_logger(log, analyzer_option.get_debugmode());
 		try {
 			GolangBinary go_bin=new GolangBinary(program, monitor);
 
@@ -108,14 +77,16 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 			}
 			service.store_binary(go_bin);
 
-			FunctionModifier func_modifier=new FunctionModifier(go_bin, service, rename_option, param_option, comment_option, disasm_option, extended_option);
+			FunctionModifier func_modifier=new FunctionModifier(go_bin, service, analyzer_option.get_rename(), analyzer_option.get_param(), analyzer_option.get_comment(), analyzer_option.get_disasm());
 			func_modifier.modify();
 
-			StructureManager struct_manager=new StructureManager(go_bin, program, service, datatype_option);
+			StructureManager struct_manager=new StructureManager(go_bin, program, service, analyzer_option.get_datatype());
 			struct_manager.modify();
 
-			StringExtractor str_extractor=new StringExtractor(go_bin, service);
-			str_extractor.modify();
+			if(analyzer_option.get_string()) {
+				StringExtractor str_extractor=new StringExtractor(go_bin, service);
+				str_extractor.modify();
+			}
 		} catch(InvalidBinaryStructureException e) {
 			Logger.append_message(e.getMessage());
 		} catch(Exception e) {
