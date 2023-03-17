@@ -94,8 +94,12 @@ public class FunctionModifier {
 
 	private boolean init_file_name_list() {
 		boolean is_go116=false;
+		boolean is_go18=false;
 		if(go_bin.ge_go_version("go1.16beta1")) {
 			is_go116=true;
+		}
+		if(go_bin.ge_go_version("go1.8beta1")) {
+			is_go18=true;
 		}
 
 		int pointer_size=go_bin.get_pointer_size();
@@ -116,7 +120,7 @@ public class FunctionModifier {
 				return false;
 			}
 
-			for(int i=1;i<file_name_table_size+1;i++) {
+			for(int i=1;i<file_name_table_size+(is_go18?0:1);i++) {
 				long file_name_offset=go_bin.get_address_value(file_name_table, 4*i,4);
 				if(file_name_offset==0) {
 					return false;
