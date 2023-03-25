@@ -195,7 +195,9 @@ public class GolangDatatype {
 			return (StructureDataType)datatype;
 		}
 		StructureDataType struct_datatype=new StructureDataType(name, 0);
-		struct_datatype.add(datatype);
+		if(datatype.getLength()!=0) {
+			struct_datatype.add(datatype);
+		}
 		return struct_datatype;
 	}
 
