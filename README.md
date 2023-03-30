@@ -16,6 +16,8 @@ Please see the attached image.
 
 <img src="img/demo.png">
 
+<img src="img/demo.gif">
+
 ## Usage
 1. Download the release
 2. Launch Ghidra
