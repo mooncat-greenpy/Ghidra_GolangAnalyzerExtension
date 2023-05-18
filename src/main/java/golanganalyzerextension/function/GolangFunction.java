@@ -404,6 +404,7 @@ public class GolangFunction {
 		int i=0;
 		boolean first=true;
 		int pc_offset=0;
+		List<PcFile> pcfile_list=get_pc_to_file_name_list(pc_offset);
 		while(true) {
 			int line_num_add;
 			int byte_size;
@@ -425,9 +426,12 @@ public class GolangFunction {
 			line_num_add=zig_zag_decode(line_num_add);
 			line_num+=line_num_add;
 			pc_offset+=byte_size*go_bin.get_quantum();
-			String file_name=pc_to_file_name(pc_offset);
-			if(file_name==null) {
-				file_name="not_found";
+			String file_name="not_found";
+			for(PcFile pcfile : pcfile_list) {
+				if(pcfile.offset<pc_offset && pc_offset<=pcfile.offset+pcfile.size && pcfile.name!=null) {
+					file_name=pcfile.name;
+					break;
+				}
 			}
 
 			file_line_comment_map.put(key, new FileLine(func_addr, key, pc_offset-key, file_name, line_num));
@@ -505,7 +509,19 @@ public class GolangFunction {
 		return frame_size;
 	}*/
 
-	private String pc_to_file_name(int target_pc_offset) {
+	private class PcFile {
+		int offset;
+		int size;
+		String name;
+
+		public PcFile(int key, int size, String name) {
+			this.offset=key;
+			this.size=size;
+			this.name=name;
+		}
+	}
+
+	private List<PcFile> get_pc_to_file_name_list(int target_pc_offset) {
 		boolean is_go116=false;
 		boolean is_go118=false;
 		if(go_bin.ge_go_version("go1.16beta1")) {
@@ -515,6 +531,7 @@ public class GolangFunction {
 			is_go118=true;
 		}
 
+		List<PcFile> pcfile_list=new ArrayList<>();
 		int pointer_size=go_bin.get_pointer_size();
 		Address pcheader_base=go_bin.get_pcheader_base();
 		Address pcfile_base;
@@ -531,7 +548,7 @@ public class GolangFunction {
 			}
 		} catch (BinaryAccessException e) {
 			Logger.append_message(String.format("Failed to get pcfile base: info_addr=%s, message=%s", info_addr, e.getMessage()));
-			return null;
+			return pcfile_list;
 		}
 
 		long file_no=-1;
@@ -548,54 +565,56 @@ public class GolangFunction {
 				i+=Integer.toBinaryString(byte_size).length()/8+1;
 			} catch (BinaryAccessException e) {
 				Logger.append_message(String.format("Failed to get line num: info_addr=%s, message=%s", info_addr, e.getMessage()));
-				return null;
+				break;
 			}
 
 			if(file_no_add==0 && !first) {
 				break;
 			}
 			first=false;
+			int key=pc_offset;
 			file_no_add=zig_zag_decode(file_no_add);
 			file_no+=file_no_add;
 			pc_offset+=byte_size*go_bin.get_quantum();
 
-			if(target_pc_offset<=pc_offset) {
-				if(is_go116) {
-					Address file_name_addr;
-					try {
-						int cu_offset=(int)go_bin.get_address_value(info_addr, (is_go118?4:pointer_size)+4*7, 4);
-						Address cutab_base;
-						if(is_go118) {
-							cutab_base=go_bin.get_address(pcheader_base, go_bin.get_address_value(pcheader_base, 8+pointer_size*4, pointer_size));
-						}else {
-							cutab_base=go_bin.get_address(pcheader_base, go_bin.get_address_value(pcheader_base, 8+pointer_size*3, pointer_size));
-						}
-
-						long file_no_offset=go_bin.get_address_value(cutab_base, (cu_offset+file_no)*4, 4);
-						Address file_base;
-						if(is_go118) {
-							file_base=go_bin.get_address(pcheader_base, go_bin.get_address_value(pcheader_base, 8+pointer_size*5, pointer_size));
-						}else {
-							file_base=go_bin.get_address(pcheader_base, go_bin.get_address_value(pcheader_base, 8+pointer_size*4, pointer_size));
-						}
-						file_name_addr=go_bin.get_address(file_base, file_no_offset);
-					} catch (BinaryAccessException e) {
-						Logger.append_message(String.format("Failed to get file name addr: pcheader_addr=%s, pcfile_base=%s, file_no=%x, message=%s", pcheader_base, pcfile_base, file_no, e.getMessage()));
-						return null;
-					}
-
-					String file_name=go_bin.create_string_data(file_name_addr).orElse(String.format("not_found_%x", file_name_addr.getOffset()));
-					service.add_filename(file_name);
-					return file_name;
-				}
+			if(!is_go116) {
 				if((int)file_no-1<0 || file_name_list.size()<=(int)file_no-1) {
 					Logger.append_message(String.format("File name list index out of range: func_addr=%s, index=%x", func_addr, (int)file_no-1));
-					return null;
+					pcfile_list.add(new PcFile(key, pc_offset-key, null));
+					continue;
 				}
-				return file_name_list.get((int)file_no-1);
+				pcfile_list.add(new PcFile(key, pc_offset-key, file_name_list.get((int)file_no-1)));
+				continue;
 			}
+
+			Address file_name_addr;
+			try {
+				int cu_offset=(int)go_bin.get_address_value(info_addr, (is_go118?4:pointer_size)+4*7, 4);
+				Address cutab_base;
+				if(is_go118) {
+					cutab_base=go_bin.get_address(pcheader_base, go_bin.get_address_value(pcheader_base, 8+pointer_size*4, pointer_size));
+				}else {
+					cutab_base=go_bin.get_address(pcheader_base, go_bin.get_address_value(pcheader_base, 8+pointer_size*3, pointer_size));
+				}
+
+				long file_no_offset=go_bin.get_address_value(cutab_base, (cu_offset+file_no)*4, 4);
+				Address file_base;
+				if(is_go118) {
+					file_base=go_bin.get_address(pcheader_base, go_bin.get_address_value(pcheader_base, 8+pointer_size*5, pointer_size));
+				}else {
+					file_base=go_bin.get_address(pcheader_base, go_bin.get_address_value(pcheader_base, 8+pointer_size*4, pointer_size));
+				}
+				file_name_addr=go_bin.get_address(file_base, file_no_offset);
+			} catch (BinaryAccessException e) {
+				Logger.append_message(String.format("Failed to get file name addr: pcheader_addr=%s, pcfile_base=%s, file_no=%x, message=%s", pcheader_base, pcfile_base, file_no, e.getMessage()));
+				break;
+			}
+
+			String file_name=go_bin.create_string_data(file_name_addr).orElse(String.format("not_found_%x", file_name_addr.getOffset()));
+			service.add_filename(file_name);
+			pcfile_list.add(new PcFile(key, pc_offset-key, file_name));
 		}
-		return null;
+		return pcfile_list;
 	}
 
 	private int zig_zag_decode(int value) {
