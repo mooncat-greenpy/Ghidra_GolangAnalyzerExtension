@@ -203,9 +203,9 @@ public class GolangFunctionX86 extends GolangFunction {
 				if(dst_reg==null) {
 					dst_reg=(Register)op1[0];
 					if(op2[0].toString().contains("XMM")) {
-						inner_datatype=go_bin.get_unsigned_number_datatype(4);
+						inner_datatype=go_bin.get_unsigned_numeric_datatype(4);
 					}else {
-						inner_datatype=go_bin.get_unsigned_number_datatype(((Register)op2[0]).getBitLength()/8);
+						inner_datatype=go_bin.get_unsigned_numeric_datatype(((Register)op2[0]).getBitLength()/8);
 					}
 				}
 				stage=MEMCPY_FUNC_STAGE.ADD_DST;
@@ -284,7 +284,7 @@ public class GolangFunctionX86 extends GolangFunction {
 					start=0;
 					dst_reg=(Register)op1[1];
 					src_reg=eax_reg;
-					inner_datatype=go_bin.get_unsigned_number_datatype(src_reg.getBitLength()/8);
+					inner_datatype=go_bin.get_unsigned_numeric_datatype(src_reg.getBitLength()/8);
 				}
 				size+=4;
 				inst=inst.getNext();
@@ -307,7 +307,7 @@ public class GolangFunctionX86 extends GolangFunction {
 				if(start<0) {
 					dst_reg=(Register)op1[0];
 					src_reg=(Register)op2[0];
-					inner_datatype=go_bin.get_unsigned_number_datatype(4);
+					inner_datatype=go_bin.get_unsigned_numeric_datatype(4);
 				}
 				if(op1.length<2) {
 					if(start<0) {
@@ -354,7 +354,7 @@ public class GolangFunctionX86 extends GolangFunction {
 			params.add(new ParameterImpl(String.format("param_%d", 1), new PointerDataType(inner_datatype, go_bin.get_pointer_size()), dst_reg, get_func().getProgram(), SourceType.USER_DEFINED));
 
 			if(src_reg!=null) {
-				params.add(new ParameterImpl(String.format("param_%d", 2), go_bin.get_unsigned_number_datatype(src_reg.getBitLength()/8), src_reg, get_func().getProgram(), SourceType.USER_DEFINED));
+				params.add(new ParameterImpl(String.format("param_%d", 2), go_bin.get_unsigned_numeric_datatype(src_reg.getBitLength()/8), src_reg, get_func().getProgram(), SourceType.USER_DEFINED));
 			}
 		} catch (InvalidInputException e) {
 		}

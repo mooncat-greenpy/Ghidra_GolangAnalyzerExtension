@@ -87,27 +87,27 @@ public class GolangDatatype {
 		if(go_datatype.kind==Kind.Bool) {
 			go_datatype=new OtherGolangDatatype(go_bin, type_base_addr, offset, is_go16, new BooleanDataType());
 		}else if(go_datatype.kind==Kind.Int) {
-			go_datatype=new OtherGolangDatatype(go_bin, type_base_addr, offset, is_go16, go_bin.get_signed_number_datatype(pointer_size));
+			go_datatype=new OtherGolangDatatype(go_bin, type_base_addr, offset, is_go16, go_bin.get_signed_numeric_datatype(pointer_size));
 		}else if(go_datatype.kind==Kind.Int8) {
-			go_datatype=new OtherGolangDatatype(go_bin, type_base_addr, offset, is_go16, go_bin.get_signed_number_datatype(1));
+			go_datatype=new OtherGolangDatatype(go_bin, type_base_addr, offset, is_go16, go_bin.get_signed_numeric_datatype(1));
 		}else if(go_datatype.kind==Kind.Int16) {
-			go_datatype=new OtherGolangDatatype(go_bin, type_base_addr, offset, is_go16, go_bin.get_signed_number_datatype(2));
+			go_datatype=new OtherGolangDatatype(go_bin, type_base_addr, offset, is_go16, go_bin.get_signed_numeric_datatype(2));
 		}else if(go_datatype.kind==Kind.Int32) {
-			go_datatype=new OtherGolangDatatype(go_bin, type_base_addr, offset, is_go16, go_bin.get_signed_number_datatype(4));
+			go_datatype=new OtherGolangDatatype(go_bin, type_base_addr, offset, is_go16, go_bin.get_signed_numeric_datatype(4));
 		}else if(go_datatype.kind==Kind.Int64) {
-			go_datatype=new OtherGolangDatatype(go_bin, type_base_addr, offset, is_go16, go_bin.get_signed_number_datatype(8));
+			go_datatype=new OtherGolangDatatype(go_bin, type_base_addr, offset, is_go16, go_bin.get_signed_numeric_datatype(8));
 		}else if(go_datatype.kind==Kind.Uint) {
-			go_datatype=new OtherGolangDatatype(go_bin, type_base_addr, offset, is_go16, go_bin.get_unsigned_number_datatype(pointer_size));
+			go_datatype=new OtherGolangDatatype(go_bin, type_base_addr, offset, is_go16, go_bin.get_unsigned_numeric_datatype(pointer_size));
 		}else if(go_datatype.kind==Kind.Uint8) {
-			go_datatype=new OtherGolangDatatype(go_bin, type_base_addr, offset, is_go16, go_bin.get_unsigned_number_datatype(1));
+			go_datatype=new OtherGolangDatatype(go_bin, type_base_addr, offset, is_go16, go_bin.get_unsigned_numeric_datatype(1));
 		}else if(go_datatype.kind==Kind.Uint16) {
-			go_datatype=new OtherGolangDatatype(go_bin, type_base_addr, offset, is_go16, go_bin.get_unsigned_number_datatype(2));
+			go_datatype=new OtherGolangDatatype(go_bin, type_base_addr, offset, is_go16, go_bin.get_unsigned_numeric_datatype(2));
 		}else if(go_datatype.kind==Kind.Uint32) {
-			go_datatype=new OtherGolangDatatype(go_bin, type_base_addr, offset, is_go16, go_bin.get_unsigned_number_datatype(4));
+			go_datatype=new OtherGolangDatatype(go_bin, type_base_addr, offset, is_go16, go_bin.get_unsigned_numeric_datatype(4));
 		}else if(go_datatype.kind==Kind.Uint64) {
-			go_datatype=new OtherGolangDatatype(go_bin, type_base_addr, offset, is_go16, go_bin.get_unsigned_number_datatype(8));
+			go_datatype=new OtherGolangDatatype(go_bin, type_base_addr, offset, is_go16, go_bin.get_unsigned_numeric_datatype(8));
 		}else if(go_datatype.kind==Kind.Uintptr) {
-			go_datatype=new OtherGolangDatatype(go_bin, type_base_addr, offset, is_go16, go_bin.get_unsigned_number_datatype(pointer_size));
+			go_datatype=new OtherGolangDatatype(go_bin, type_base_addr, offset, is_go16, go_bin.get_unsigned_numeric_datatype(pointer_size));
 		}else if(go_datatype.kind==Kind.Float32) {
 			go_datatype=new OtherGolangDatatype(go_bin, type_base_addr, offset, is_go16, new Float4DataType());
 		}else if(go_datatype.kind==Kind.Float64) {

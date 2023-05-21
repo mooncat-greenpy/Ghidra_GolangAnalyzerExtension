@@ -29,7 +29,6 @@ import ghidra.program.model.data.Integer3DataType;
 import ghidra.program.model.data.Integer5DataType;
 import ghidra.program.model.data.Integer6DataType;
 import ghidra.program.model.data.Integer7DataType;
-import ghidra.program.model.data.IntegerDataType;
 import ghidra.program.model.data.LongLongDataType;
 import ghidra.program.model.data.ShortDataType;
 import ghidra.program.model.data.SignedByteDataType;
@@ -40,7 +39,6 @@ import ghidra.program.model.data.UnsignedInteger3DataType;
 import ghidra.program.model.data.UnsignedInteger5DataType;
 import ghidra.program.model.data.UnsignedInteger6DataType;
 import ghidra.program.model.data.UnsignedInteger7DataType;
-import ghidra.program.model.data.UnsignedIntegerDataType;
 import ghidra.program.model.data.UnsignedLongLongDataType;
 import ghidra.program.model.data.UnsignedShortDataType;
 import ghidra.program.model.lang.Register;
@@ -306,7 +304,8 @@ public class GolangBinary {
 		category.addDataType(datatype, null);
 	}
 
-	public DataType get_unsigned_number_datatype(int size) {
+
+	public DataType get_unsigned_numeric_datatype(int size) throws InvalidBinaryStructureException {
 		if(size==1) {
 			return new ByteDataType();
 		}else if(size==2) {
@@ -314,7 +313,8 @@ public class GolangBinary {
 		}else if(size==3) {
 			return new UnsignedInteger3DataType();
 		}else if(size==4) {
-			return new UnsignedIntegerDataType();
+			// The size of UnsignedIntegerDataType and UnsignedLongDataType depends on the binary.
+			return new UnsignedInteger4DataType();
 		}else if(size==5) {
 			return new UnsignedInteger5DataType();
 		}else if(size==6) {
@@ -325,14 +325,12 @@ public class GolangBinary {
 			return new UnsignedLongLongDataType();
 		}else if(size==16) {
 			return new UnsignedInteger16DataType();
-		}else if(pcheader.get_pointer_size()==8) {
-			return new UnsignedLongLongDataType();
-		}else {
-			return new UnsignedIntegerDataType();
 		}
+
+		throw new InvalidBinaryStructureException("Invalid datatype size");
 	}
 
-	public DataType get_signed_number_datatype(int size) {
+	public DataType get_signed_numeric_datatype(int size) throws InvalidBinaryStructureException {
 		if(size==1) {
 			return new SignedByteDataType();
 		}else if(size==2) {
@@ -340,7 +338,8 @@ public class GolangBinary {
 		}else if(size==3) {
 			return new Integer3DataType();
 		}else if(size==4) {
-			return new IntegerDataType();
+			// The size of UnsignedIntegerDataType and UnsignedLongDataType depends on the binary.
+			return new Integer4DataType();
 		}else if(size==5) {
 			return new Integer5DataType();
 		}else if(size==6) {
@@ -351,11 +350,9 @@ public class GolangBinary {
 			return new LongLongDataType();
 		}else if(size==16) {
 			return new Integer16DataType();
-		}else if(pcheader.get_pointer_size()==8) {
-			return new LongLongDataType();
-		}else {
-			return new IntegerDataType();
 		}
+
+		throw new InvalidBinaryStructureException("Invalid datatype size");
 	}
 
 	public MemoryBlock[] get_memory_blocks() {

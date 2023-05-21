@@ -194,7 +194,7 @@ public class GolangFunctionArm extends GolangFunction {
 					}
 					if(dst_reg==null) {
 						dst_reg=(Register)op2[0];
-						inner_datatype=go_bin.get_unsigned_number_datatype(((Register)op1[0]).getBitLength()/8);
+						inner_datatype=go_bin.get_unsigned_numeric_datatype(((Register)op1[0]).getBitLength()/8);
 					}
 					size+=Integer.decode(op2[1].toString());
 					stage=MEMCPY_FUNC_STAGE.GET_SRC;
@@ -222,7 +222,7 @@ public class GolangFunctionArm extends GolangFunction {
 					}
 					if(dst_reg==null) {
 						dst_reg=(Register)op3[0];
-						inner_datatype=go_bin.get_unsigned_number_datatype(((Register)op1[0]).getBitLength()/8);
+						inner_datatype=go_bin.get_unsigned_numeric_datatype(((Register)op1[0]).getBitLength()/8);
 					}
 					if(op3.length>=2 && op3[1] instanceof Scalar) {
 						size+=Integer.decode(op3[1].toString());
@@ -306,7 +306,7 @@ public class GolangFunctionArm extends GolangFunction {
 					start=0;
 					dst_reg=(Register)op2[0];
 					src_reg=(Register)op1[0];
-					inner_datatype=go_bin.get_unsigned_number_datatype(src_reg.getBitLength()/8);
+					inner_datatype=go_bin.get_unsigned_numeric_datatype(src_reg.getBitLength()/8);
 				}
 				size+=Integer.decode(op2[1].toString());
 			}else if(mnemonic.equals("stp")) {
@@ -333,7 +333,7 @@ public class GolangFunctionArm extends GolangFunction {
 				if(start<0) {
 					start=0;
 					dst_reg=(Register)op3[0];
-					inner_datatype=go_bin.get_unsigned_number_datatype(((Register)op1[0]).getBitLength()/8);
+					inner_datatype=go_bin.get_unsigned_numeric_datatype(((Register)op1[0]).getBitLength()/8);
 				}
 				if(op3.length>=2 && op3[1] instanceof Scalar) {
 					size+=Integer.decode(op3[1].toString());
@@ -359,7 +359,7 @@ public class GolangFunctionArm extends GolangFunction {
 			params.add(new ParameterImpl(String.format("param_%d", 1), new PointerDataType(inner_datatype, go_bin.get_pointer_size()), dst_reg, get_func().getProgram(), SourceType.USER_DEFINED));
 
 			if(src_reg!=null) {
-				params.add(new ParameterImpl(String.format("param_%d", 2), go_bin.get_unsigned_number_datatype(src_reg.getBitLength()/8), src_reg, get_func().getProgram(), SourceType.USER_DEFINED));
+				params.add(new ParameterImpl(String.format("param_%d", 2), go_bin.get_unsigned_numeric_datatype(src_reg.getBitLength()/8), src_reg, get_func().getProgram(), SourceType.USER_DEFINED));
 			}
 		} catch (InvalidInputException e) {
 		}
