@@ -108,15 +108,19 @@ class SysTheVersion {
 		if(size!=sys_the_version.length()) {
 			return false;
 		}
+		GolangVersion go_version=new GolangVersion(sys_the_version);
+		if(go_version.lt("go1.8beta1")) {
+			return true;
+		}
 
 		// runtime/proc.go
 		boolean badmorestackg0Msg=false;
 		boolean badmorestackgsignalMsg=false;
-		for(int i=-4; i<4; i++) {
+		for(int i=-8; i<8; i++) {
 			Address around_str_addr;
 			String around_str;
 			try {
-				around_str_addr=go_bin.get_address(string_struct_addr, go_bin.get_pointer_size()*2*i);
+				around_str_addr=go_bin.get_address(string_struct_addr, go_bin.get_pointer_size()*1*i);
 				around_str=go_bin.read_string_struct(around_str_addr, go_bin.get_pointer_size());
 			} catch (BinaryAccessException | InvalidBinaryStructureException e) {
 				continue;
@@ -128,8 +132,7 @@ class SysTheVersion {
 				badmorestackgsignalMsg=true;
 			}
 		}
-		GolangVersion go_version=new GolangVersion(sys_the_version);
-		if(go_version.ge("go1.8beta1") && (!badmorestackg0Msg || !badmorestackgsignalMsg)) {
+		if(!badmorestackg0Msg || !badmorestackgsignalMsg) {
 			return false;
 		}
 

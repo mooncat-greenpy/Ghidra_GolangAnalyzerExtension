@@ -67,16 +67,26 @@ class GolangBuildInfo {
 
 	Optional<String> find_module_version(Address base_addr) throws BinaryAccessException {
 		byte size=(byte)go_bin.get_address_value(base_addr, 14, 1);
+		byte endian=(byte)go_bin.get_address_value(base_addr, 15, 1);
 
-		long addr_value=go_bin.get_address_value(base_addr, 16+size, size);
-		if(!go_bin.is_valid_address(addr_value)) {
-			return Optional.empty();
+		Address bytes_addr;
+		long bytes_size;
+		if((endian&2)==0) {
+			long addr_value=go_bin.get_address_value(base_addr, 16+size, size);
+			if(!go_bin.is_valid_address(addr_value)) {
+				return Optional.empty();
+			}
+			bytes_addr=go_bin.get_address(go_bin.get_address_value(addr_value, size));
+			if(!go_bin.is_valid_address(bytes_addr)) {
+				return Optional.empty();
+			}
+			bytes_size=go_bin.get_address_value(addr_value + size, size);
+		} else {
+			long ver_str_size=go_bin.get_address_value(base_addr, 32, 1);
+			Address go_ver_end_addr=go_bin.get_address(base_addr, 32+1+ver_str_size);
+			bytes_addr=go_bin.get_address(go_ver_end_addr, 1);
+			bytes_size=go_bin.get_address_value(go_ver_end_addr, 1);
 		}
-		Address bytes_addr=go_bin.get_address(go_bin.get_address_value(addr_value, size));
-		if(!go_bin.is_valid_address(bytes_addr)) {
-			return Optional.empty();
-		}
-		long bytes_size=go_bin.get_address_value(addr_value + size, size);
 
 		// runtime/debug/mod.go
 		Address mod_bytes_addr=go_bin.get_address(bytes_addr, 16);
