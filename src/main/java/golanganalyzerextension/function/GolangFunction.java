@@ -590,6 +590,9 @@ public class GolangFunction {
 			Address file_name_addr;
 			try {
 				int cu_offset=(int)go_bin.get_address_value(info_addr, (is_go118?4:pointer_size)+4*7, 4);
+				if(cu_offset==0xffffffff) {
+					return pcfile_list;
+				}
 				Address cutab_base;
 				if(is_go118) {
 					cutab_base=go_bin.get_address(pcheader_base, go_bin.get_address_value(pcheader_base, 8+pointer_size*4, pointer_size));

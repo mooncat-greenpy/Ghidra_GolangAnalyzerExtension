@@ -62,7 +62,7 @@ public class PcHeader {
 	public PcHeader(GolangBinary go_bin) throws InvalidBinaryStructureException {
 		this.go_bin=go_bin;
 
-		this.addr=search_by_magic();
+		this.addr=search_by_magic_all_ver();
 	}
 
 	public PcHeader(GolangBinary go_bin, Address target_addr, GO_VERSION go_version, boolean little_endian) throws InvalidBinaryStructureException {
@@ -91,7 +91,7 @@ public class PcHeader {
 		return little_endian;
 	}
 
-	private Address search_by_magic() {
+	private Address search_by_magic_all_ver() {
 		Address result_addr=null;
 		if(result_addr==null) {
 			result_addr=search_by_magic(null, GO_VERSION.GO_12, true);
@@ -177,8 +177,9 @@ public class PcHeader {
 				}else {
 					func_list_base=go_bin.get_address(tmp_addr, 8+pointer_size);
 				}
-				long func_addr_value=go_bin.get_address_value(func_list_base, 0, is_go118?4:pointer_size);
-				long func_info_offset=go_bin.get_address_value(func_list_base, is_go118?4:pointer_size, is_go118?4:pointer_size);
+				int functab_field_size=is_go118?4:pointer_size;
+				long func_addr_value=go_bin.get_address_value(func_list_base, 0, functab_field_size);
+				long func_info_offset=go_bin.get_address_value(func_list_base, functab_field_size, functab_field_size);
 				long func_entry_value;
 				if(is_go118) {
 					func_entry_value=go_bin.get_address_value(func_list_base, func_info_offset, 4);

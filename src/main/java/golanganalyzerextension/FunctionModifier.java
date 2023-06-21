@@ -173,11 +173,12 @@ public class FunctionModifier {
 			long func_entry_value;
 			long func_end_value;
 			try {
-				func_addr_value=go_bin.get_address_value(func_list_base, i*(is_go118?4:pointer_size)*2, is_go118?4:pointer_size);
+				int functab_field_size=is_go118?4:pointer_size;
+				func_addr_value=go_bin.get_address_value(func_list_base, i*functab_field_size*2, functab_field_size);
 				if(is_go118) {
 					func_addr_value+=go_bin.get_address_value(pcheader_base, 8+pointer_size*2, pointer_size);
 				}
-				func_info_offset=go_bin.get_address_value(func_list_base, i*(is_go118?4:pointer_size)*2+(is_go118?4:pointer_size), is_go118?4:pointer_size);
+				func_info_offset=go_bin.get_address_value(func_list_base, i*functab_field_size*2+functab_field_size, functab_field_size);
 
 				if(is_go116) {
 					func_info_addr=go_bin.get_address(func_list_base, func_info_offset);
@@ -185,11 +186,12 @@ public class FunctionModifier {
 					func_info_addr=go_bin.get_address(pcheader_base, func_info_offset);
 				}
 
-				func_entry_value=go_bin.get_address_value(func_info_addr, is_go118?4:pointer_size);
-				func_end_value=go_bin.get_address_value(func_list_base, i*(is_go118?4:pointer_size)*2+(is_go118?4:pointer_size)*2, is_go118?4:pointer_size);
+				func_entry_value=go_bin.get_address_value(func_info_addr, functab_field_size);
+				func_end_value=go_bin.get_address_value(func_list_base, i*functab_field_size*2+functab_field_size*2, functab_field_size);
 				if(is_go118) {
-					func_entry_value+=go_bin.get_address_value(pcheader_base, 8+pointer_size*2, pointer_size);
-					func_end_value+=go_bin.get_address_value(pcheader_base, 8+pointer_size*2, pointer_size);
+					long text=go_bin.get_address_value(pcheader_base, 8+pointer_size*2, pointer_size);
+					func_entry_value+=text;
+					func_end_value+=text;
 				}
 			} catch (BinaryAccessException e) {
 				Logger.append_message(String.format("Failed to init func: pcheader_addr=%s, func_list_base=%s, i=%d, message=%s", pcheader_base, func_list_base, i, e.getMessage()));
