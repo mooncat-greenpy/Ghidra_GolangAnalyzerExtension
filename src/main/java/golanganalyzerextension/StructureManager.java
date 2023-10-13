@@ -4,6 +4,7 @@ import ghidra.program.model.address.Address;
 import ghidra.program.model.data.*;
 import ghidra.program.model.listing.Program;
 import golanganalyzerextension.datatype.GolangDatatype;
+import golanganalyzerextension.datatype.Kind;
 import golanganalyzerextension.datatype.UncommonType.UncommonMethod;
 import golanganalyzerextension.exceptions.InvalidBinaryStructureException;
 import golanganalyzerextension.gobinary.GolangBinary;
@@ -55,7 +56,10 @@ public class StructureManager {
 				GolangDatatype go_datatype=datatype_holder.get_go_datatype_by_key(key);
 				go_datatype.modify(datatype_holder);
 
-				go_bin.add_datatype(go_datatype.get_category_path(), go_datatype.get_struct_datatype());
+				if(!go_datatype.get_kind().equals(Kind.Ptr))
+				{
+					go_bin.add_datatype(go_datatype.get_category_path(), go_datatype.get_struct_datatype());
+				}
 
 				go_bin.set_comment(go_datatype.get_addr(), ghidra.program.model.listing.CodeUnit.PLATE_COMMENT, make_datatype_comment(go_datatype, datatype_holder));
 			}catch(Exception e) {
