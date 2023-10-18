@@ -30,7 +30,13 @@ public class StructGolangDatatype extends GolangDatatype {
 
 	@Override
 	public void make_datatype(DatatypeHolder datatype_searcher) {
-		StructureDataType structure_datatype=new StructureDataType(name, 0);
+		StructureDataType structure_datatype;
+		if(datatype instanceof StructureDataType) {
+			structure_datatype=(StructureDataType)datatype;
+			structure_datatype.deleteAll();
+		} else {
+			structure_datatype=new StructureDataType(name, 0);
+		}
 
 		// ver <= go1.8.*
 		int pre_field_end=0;
