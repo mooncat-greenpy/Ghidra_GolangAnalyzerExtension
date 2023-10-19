@@ -77,11 +77,11 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 			}
 			service.store_binary(go_bin);
 
-			FunctionModifier func_modifier=new FunctionModifier(go_bin, service, analyzer_option.get_rename(), analyzer_option.get_param(), analyzer_option.get_comment(), analyzer_option.get_disasm());
-			func_modifier.modify();
-
 			StructureManager struct_manager=new StructureManager(go_bin, program, service, analyzer_option.get_datatype());
 			struct_manager.modify();
+
+			FunctionModifier func_modifier=new FunctionModifier(go_bin, service, analyzer_option.get_rename(), analyzer_option.get_param(), analyzer_option.get_comment(), analyzer_option.get_disasm());
+			func_modifier.modify();
 
 			if(analyzer_option.get_string()) {
 				StringExtractor str_extractor=new StringExtractor(go_bin, service);

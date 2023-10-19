@@ -22,7 +22,10 @@ import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.listing.Parameter;
 import ghidra.program.model.listing.ParameterImpl;
+import ghidra.program.model.listing.VariableStorage;
 import ghidra.program.model.symbol.SourceType;
+import golanganalyzerextension.datatype.GolangDatatypeRecord;
+import golanganalyzerextension.datatype.UncommonType.UncommonMethod;
 import golanganalyzerextension.exceptions.InvalidBinaryStructureException;
 import golanganalyzerextension.gobinary.GolangBinary;
 import golanganalyzerextension.gobinary.exceptions.BinaryAccessException;
@@ -327,6 +330,37 @@ public class GolangFunction {
 		}
 		if(!init_params()) {
 			return false;
+		}
+
+		for(GolangDatatypeRecord record : service.get_datatype_map().values()) {
+			if(record.get_uncommon_type().isEmpty()) {
+				continue;
+			}
+			for(UncommonMethod method : record.get_uncommon_type().get().get_method_list()) {
+				long addr_value;
+				if(method.get_normal_method_addr().isPresent()) {
+					addr_value=method.get_normal_method_addr().get();
+				} else if(method.get_interface_method_addr().isPresent()) {
+					addr_value=method.get_interface_method_addr().get();
+				} else {
+					continue;
+				}
+				if(addr_value!=func_addr.getOffset()) {
+					continue;
+				}
+
+				DataType this_datatype=record.get_datatype();
+				if(params.size()>0 && params.get(0).getLength()==this_datatype.getLength()) {
+					VariableStorage var_strorage=params.get(0).getVariableStorage();
+					params.remove(0);
+					try {
+						params.add(0, new ParameterImpl("this", this_datatype, var_strorage, func.getProgram(), SourceType.USER_DEFINED));
+					}catch(Exception e) {
+						Logger.append_message(String.format("Failed to insert function parameters: %s", e.getMessage()));
+						return false;
+					}
+				}
+			}
 		}
 
 		return true;
