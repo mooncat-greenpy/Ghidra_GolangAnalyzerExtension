@@ -23,6 +23,7 @@ import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.listing.Parameter;
 import ghidra.program.model.listing.ParameterImpl;
 import ghidra.program.model.listing.VariableStorage;
+import ghidra.program.model.pcode.Varnode;
 import ghidra.program.model.symbol.SourceType;
 import golanganalyzerextension.datatype.GolangDatatypeRecord;
 import golanganalyzerextension.datatype.UncommonType.UncommonMethod;
@@ -292,6 +293,76 @@ public class GolangFunction {
 		return true;
 	}
 
+	public boolean insert_params(String name, int offset, DataType datatype) {
+		int size=datatype.getLength();
+
+		int cur_offset=0;
+		int idx=0;
+		int count=0;
+		for(int i=0; i<params.size(); i++) {
+			if(cur_offset!=offset) {
+				cur_offset+=params.get(i).getLength();
+				continue;
+			}
+			idx=i;
+			do {
+				cur_offset+=params.get(i).getLength();
+				i++;
+			} while(cur_offset<offset+size && i<params.size());
+			count=i-idx;
+
+			if(cur_offset!=offset+size) {
+				return false;
+			}
+			break;
+		}
+		if(count==0) {
+			return false;
+		}
+
+		List<Varnode> var_list=new ArrayList<>();
+		List<Parameter> new_params=new ArrayList<>();
+		boolean is_reg=true;
+		Address stack_base=null;
+		int stack_size=0;
+		for(int i=0; i<params.size(); i++) {
+			if(i<idx || idx+count<=i) {
+				new_params.add(params.get(i));
+				continue;
+			}
+
+			for(Varnode var : params.get(i).getVariableStorage().getVarnodes()) {
+				if(!var.isRegister()) {
+					is_reg=false;
+				} else if(!is_reg && var.isRegister()) {
+					return false;
+				}
+
+				if(is_reg) {
+					var_list.add(0, var);
+				} else if(stack_base==null) {
+					stack_base=var.getAddress();
+					stack_size=var.getSize();
+				} else {
+					stack_size+=var.getSize();
+				}
+			}
+		}
+		if(stack_base!=null) {
+			var_list.add(0, new Varnode(stack_base, stack_size));
+		}
+
+		try {
+			VariableStorage storage = new VariableStorage(func.getProgram(), var_list.toArray(new Varnode[var_list.size()]));
+			new_params.add(idx, new ParameterImpl(name, datatype, storage, func.getProgram(), SourceType.USER_DEFINED));
+			params=new_params;
+		}catch(Exception e) {
+			Logger.append_message(String.format("Failed to insert function parameters: %s", e.getMessage()));
+			return false;
+		}
+		return true;
+	}
+
 	private boolean init_func() {
 		boolean is_go118=false;
 		if(go_bin.ge_go_version("go1.18beta1")) {
@@ -333,6 +404,22 @@ public class GolangFunction {
 		}
 
 		for(GolangDatatypeRecord record : service.get_datatype_map().values()) {
+			if(func_name.equals("fmt.Fprintln")) {
+				if(record.get_name().equals("io.Writer")) {
+					insert_params("w", 0, record.get_struct());
+				} else if(record.get_name().equals("[]interface {}")) {
+					insert_params("a", go_bin.get_pointer_size()*2, record.get_struct());
+				}
+				continue;
+			}
+			if(func_name.equals("fmt.Println")) {
+				if(record.get_name().equals("[]interface {}")) {
+					insert_params("a", 0, record.get_struct());
+					break;
+				}
+				continue;
+			}
+
 			if(record.get_uncommon_type().isEmpty()) {
 				continue;
 			}
@@ -345,20 +432,8 @@ public class GolangFunction {
 				} else {
 					continue;
 				}
-				if(addr_value!=func_addr.getOffset()) {
-					continue;
-				}
-
-				DataType this_datatype=record.get_datatype();
-				if(params.size()>0 && params.get(0).getLength()==this_datatype.getLength()) {
-					VariableStorage var_strorage=params.get(0).getVariableStorage();
-					params.remove(0);
-					try {
-						params.add(0, new ParameterImpl("this", this_datatype, var_strorage, func.getProgram(), SourceType.USER_DEFINED));
-					}catch(Exception e) {
-						Logger.append_message(String.format("Failed to insert function parameters: %s", e.getMessage()));
-						return false;
-					}
+				if(addr_value==func_addr.getOffset()) {
+					insert_params("this", 0, record.get_datatype());
 				}
 			}
 		}
