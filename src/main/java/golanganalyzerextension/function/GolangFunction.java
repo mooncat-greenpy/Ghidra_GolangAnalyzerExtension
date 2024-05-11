@@ -4,10 +4,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.DataType;
+import ghidra.program.model.data.StructureDataType;
 import ghidra.program.model.data.Undefined1DataType;
 import ghidra.program.model.data.Undefined2DataType;
 import ghidra.program.model.data.Undefined3DataType;
@@ -22,6 +24,7 @@ import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.listing.Parameter;
 import ghidra.program.model.listing.ParameterImpl;
+import ghidra.program.model.listing.ReturnParameterImpl;
 import ghidra.program.model.listing.VariableStorage;
 import ghidra.program.model.pcode.Varnode;
 import ghidra.program.model.symbol.SourceType;
@@ -50,6 +53,7 @@ public class GolangFunction {
 	String func_name;
 	int arg_size;
 	List<Parameter> params;
+	ReturnParameterImpl ret_param;
 	Map<Integer, FileLine> file_line_comment_map;
 	Map<Integer, Long> frame_map;
 
@@ -64,6 +68,7 @@ public class GolangFunction {
 		this.func_size=func_size;
 
 		this.params=new ArrayList<>();
+		this.ret_param=null;
 		this.file_line_comment_map=new HashMap<>();
 		this.frame_map = new TreeMap<>();
 
@@ -87,6 +92,7 @@ public class GolangFunction {
 		this.func_name="not_init";
 		this.arg_size=0;
 		this.params=new ArrayList<>();
+		this.ret_param=null;
 		this.file_line_comment_map=new HashMap<>();
 		this.frame_map = new TreeMap<>();
 
@@ -149,6 +155,10 @@ public class GolangFunction {
 
 	public List<Parameter> get_params(){
 		return params;
+	}
+
+	public Optional<Parameter> get_ret_param() {
+		return Optional.ofNullable(ret_param);
 	}
 
 	public Map<Integer, FileLine> get_file_line_comment_map(){
@@ -240,6 +250,7 @@ public class GolangFunction {
 
 		try {
 			params=new ArrayList<>();
+			List<Register> ret_regs=new ArrayList<>();
 			int stack_base=get_arg_stack_base();
 			int stack_count=0;
 			for(int i=0;i<args_num && i<50;i++) {
@@ -274,6 +285,9 @@ public class GolangFunction {
 				Register reg=null;
 				if(is_reg_arg) {
 					reg=go_bin.get_register(get_reg_arg_name(i)).orElse(null);
+					if(reg!=null) {
+						ret_regs.add(reg);
+					}
 				}else if(is_builtin_reg) {
 					reg=builtin_reg_arg.get(i);
 				}
@@ -285,6 +299,14 @@ public class GolangFunction {
 					add_param=new ParameterImpl(String.format("param_%d", i+1), datatype, reg, func.getProgram(), SourceType.USER_DEFINED);
 				}
 				params.add(add_param);
+			}
+			if(ret_regs.size() > 0) {
+				StructureDataType ret_datatype=new StructureDataType(String.format("ret_datatype_%x", ret_regs.size()), 0);
+				for(int i=0; i<ret_regs.size(); i++) {
+					ret_datatype.add(go_bin.get_unsigned_numeric_datatype(go_bin.get_pointer_size()), String.format("ret_%x", ret_regs.size()-i), null);
+				}
+				VariableStorage vs=new VariableStorage(func.getProgram(), (Register[])ret_regs.toArray(new Register[ret_regs.size()]));
+				ret_param=new ReturnParameterImpl(ret_datatype, vs, func.getProgram());
 			}
 		}catch(Exception e) {
 			Logger.append_message(String.format("Failed to set function parameters: %s", e.getMessage()));
