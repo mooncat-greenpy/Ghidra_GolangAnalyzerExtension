@@ -3,6 +3,7 @@ package golanganalyzerextension.gobinary;
 import ghidra.program.model.address.Address;
 import golanganalyzerextension.exceptions.InvalidBinaryStructureException;
 import golanganalyzerextension.gobinary.exceptions.BinaryAccessException;
+import golanganalyzerextension.version.GolangVersion;
 
 public class PcHeader {
 
@@ -55,6 +56,19 @@ public class PcHeader {
 				return 118;
 			default:
 				return 120;
+			}
+		}
+
+		public static GolangVersion to_go_version(GO_VERSION go_version) {
+			switch(go_version) {
+			case GO_12:
+				return new GolangVersion("go1.2beta1");
+			case GO_116:
+				return new GolangVersion("go1.16beta1");
+			case GO_118:
+				return new GolangVersion("go1.18beta1");
+			default:
+				return new GolangVersion("go1.20beta1");
 			}
 		}
 	}

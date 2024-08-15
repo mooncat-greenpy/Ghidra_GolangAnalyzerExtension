@@ -29,14 +29,15 @@ public class GolangVersionExtractor {
 		}
 	}
 
-	public void scan() {
+	public boolean scan() {
 		if(scan_build_info()) {
-			return;
+			return true;
 		}
 
 		if(scan_sys_the_version()) {
-			return;
+			return true;
 		}
+		return false;
 	}
 
 	private boolean scan_build_info() {

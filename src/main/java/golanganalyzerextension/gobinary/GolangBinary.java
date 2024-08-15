@@ -83,8 +83,11 @@ public class GolangBinary {
 		pcheader=new PcHeader(this);
 
 		GolangVersionExtractor go_version_extractor=new GolangVersionExtractor(this);
-		go_version_extractor.scan();
-		go_version=go_version_extractor.get_go_version();
+		if (go_version_extractor.scan()) {
+			go_version=go_version_extractor.get_go_version();
+		} else {
+			go_version=GO_VERSION.to_go_version(pcheader.get_go_version());
+		}
 	}
 
 	public GolangBinary(GolangBinary obj) {
