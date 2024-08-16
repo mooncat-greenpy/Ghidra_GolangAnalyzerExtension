@@ -5,6 +5,7 @@ import golanganalyzerextension.datatype.GolangDatatype;
 import golanganalyzerextension.exceptions.InvalidBinaryStructureException;
 import golanganalyzerextension.gobinary.exceptions.BinaryAccessException;
 import golanganalyzerextension.log.Logger;
+import golanganalyzerextension.version.GolangVersion;
 
 public class ModuleData {
 
@@ -15,15 +16,58 @@ public class ModuleData {
 	private Address typelink_addr;
 	private long typelink_len;
 	private Address text_addr;
-	private boolean is_go16;
+	private GolangVersion go_version;
 
-	public ModuleData(GolangBinary go_bin, Address base_addr) throws InvalidBinaryStructureException {
+	public ModuleData(GolangBinary go_bin) throws InvalidBinaryStructureException {
 		this.go_bin=go_bin;
-		this.base_addr=base_addr;
 
-		if(!parse()) {
-			throw new InvalidBinaryStructureException(String.format("Parsing module data: addr=%s", base_addr));
+		if(!search_by_magic()) {
+			throw new InvalidBinaryStructureException(String.format("Searching module data: addr=%s", base_addr));
 		}
+	}
+
+	private boolean search_by_magic() {
+		int pointer_size=go_bin.get_pointer_size();
+
+		byte gopclntab_base_bytes[]=new byte[pointer_size];
+		byte gopclntab_base_mask[]=new byte[pointer_size];
+		long gopclntab_base_value=go_bin.get_pcheader_base().getOffset();
+		if(go_bin.is_little_endian()) {
+			for(int i=0; i<pointer_size; i++) {
+				gopclntab_base_bytes[i]=(byte)(gopclntab_base_value&0xff);
+				gopclntab_base_value>>=8;
+				gopclntab_base_mask[i]=(byte)0xff;
+			}
+		} else {
+			for(int i=pointer_size-1; i>=0; i--) {
+				gopclntab_base_bytes[i]=(byte)(gopclntab_base_value&0xff);
+				gopclntab_base_value>>=8;
+				gopclntab_base_mask[i]=(byte)0xff;
+			}
+		}
+
+		Address tmp_base_addr=null;
+		while(true) {
+			try {
+				tmp_base_addr=go_bin.find_memory(tmp_base_addr, gopclntab_base_bytes, gopclntab_base_mask).orElse(null);
+
+				if(tmp_base_addr==null) {
+					break;
+				}
+
+				base_addr=tmp_base_addr;
+				if (parse()) {
+					return true;
+				} else {
+					Logger.append_message(String.format("Failed to parse module data: addr=%s", tmp_base_addr));
+					tmp_base_addr=go_bin.get_address(tmp_base_addr, 4);
+				}
+			} catch (BinaryAccessException e) {
+				Logger.append_message(String.format("Failed to get module data: addr=%s, message=%s", tmp_base_addr, e.getMessage()));
+				break;
+			}
+		}
+		return false;
 	}
 
 	private boolean parse() {
@@ -112,8 +156,12 @@ public class ModuleData {
 		return text_addr;
 	}
 
+	public GolangVersion get_go_version() {
+		return go_version;
+	}
+
 	public boolean get_is_go16() {
-		return is_go16;
+		return go_version.lt("go1.7beta1");
 	}
 
 	private boolean is_golang_type(Address type_base_addr, long offset, boolean is_go16) {
@@ -147,7 +195,7 @@ public class ModuleData {
 		typelink_addr=tmp_typelink_addr;
 		typelink_len=tmp_typelink_len;
 		text_addr=tmp_text_addr;
-		is_go16=false;
+		go_version=new GolangVersion("go1.20beta1");
 
 		return true;
 	}
@@ -174,7 +222,7 @@ public class ModuleData {
 		typelink_addr=tmp_typelink_addr;
 		typelink_len=tmp_typelink_len;
 		text_addr=tmp_text_addr;
-		is_go16=false;
+		go_version=new GolangVersion("go1.18beta1");
 
 		return true;
 	}
@@ -201,7 +249,7 @@ public class ModuleData {
 		typelink_addr=tmp_typelink_addr;
 		typelink_len=tmp_typelink_len;
 		text_addr=tmp_text_addr;
-		is_go16=false;
+		go_version=new GolangVersion("go1.16beta1");
 
 		return true;
 	}
@@ -228,7 +276,7 @@ public class ModuleData {
 		typelink_addr=tmp_typelink_addr;
 		typelink_len=tmp_typelink_len;
 		text_addr=tmp_text_addr;
-		is_go16=false;
+		go_version=new GolangVersion("go1.8beta1");
 
 		return true;
 	}
@@ -255,7 +303,7 @@ public class ModuleData {
 		typelink_addr=tmp_typelink_addr;
 		typelink_len=tmp_typelink_len;
 		text_addr=tmp_text_addr;
-		is_go16=false;
+		go_version=new GolangVersion("go1.7beta1");
 
 		return true;
 	}
@@ -282,7 +330,7 @@ public class ModuleData {
 		typelink_addr=tmp_typelink_addr;
 		typelink_len=tmp_typelink_len;
 		text_addr=tmp_text_addr;
-		is_go16=true;
+		go_version=new GolangVersion("go1.6beta1");
 
 		return true;
 	}

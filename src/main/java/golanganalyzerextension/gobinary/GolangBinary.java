@@ -72,6 +72,7 @@ public class GolangBinary {
 	private Memory memory;
 
 	private PcHeader pcheader;
+	private ModuleData module_data;
 	private GolangVersion go_version;
 
 	public GolangBinary(Program program, TaskMonitor monitor) {
@@ -87,6 +88,13 @@ public class GolangBinary {
 			go_version=go_version_extractor.get_go_version();
 		} else {
 			go_version=GO_VERSION.to_go_version(pcheader.get_go_version());
+		}
+
+		try {
+			module_data=new ModuleData(this);
+		} catch(InvalidBinaryStructureException e) {
+			module_data=null;
+			Logger.append_message(String.format("Failed to get module data: message=%s", e.getMessage()));
 		}
 	}
 
@@ -602,6 +610,10 @@ public class GolangBinary {
 
 	public boolean is_little_endian() {
 		return pcheader.is_little_endian();
+	}
+
+	public Optional<ModuleData> get_module_data() {
+		return Optional.ofNullable(module_data);
 	}
 
 	public String get_go_version() {

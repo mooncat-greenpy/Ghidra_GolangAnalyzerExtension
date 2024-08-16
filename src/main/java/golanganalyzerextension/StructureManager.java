@@ -91,68 +91,36 @@ public class StructureManager {
 
 	private boolean init_basig_golang_datatype() {
 		int pointer_size=go_bin.get_pointer_size();
-
-		byte gopclntab_base_bytes[]=new byte[pointer_size];
-		byte gopclntab_base_mask[]=new byte[pointer_size];
-		long gopclntab_base_value=go_bin.get_pcheader_base().getOffset();
-		if(go_bin.is_little_endian()) {
-			for(int i=0; i<pointer_size; i++) {
-				gopclntab_base_bytes[i]=(byte)(gopclntab_base_value&0xff);
-				gopclntab_base_value>>=8;
-				gopclntab_base_mask[i]=(byte)0xff;
-			}
-		} else {
-			for(int i=pointer_size-1; i>=0; i--) {
-				gopclntab_base_bytes[i]=(byte)(gopclntab_base_value&0xff);
-				gopclntab_base_value>>=8;
-				gopclntab_base_mask[i]=(byte)0xff;
-			}
+		ModuleData module_data=go_bin.get_module_data().orElse(null);
+		if (module_data==null) {
+			return false;
 		}
+		Address type_addr=module_data.get_type_addr();
+		Address typelink_addr=module_data.get_typelink_addr();
+		long typelink_len=module_data.get_typelink_len();
+		boolean is_go16=module_data.get_is_go16();
 
-		Address base_addr=null;
-		while(true) {
-			try {
-				base_addr=go_bin.find_memory(base_addr, gopclntab_base_bytes, gopclntab_base_mask).orElse(null);
+		datatype_holder=new DatatypeHolder(go_bin, is_go16);
 
-				if(base_addr==null) {
-					break;
+		try {
+			for(long i=0;i<typelink_len;i++)
+			{
+				long offset;
+				if(is_go16) {
+					offset=go_bin.get_address_value(typelink_addr, pointer_size*i, pointer_size)-type_addr.getOffset();
+				}else {
+					offset=go_bin.get_address_value(typelink_addr, i*4, 4);
 				}
-
-				ModuleData module_data;
 				try {
-					module_data=new ModuleData(go_bin, base_addr);
+					analyze_type(type_addr, offset, is_go16);
 				} catch(InvalidBinaryStructureException e) {
-					Logger.append_message(String.format("Failed to get module data: %s", e.getMessage()));
-					base_addr=go_bin.get_address(base_addr, 4);
-					continue;
+					Logger.append_message(String.format("Failed to analyze type: addr=%s, offset=%x, message=%s", type_addr, offset, e.getMessage()));
 				}
-
-				Address type_addr=module_data.get_type_addr();
-				Address typelink_addr=module_data.get_typelink_addr();
-				long typelink_len=module_data.get_typelink_len();
-				boolean is_go16=module_data.get_is_go16();
-				datatype_holder=new DatatypeHolder(go_bin, is_go16);
-
-				for(long i=0;i<typelink_len;i++)
-				{
-					long offset;
-					if(is_go16) {
-						offset=go_bin.get_address_value(typelink_addr, pointer_size*i, pointer_size)-type_addr.getOffset();
-					}else {
-						offset=go_bin.get_address_value(typelink_addr, i*4, 4);
-					}
-					try {
-						analyze_type(type_addr, offset, is_go16);
-					} catch(InvalidBinaryStructureException e) {
-						Logger.append_message(String.format("Failed to analyze type: addr=%s, offset=%x, message=%s", type_addr, offset, e.getMessage()));
-					}
-				}
-
-				base_addr=go_bin.get_address(base_addr, 4);
-			} catch (BinaryAccessException e) {
-				Logger.append_message(String.format("Failed to get datatypes: addr=%s, message=%s", base_addr, e.getMessage()));
-				break;
 			}
+
+		} catch (BinaryAccessException e) {
+			Logger.append_message(String.format("Failed to get datatypes: addr=%s, message=%s", module_data.get_base_addr(), e.getMessage()));
+			return false;
 		}
 
 		if(datatype_holder.get_datatype_map().size()==0)
