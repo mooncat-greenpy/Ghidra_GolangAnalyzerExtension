@@ -109,7 +109,7 @@ class SysTheVersion {
 			return false;
 		}
 		GolangVersion go_version=new GolangVersion(sys_the_version);
-		if(go_version.lt("go1.8beta1")) {
+		if(go_version.lt(GolangVersion.GO_1_8_LOWEST)) {
 			return true;
 		}
 

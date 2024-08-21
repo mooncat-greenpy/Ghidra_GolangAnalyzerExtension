@@ -35,6 +35,7 @@ import golanganalyzerextension.gobinary.GolangBinary;
 import golanganalyzerextension.gobinary.exceptions.BinaryAccessException;
 import golanganalyzerextension.log.Logger;
 import golanganalyzerextension.service.GolangAnalyzerExtensionService;
+import golanganalyzerextension.version.GolangVersion;
 
 
 // debug/gosym/pclntab.go
@@ -208,7 +209,7 @@ public class GolangFunction {
 
 	private boolean init_params() {
 		boolean is_go118=false;
-		if(go_bin.ge_go_version("go1.18beta1")) {
+		if(go_bin.ge_go_version(GolangVersion.GO_1_18_LOWEST)) {
 			is_go118=true;
 		}
 
@@ -387,7 +388,7 @@ public class GolangFunction {
 
 	private boolean init_func() {
 		boolean is_go118=false;
-		if(go_bin.ge_go_version("go1.18beta1")) {
+		if(go_bin.ge_go_version(GolangVersion.GO_1_18_LOWEST)) {
 			is_go118=true;
 		}
 		long entry_addr_value;
@@ -466,10 +467,10 @@ public class GolangFunction {
 	private boolean init_func_name() {
 		boolean is_go116=false;
 		boolean is_go118=false;
-		if(go_bin.ge_go_version("go1.16beta1")) {
+		if(go_bin.ge_go_version(GolangVersion.GO_1_16_LOWEST)) {
 			is_go116=true;
 		}
-		if(go_bin.ge_go_version("go1.18beta1")) {
+		if(go_bin.ge_go_version(GolangVersion.GO_1_18_LOWEST)) {
 			is_go118=true;
 		}
 
@@ -503,10 +504,10 @@ public class GolangFunction {
 	private boolean init_file_line_map() {
 		boolean is_go116=false;
 		boolean is_go118=false;
-		if(go_bin.ge_go_version("go1.16beta1")) {
+		if(go_bin.ge_go_version(GolangVersion.GO_1_16_LOWEST)) {
 			is_go116=true;
 		}
-		if(go_bin.ge_go_version("go1.18beta1")) {
+		if(go_bin.ge_go_version(GolangVersion.GO_1_18_LOWEST)) {
 			is_go118=true;
 		}
 
@@ -573,10 +574,10 @@ public class GolangFunction {
 	private boolean init_frame_map() {
 		boolean is_go116=false;
 		boolean is_go118=false;
-		if(go_bin.ge_go_version("go1.16beta1")) {
+		if(go_bin.ge_go_version(GolangVersion.GO_1_16_LOWEST)) {
 			is_go116=true;
 		}
-		if(go_bin.ge_go_version("go1.18beta1")) {
+		if(go_bin.ge_go_version(GolangVersion.GO_1_18_LOWEST)) {
 			is_go118=true;
 		}
 
@@ -655,10 +656,10 @@ public class GolangFunction {
 	private List<PcFile> get_pc_to_file_name_list(int target_pc_offset) {
 		boolean is_go116=false;
 		boolean is_go118=false;
-		if(go_bin.ge_go_version("go1.16beta1")) {
+		if(go_bin.ge_go_version(GolangVersion.GO_1_16_LOWEST)) {
 			is_go116=true;
 		}
-		if(go_bin.ge_go_version("go1.18beta1")) {
+		if(go_bin.ge_go_version(GolangVersion.GO_1_18_LOWEST)) {
 			is_go118=true;
 		}
 

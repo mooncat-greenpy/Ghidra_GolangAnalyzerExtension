@@ -3,6 +3,28 @@ package golanganalyzerextension.version;
 import golanganalyzerextension.exceptions.InvalidGolangVersionFormatException;
 
 public class GolangVersion {
+	public static final String GO_1_2_LOWEST="go1.2beta1";
+	public static final String GO_1_3_LOWEST="go1.3beta1";
+	public static final String GO_1_4_LOWEST="go1.4beta1";
+	public static final String GO_1_5_LOWEST="go1.5beta1";
+	public static final String GO_1_6_LOWEST="go1.6beta1";
+	public static final String GO_1_7_LOWEST="go1.7beta1";
+	public static final String GO_1_8_LOWEST="go1.8beta1";
+	public static final String GO_1_9_LOWEST="go1.9beta1";
+	public static final String GO_1_10_LOWEST="go1.10beta1";
+	public static final String GO_1_11_LOWEST="go1.11beta1";
+	public static final String GO_1_12_LOWEST="go1.12beta1";
+	public static final String GO_1_13_LOWEST="go1.13beta1";
+	public static final String GO_1_14_LOWEST="go1.14beta1";
+	public static final String GO_1_15_LOWEST="go1.15beta1";
+	public static final String GO_1_16_LOWEST="go1.16beta1";
+	public static final String GO_1_17_LOWEST="go1.17beta1";
+	public static final String GO_1_18_LOWEST="go1.18beta1";
+	public static final String GO_1_19_LOWEST="go1.19beta1";
+	public static final String GO_1_20_LOWEST="go1.20beta1";
+	public static final String GO_1_21_LOWEST="go1.21beta1";
+	public static final String GO_1_22_LOWEST="go1.22beta1";
+
 	private static final String GO_VERSION_PATTERN="go\\d+(\\.\\d+(\\.\\d+)?)?(beta\\d+|rc\\d+)?";
 	// major minor patch
 	private static final int PART_NUM=3;

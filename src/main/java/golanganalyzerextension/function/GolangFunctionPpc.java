@@ -8,6 +8,7 @@ import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Instruction;
 import golanganalyzerextension.gobinary.GolangBinary;
 import golanganalyzerextension.service.GolangAnalyzerExtensionService;
+import golanganalyzerextension.version.GolangVersion;
 
 public class GolangFunctionPpc extends GolangFunction {
 
@@ -36,7 +37,7 @@ public class GolangFunctionPpc extends GolangFunction {
 
 	@Override
 	boolean check_inst_reg_arg(Instruction inst, Map<Register, REG_FLAG> builtin_reg_state) {
-		if(go_bin.lt_go_version("go1.18beta1") || go_bin.get_pointer_size()!=8) {
+		if(go_bin.lt_go_version(GolangVersion.GO_1_18_LOWEST) || go_bin.get_pointer_size()!=8) {
 			return false;
 		}
 		return true;

@@ -9,6 +9,7 @@ import ghidra.program.model.address.Address;
 import golanganalyzerextension.exceptions.InvalidBinaryStructureException;
 import golanganalyzerextension.gobinary.GolangBinary;
 import golanganalyzerextension.gobinary.exceptions.BinaryAccessException;
+import golanganalyzerextension.version.GolangVersion;
 
 public class UncommonType implements Serializable {
 
@@ -48,7 +49,7 @@ public class UncommonType implements Serializable {
 
 	private String get_type_string(GolangBinary go_bin, Address address) {
 		boolean is_go117=false;
-		if(go_bin.ge_go_version("go1.17beta1")) {
+		if(go_bin.ge_go_version(GolangVersion.GO_1_17_LOWEST)) {
 			is_go117=true;
 		}
 

@@ -1,6 +1,7 @@
 package golanganalyzerextension.datatype;
 
 import golanganalyzerextension.gobinary.GolangBinary;
+import golanganalyzerextension.version.GolangVersion;
 
 public class StructField {
 	private String name;
@@ -10,7 +11,7 @@ public class StructField {
 	StructField(GolangBinary go_bin, String name, long type_key, int offset){
 		this.name=name;
 		this.type_key=type_key;
-		if(go_bin.ge_go_version("go1.19beta1") || go_bin.lt_go_version("go1.9beta1")) {
+		if(go_bin.ge_go_version(GolangVersion.GO_1_19_LOWEST) || go_bin.lt_go_version(GolangVersion.GO_1_9_LOWEST)) {
 			this.offset=offset;
 		} else {
 			this.offset=offset>>1;

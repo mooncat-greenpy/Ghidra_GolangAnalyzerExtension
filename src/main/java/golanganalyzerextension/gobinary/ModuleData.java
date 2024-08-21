@@ -76,15 +76,15 @@ public class ModuleData {
 		boolean is_go116=false;
 		boolean is_go18=false;
 		boolean is_go17=false;
-		if(go_bin.ge_go_version("go1.20beta1")) {
+		if(go_bin.ge_go_version(GolangVersion.GO_1_20_LOWEST)) {
 			is_go120=true;
-		} else if(go_bin.ge_go_version("go1.18beta1")) {
+		} else if(go_bin.ge_go_version(GolangVersion.GO_1_18_LOWEST)) {
 			is_go118=true;
-		} else if(go_bin.ge_go_version("go1.16beta1")) {
+		} else if(go_bin.ge_go_version(GolangVersion.GO_1_16_LOWEST)) {
 			is_go116=true;
-		} else if(go_bin.ge_go_version("go1.8beta1")) {
+		} else if(go_bin.ge_go_version(GolangVersion.GO_1_8_LOWEST)) {
 			is_go18=true;
-		} else if(go_bin.ge_go_version("go1.7beta1")) {
+		} else if(go_bin.ge_go_version(GolangVersion.GO_1_7_LOWEST)) {
 			is_go17=true;
 		}
 
@@ -161,7 +161,7 @@ public class ModuleData {
 	}
 
 	public boolean get_is_go16() {
-		return go_version.lt("go1.7beta1");
+		return go_version.lt(GolangVersion.GO_1_7_LOWEST);
 	}
 
 	private boolean is_golang_type(Address type_base_addr, long offset, boolean is_go16) {
@@ -195,7 +195,7 @@ public class ModuleData {
 		typelink_addr=tmp_typelink_addr;
 		typelink_len=tmp_typelink_len;
 		text_addr=tmp_text_addr;
-		go_version=new GolangVersion("go1.20beta1");
+		go_version=new GolangVersion(GolangVersion.GO_1_20_LOWEST);
 
 		return true;
 	}
@@ -222,7 +222,7 @@ public class ModuleData {
 		typelink_addr=tmp_typelink_addr;
 		typelink_len=tmp_typelink_len;
 		text_addr=tmp_text_addr;
-		go_version=new GolangVersion("go1.18beta1");
+		go_version=new GolangVersion(GolangVersion.GO_1_18_LOWEST);
 
 		return true;
 	}
@@ -249,7 +249,7 @@ public class ModuleData {
 		typelink_addr=tmp_typelink_addr;
 		typelink_len=tmp_typelink_len;
 		text_addr=tmp_text_addr;
-		go_version=new GolangVersion("go1.16beta1");
+		go_version=new GolangVersion(GolangVersion.GO_1_16_LOWEST);
 
 		return true;
 	}
@@ -276,7 +276,7 @@ public class ModuleData {
 		typelink_addr=tmp_typelink_addr;
 		typelink_len=tmp_typelink_len;
 		text_addr=tmp_text_addr;
-		go_version=new GolangVersion("go1.8beta1");
+		go_version=new GolangVersion(GolangVersion.GO_1_8_LOWEST);
 
 		return true;
 	}
@@ -303,7 +303,7 @@ public class ModuleData {
 		typelink_addr=tmp_typelink_addr;
 		typelink_len=tmp_typelink_len;
 		text_addr=tmp_text_addr;
-		go_version=new GolangVersion("go1.7beta1");
+		go_version=new GolangVersion(GolangVersion.GO_1_7_LOWEST);
 
 		return true;
 	}
@@ -330,7 +330,7 @@ public class ModuleData {
 		typelink_addr=tmp_typelink_addr;
 		typelink_len=tmp_typelink_len;
 		text_addr=tmp_text_addr;
-		go_version=new GolangVersion("go1.6beta1");
+		go_version=new GolangVersion(GolangVersion.GO_1_6_LOWEST);
 
 		return true;
 	}

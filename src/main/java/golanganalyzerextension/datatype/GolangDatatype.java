@@ -19,6 +19,7 @@ import golanganalyzerextension.exceptions.InvalidBinaryStructureException;
 import golanganalyzerextension.gobinary.GolangBinary;
 import golanganalyzerextension.gobinary.exceptions.BinaryAccessException;
 import golanganalyzerextension.log.Logger;
+import golanganalyzerextension.version.GolangVersion;
 
 
 public class GolangDatatype {
@@ -226,7 +227,7 @@ public class GolangDatatype {
 
 	String get_type_string(Address address, int flag) throws InvalidBinaryStructureException {
 		boolean is_go117=false;
-		if(go_bin.ge_go_version("go1.17beta1")) {
+		if(go_bin.ge_go_version(GolangVersion.GO_1_17_LOWEST)) {
 			is_go117=true;
 		}
 

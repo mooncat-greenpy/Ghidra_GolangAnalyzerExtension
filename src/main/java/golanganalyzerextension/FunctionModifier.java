@@ -17,6 +17,7 @@ import golanganalyzerextension.gobinary.GolangBinary;
 import golanganalyzerextension.gobinary.exceptions.BinaryAccessException;
 import golanganalyzerextension.log.Logger;
 import golanganalyzerextension.service.GolangAnalyzerExtensionService;
+import golanganalyzerextension.version.GolangVersion;
 
 
 // debug/gosym/pclntab.go
@@ -95,10 +96,10 @@ public class FunctionModifier {
 	private boolean init_file_name_list() {
 		boolean is_go116=false;
 		boolean is_go18=false;
-		if(go_bin.ge_go_version("go1.16beta1")) {
+		if(go_bin.ge_go_version(GolangVersion.GO_1_16_LOWEST)) {
 			is_go116=true;
 		}
-		if(go_bin.ge_go_version("go1.8beta1")) {
+		if(go_bin.ge_go_version(GolangVersion.GO_1_8_LOWEST)) {
 			is_go18=true;
 		}
 
@@ -141,10 +142,10 @@ public class FunctionModifier {
 	private boolean init_functions() {
 		boolean is_go116=false;
 		boolean is_go118=false;
-		if(go_bin.ge_go_version("go1.16beta1")) {
+		if(go_bin.ge_go_version(GolangVersion.GO_1_16_LOWEST)) {
 			is_go116=true;
 		}
-		if(go_bin.ge_go_version("go1.18beta1")) {
+		if(go_bin.ge_go_version(GolangVersion.GO_1_18_LOWEST)) {
 			is_go118=true;
 		}
 

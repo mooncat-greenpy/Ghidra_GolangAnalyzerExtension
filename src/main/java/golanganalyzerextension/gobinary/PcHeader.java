@@ -62,13 +62,13 @@ public class PcHeader {
 		public static GolangVersion to_go_version(GO_VERSION go_version) {
 			switch(go_version) {
 			case GO_12:
-				return new GolangVersion("go1.2beta1");
+				return new GolangVersion(GolangVersion.GO_1_2_LOWEST);
 			case GO_116:
-				return new GolangVersion("go1.16beta1");
+				return new GolangVersion(GolangVersion.GO_1_16_LOWEST);
 			case GO_118:
-				return new GolangVersion("go1.18beta1");
+				return new GolangVersion(GolangVersion.GO_1_18_LOWEST);
 			default:
-				return new GolangVersion("go1.20beta1");
+				return new GolangVersion(GolangVersion.GO_1_20_LOWEST);
 			}
 		}
 	}
