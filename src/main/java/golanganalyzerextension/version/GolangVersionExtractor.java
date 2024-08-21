@@ -13,12 +13,13 @@ public class GolangVersionExtractor {
 	private static final String DEFAULT_GO_VERSION="go0.0.0";
 
 	private GolangBinary go_bin;
-
 	private String go_version;
+	private boolean is_scanned_result;
 
 	public GolangVersionExtractor(GolangBinary go_bin) {
 		go_version=DEFAULT_GO_VERSION;
 		this.go_bin=go_bin;
+		is_scanned_result=false;
 	}
 
 	public GolangVersion get_go_version() {
@@ -31,13 +32,20 @@ public class GolangVersionExtractor {
 
 	public boolean scan() {
 		if(scan_build_info()) {
+			is_scanned_result=true;
 			return true;
 		}
 
 		if(scan_sys_the_version()) {
+			is_scanned_result=true;
 			return true;
 		}
+		is_scanned_result=false;
 		return false;
+	}
+
+	public boolean get_is_scanned_result() {
+		return is_scanned_result;
 	}
 
 	private boolean scan_build_info() {

@@ -60,7 +60,7 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 			throws CancelledException {
 		Logger.set_logger(log, analyzer_option.get_debugmode());
 		try {
-			GolangBinary go_bin=new GolangBinary(program, monitor);
+			GolangBinary go_bin=new GolangBinary(program, analyzer_option.get_go_version(), monitor);
 
 			GolangAnalyzerExtensionService service=null;
 			for(Object obj : program.getConsumerList()) {

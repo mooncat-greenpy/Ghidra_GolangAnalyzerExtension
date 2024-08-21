@@ -28,6 +28,10 @@ public class AnalyzerOption {
 	private static final String DEBUG_MODE_DESC="Enable logging.";
 	private boolean debugmode_option;
 
+	private static final String GOLANG_VERSION="Golang version";
+	private static final String GOLANG_VERSION_DESC="Use specified golang version(Optional)";
+	private String go_version_option;
+
 	public AnalyzerOption() {
 		set_default();
 	}
@@ -40,6 +44,7 @@ public class AnalyzerOption {
 		datatype_option=true;
 		string_option=true;
 		debugmode_option=false;
+		go_version_option="";
 	}
 
 	public boolean get_rename() {
@@ -70,6 +75,10 @@ public class AnalyzerOption {
 		return debugmode_option;
 	}
 
+	public String get_go_version() {
+		return go_version_option;
+	}
+
 	public void register(Options options) {
 		options.registerOption(RENAME_FUNC, rename_option, null, RENAME_FUNC_DESC);
 		options.registerOption(CORRECT_ARG, param_option, null, CORRECT_ARG_DESC);
@@ -78,6 +87,7 @@ public class AnalyzerOption {
 		options.registerOption(ADD_DATATYPE, datatype_option, null, ADD_DATATYPE_DESC);
 		options.registerOption(SEARCH_STRING, string_option, null, SEARCH_STRING_DESC);
 		options.registerOption(DEBUG_MODE, debugmode_option, null, DEBUG_MODE_DESC);
+		options.registerOption(GOLANG_VERSION, go_version_option, null, GOLANG_VERSION_DESC);
 	}
 
 	public void change(Options options) {
@@ -88,5 +98,6 @@ public class AnalyzerOption {
 		datatype_option=options.getBoolean(ADD_DATATYPE, datatype_option);
 		string_option=options.getBoolean(SEARCH_STRING, string_option);
 		debugmode_option=options.getBoolean(DEBUG_MODE, debugmode_option);
+		go_version_option=options.getString(GOLANG_VERSION, go_version_option);
 	}
 }

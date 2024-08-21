@@ -75,16 +75,18 @@ public class GolangBinary {
 	private ModuleData module_data;
 	private GolangVersion go_version;
 
-	public GolangBinary(Program program, TaskMonitor monitor) {
+	public GolangBinary(Program program, String custom_go_version_str, TaskMonitor monitor) {
 		this.program=program;
 		this.monitor=monitor;
 		this.program_listing=program.getListing();
 		this.memory=program.getMemory();
 
 		pcheader=new PcHeader(this);
-
 		GolangVersionExtractor go_version_extractor=new GolangVersionExtractor(this);
-		if (go_version_extractor.scan()) {
+
+		if (GolangVersion.is_go_version(custom_go_version_str)) {
+			go_version=new GolangVersion(custom_go_version_str);
+		} else if (go_version_extractor.scan()) {
 			go_version=go_version_extractor.get_go_version();
 		} else {
 			go_version=GO_VERSION.to_go_version(pcheader.get_go_version());
@@ -92,6 +94,9 @@ public class GolangBinary {
 
 		try {
 			module_data=new ModuleData(this);
+			if (!GolangVersion.is_go_version(custom_go_version_str) && !go_version_extractor.get_is_scanned_result() && go_version.le(module_data.get_go_version().get_version_str())) {
+				go_version=module_data.get_go_version();
+			}
 		} catch(InvalidBinaryStructureException e) {
 			module_data=null;
 			Logger.append_message(String.format("Failed to get module data: message=%s", e.getMessage()));
