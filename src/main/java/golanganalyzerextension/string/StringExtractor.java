@@ -217,9 +217,7 @@ public class StringExtractor {
 						}
 					}
 				}
-				if(is_arg_reg) {
-					return;
-				}
+				return;
 			} else {
 				clear_reg_move_any_to_reg(reg_map, check_inst);
 			}
