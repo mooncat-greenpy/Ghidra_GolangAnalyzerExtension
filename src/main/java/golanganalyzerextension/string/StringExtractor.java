@@ -19,7 +19,8 @@ import golanganalyzerextension.service.GolangAnalyzerExtensionService;
 
 public class StringExtractor {
 
-	private static final String[] reg_arg_str={"RAX", "RBX", "RCX", "RDI", "RSI", "R8", "R9", "R10", "R11"};
+	private String[] reg_arg_str={};
+	private static final String[] reg_arg_str_x86={"RAX", "RBX", "RCX", "RDI", "RSI", "R8", "R9", "R10", "R11"};
 
 	private static final int CHECK_INST_NUM=6;
 
@@ -31,6 +32,10 @@ public class StringExtractor {
 	public StringExtractor(GolangBinary go_bin, GolangAnalyzerExtensionService service) {
 		this.go_bin=go_bin;
 		this.service=service;
+
+		if (go_bin.is_x86()) {
+			reg_arg_str=reg_arg_str_x86;
+		}
 
 		string_map=new HashMap<Long, GolangString>();
 
