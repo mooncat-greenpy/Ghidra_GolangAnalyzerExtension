@@ -11,7 +11,7 @@ public class GolangString {
 	private Address addr;
 	private String str;
 
-	private GolangString(boolean is_struct, Address addr, String str) {
+	public GolangString(boolean is_struct, Address addr, String str) {
 		this.is_struct=is_struct;
 		this.addr=addr;
 		this.str=str;

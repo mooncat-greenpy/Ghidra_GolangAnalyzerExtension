@@ -6,11 +6,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import db.BooleanField;
 import db.DBHandle;
 import db.DBLongIterator;
 import db.DBRecord;
 import db.Field;
 import db.IllegalFieldAccessException;
+import db.LongField;
 import db.Schema;
 import db.StringField;
 import db.Table;
@@ -30,6 +32,7 @@ import golanganalyzerextension.datatype.GolangDatatypeRecord;
 import golanganalyzerextension.function.GolangFunction;
 import golanganalyzerextension.function.GolangFunctionRecord;
 import golanganalyzerextension.gobinary.GolangBinary;
+import golanganalyzerextension.gobinary.exceptions.BinaryAccessException;
 import golanganalyzerextension.log.Logger;
 import golanganalyzerextension.string.GolangString;
 import golanganalyzerextension.viewer.GolangAnalyzerExtensionProvider;
@@ -51,6 +54,7 @@ public class GolangAnalyzerExtensionPlugin extends ProgramPlugin implements Gola
 	private static final String GOLANG_FUNCTION_TABLE_NAME="GAE_GolangFunction";
 	private static final String GOLANG_FILENAME_TABLE_NAME="GAE_GolangFilename";
 	private static final String GOLANG_DATATYPE_TABLE_NAME="GAE_GolangDatatype";
+	private static final String GOLANG_STRING_TABLE_NAME="GAE_GolangString";
 
 	// TODO: Fix
 	// - Save GolangString to DBRecord
@@ -377,13 +381,86 @@ public class GolangAnalyzerExtensionPlugin extends ProgramPlugin implements Gola
 		datatype_map=tmp_datatype_map;
 	}
 
+	private static final int RECORD_ADDR_INDEX_V1=1;
+	private static final int RECORD_STRING_INDEX_V1=2;
+	private static final int RECORD_IS_STRUCT_INDEX_V1=3;
+	private static final Schema GOLANG_STRING_SCHEMA_V1=new Schema(1, "GolangString",
+			new Field[] {
+					StringField.INSTANCE,
+					LongField.INSTANCE,
+					StringField.INSTANCE,
+					BooleanField.INSTANCE,
+					},
+			new String[] {
+					"GAEVersion",
+					"Addr",
+					"String",
+					"IsStruct"
+					}
+	);
 	@Override
 	public Map<Long, GolangString> get_string_map() {
+		if(string_map.size()>0) {
+			return string_map;
+		}
+
+		Table table=get_table(GOLANG_STRING_TABLE_NAME);
+		if(table==null) {
+			return string_map;
+		}
+		GolangBinary go_bin=get_binary();
+		if(go_bin==null) {
+			return string_map;
+		}
+		Map<Long, GolangString> tmp_string_map=new HashMap<>();
+		try {
+			DBLongIterator iter=table.longKeyIterator();
+			while(iter.hasNext()) {
+				try {
+					long key;
+					long addr_value;
+					String str;
+					boolean is_struct;
+					DBRecord record=table.getRecord(iter.next());
+					if (record.hasSameSchema(GOLANG_STRING_SCHEMA_V1)) {
+						key=record.getKey();
+						addr_value=record.getLongValue(RECORD_ADDR_INDEX_V1);
+						str=record.getString(RECORD_STRING_INDEX_V1);
+						is_struct=record.getBooleanValue(RECORD_IS_STRUCT_INDEX_V1);
+					} else {
+						throw new IllegalArgumentException("Invalid DBRecord schema");
+					}
+					tmp_string_map.put(key, new GolangString(is_struct, go_bin.get_address(addr_value), str));
+				} catch (IllegalArgumentException | BinaryAccessException e) {
+					Logger.append_message(String.format("Failed to get GolangString from table: message=%s", e.getMessage()));;
+				}
+			}
+		} catch (IOException e) {
+			Logger.append_message(String.format("Failed to get GolangString from table: message=%s", e.getMessage()));;
+		}
+		string_map=tmp_string_map;
 		return string_map;
 	}
 
 	@Override
 	public void store_string_map(Map<Long, GolangString> map) {
+		Table table=create_new_table(GOLANG_STRING_TABLE_NAME, GOLANG_STRING_SCHEMA_V1);
+		if(table==null) {
+			return;
+		}
+		for(Map.Entry<Long, GolangString> entry : map.entrySet()) {
+			try {
+				DBRecord record=GOLANG_STRING_SCHEMA_V1.createRecord(entry.getKey());
+				GolangString go_str=entry.getValue();
+				record.setString(RECORD_GAE_VERSION_INDEX_V1, GolangAnalyzerExtensionAnalyzer.VERSION);
+				record.setLongValue(RECORD_ADDR_INDEX_V1, go_str.get_addr().getOffset());
+				record.setString(RECORD_STRING_INDEX_V1, go_str.get_str());
+				record.setBooleanValue(RECORD_IS_STRUCT_INDEX_V1, go_str.get_is_struct());
+				table.putRecord(record);
+			} catch (IOException | IllegalFieldAccessException e) {
+				Logger.append_message(String.format("Failed to put GolangString to table: message=%s", e.getMessage()));;
+			}
+		}
 		string_map=map;
 	}
 }
