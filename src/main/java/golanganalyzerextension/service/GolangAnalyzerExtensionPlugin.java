@@ -24,6 +24,7 @@ import ghidra.framework.plugintool.util.PluginStatus;
 import ghidra.program.database.ProgramDB;
 import ghidra.program.model.listing.Program;
 import ghidra.util.task.TaskMonitor;
+import golanganalyzerextension.GolangAnalyzerExtensionAnalyzer;
 import golanganalyzerextension.datatype.GolangDatatype;
 import golanganalyzerextension.datatype.GolangDatatypeRecord;
 import golanganalyzerextension.function.GolangFunction;
@@ -172,7 +173,7 @@ public class GolangAnalyzerExtensionPlugin extends ProgramPlugin implements Gola
 	public void store_binary(GolangBinary bin) {
 		go_bin=bin;
 
-		Table table=create_new_table(GOLANG_BINARY_TABLE_NAME, GolangBinary.SCHEMA);
+		Table table=create_new_table(GOLANG_BINARY_TABLE_NAME, GolangBinary.SCHEMA_V1);
 		if(table==null) {
 			return;
 		}
@@ -195,8 +196,12 @@ public class GolangAnalyzerExtensionPlugin extends ProgramPlugin implements Gola
 		List<GolangFunctionRecord> tmp_func_list=new ArrayList<>();
 		try {
 			DBLongIterator iter=table.longKeyIterator();
+			GolangBinary go_bin=get_binary();
+			if (go_bin==null) {
+				return func_list;
+			}
 			while(iter.hasNext()) {
-				tmp_func_list.add(new GolangFunctionRecord(get_binary(), table.getRecord(iter.next())));
+				tmp_func_list.add(new GolangFunctionRecord(go_bin, table.getRecord(iter.next())));
 			}
 		} catch (IOException | IllegalArgumentException e) {
 			Logger.append_message(String.format("Failed to get GolangFunction from table: message=%s", e.getMessage()));;
@@ -209,7 +214,7 @@ public class GolangAnalyzerExtensionPlugin extends ProgramPlugin implements Gola
 	public void store_function_list(List<GolangFunction> list) {
 		List<GolangFunctionRecord> tmp_func_list=new ArrayList<>();
 
-		Table table=create_new_table(GOLANG_FUNCTION_TABLE_NAME, GolangFunctionRecord.SCHEMA);
+		Table table=create_new_table(GOLANG_FUNCTION_TABLE_NAME, GolangFunctionRecord.SCHEMA_V1);
 		if(table==null) {
 			return;
 		}
@@ -225,12 +230,24 @@ public class GolangAnalyzerExtensionPlugin extends ProgramPlugin implements Gola
 		func_list=tmp_func_list;
 	}
 
-	private static final int RECORD_FILENAME_INDEX=0;
-	public static final Schema GOLANG_FILENAME_SCHEMA=new Schema(0, "GolangFilename",
+	private static final int RECORD_FILENAME_INDEX_V0=0;
+	public static final Schema GOLANG_FILENAME_SCHEMA_V0=new Schema(0, "GolangFilename",
 			new Field[] {
 					StringField.INSTANCE,
 					},
 			new String[] {
+					"Filename",
+					}
+	);
+	private static final int RECORD_GAE_VERSION_INDEX_V1=0;
+	private static final int RECORD_FILENAME_INDEX_V1=1;
+	public static final Schema GOLANG_FILENAME_SCHEMA_V1=new Schema(1, "GolangFilename",
+			new Field[] {
+					StringField.INSTANCE,
+					StringField.INSTANCE,
+					},
+			new String[] {
+					"GAEVersion",
 					"Filename",
 					}
 	);
@@ -250,7 +267,13 @@ public class GolangAnalyzerExtensionPlugin extends ProgramPlugin implements Gola
 			while(iter.hasNext()) {
 				try {
 					DBRecord record=table.getRecord(iter.next());
-					tmp_filename_list.add(record.getString(RECORD_FILENAME_INDEX));
+					if (record.hasSameSchema(GOLANG_FILENAME_SCHEMA_V0)) {
+						tmp_filename_list.add(record.getString(RECORD_FILENAME_INDEX_V0));
+					} else if (record.hasSameSchema(GOLANG_FILENAME_SCHEMA_V1)) {
+						tmp_filename_list.add(record.getString(RECORD_FILENAME_INDEX_V1));
+					} else {
+						throw new IllegalArgumentException("Invalid DBRecord schema");
+					}
 				} catch(IllegalArgumentException e) {
 					Logger.append_message(String.format("Failed to get GolangFilename from table: message=%s", e.getMessage()));;
 				}
@@ -264,14 +287,15 @@ public class GolangAnalyzerExtensionPlugin extends ProgramPlugin implements Gola
 
 	@Override
 	public void store_filename_list(List<String> list) {
-		Table table=create_new_table(GOLANG_FILENAME_TABLE_NAME, GOLANG_FILENAME_SCHEMA);
+		Table table=create_new_table(GOLANG_FILENAME_TABLE_NAME, GOLANG_FILENAME_SCHEMA_V1);
 		if(table==null) {
 			return;
 		}
 		for(int i=0; i<list.size(); i++) {
 			try {
-				DBRecord record=GOLANG_FILENAME_SCHEMA.createRecord(i);
-				record.setString(RECORD_FILENAME_INDEX, list.get(i));
+				DBRecord record=GOLANG_FILENAME_SCHEMA_V1.createRecord(i);
+				record.setString(RECORD_GAE_VERSION_INDEX_V1, GolangAnalyzerExtensionAnalyzer.VERSION);
+				record.setString(RECORD_FILENAME_INDEX_V1, list.get(i));
 				table.putRecord(record);
 			} catch (IOException | IllegalFieldAccessException e) {
 				Logger.append_message(String.format("Failed to put GolangFilename to table: message=%s", e.getMessage()));;
@@ -286,14 +310,15 @@ public class GolangAnalyzerExtensionPlugin extends ProgramPlugin implements Gola
 			return;
 		}
 		filename_list.add(filename);
-		Table table=create_or_open_table(GOLANG_FILENAME_TABLE_NAME, GOLANG_FILENAME_SCHEMA);
+		Table table=create_or_open_table(GOLANG_FILENAME_TABLE_NAME, GOLANG_FILENAME_SCHEMA_V1);
 		if(table==null) {
 			return;
 		}
 		int idx=filename_list.size();
 		try {
-			DBRecord record=GOLANG_FILENAME_SCHEMA.createRecord(idx);
-			record.setString(RECORD_FILENAME_INDEX, filename);
+			DBRecord record=GOLANG_FILENAME_SCHEMA_V1.createRecord(idx);
+			record.setString(RECORD_GAE_VERSION_INDEX_V1, GolangAnalyzerExtensionAnalyzer.VERSION);
+			record.setString(RECORD_FILENAME_INDEX_V1, filename);
 			table.putRecord(record);
 		} catch (IOException | IllegalFieldAccessException e) {
 			Logger.append_message(String.format("Failed to put a GolangFilename to table: message=%s", e.getMessage()));;
@@ -315,7 +340,11 @@ public class GolangAnalyzerExtensionPlugin extends ProgramPlugin implements Gola
 			DBLongIterator iter=table.longKeyIterator();
 			while(iter.hasNext()) {
 				try {
-					GolangDatatypeRecord record=new GolangDatatypeRecord(get_binary(), table.getRecord(iter.next()));
+					GolangBinary go_bin=get_binary();
+					if (go_bin==null) {
+						return datatype_map;
+					}
+					GolangDatatypeRecord record=new GolangDatatypeRecord(go_bin, table.getRecord(iter.next()));
 					tmp_datatype_map.put(record.get_type_offset(), record);
 				} catch (IllegalArgumentException e) {
 					Logger.append_message(String.format("Failed to get GolangDatatype from table: message=%s", e.getMessage()));;
@@ -332,7 +361,7 @@ public class GolangAnalyzerExtensionPlugin extends ProgramPlugin implements Gola
 	public void store_datatype_map(Map<Long, GolangDatatype> map) {
 		Map<Long, GolangDatatypeRecord> tmp_datatype_map=new HashMap<>();
 
-		Table table=create_new_table(GOLANG_DATATYPE_TABLE_NAME, GolangDatatypeRecord.SCHEMA);
+		Table table=create_new_table(GOLANG_DATATYPE_TABLE_NAME, GolangDatatypeRecord.SCHEMA_V1);
 		if(table==null) {
 			return;
 		}

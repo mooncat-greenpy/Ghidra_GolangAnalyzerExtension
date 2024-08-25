@@ -56,6 +56,7 @@ import ghidra.program.model.symbol.SourceType;
 import ghidra.program.model.util.CodeUnitInsertionException;
 import ghidra.util.exception.InvalidInputException;
 import ghidra.util.task.TaskMonitor;
+import golanganalyzerextension.GolangAnalyzerExtensionAnalyzer;
 import golanganalyzerextension.exceptions.InvalidBinaryStructureException;
 import golanganalyzerextension.exceptions.InvalidGolangVersionFormatException;
 import golanganalyzerextension.gobinary.PcHeader.GO_VERSION;
@@ -113,12 +114,12 @@ public class GolangBinary {
 		this.go_version=obj.go_version;
 	}
 
-	private static final int RECORD_PCHEADER_ADDR_INDEX=0;
-	private static final int RECORD_PCHEADER_VERSION_INDEX=1;
-	private static final int RECORD_PCHEADER_LITTLE_ENDIAN_INDEX=2;
-	private static final int RECORD_GO_VERSION_INDEX=3;
 	public static final int RECORD_KEY=0;
-	public static final Schema SCHEMA=new Schema(0, "GolangBinary",
+	private static final int RECORD_PCHEADER_ADDR_INDEX_V0=0;
+	private static final int RECORD_PCHEADER_VERSION_INDEX_V0=1;
+	private static final int RECORD_PCHEADER_LITTLE_ENDIAN_INDEX_V0=2;
+	private static final int RECORD_GO_VERSION_INDEX_V0=3;
+	public static final Schema SCHEMA_V0=new Schema(0, "GolangBinary",
 			new Field[] {
 					LongField.INSTANCE,
 					IntField.INSTANCE,
@@ -132,6 +133,27 @@ public class GolangBinary {
 					"GoVersion",
 					}
 	);
+	private static final int RECORD_GAE_VERSION_INDEX_V1=0;
+	private static final int RECORD_PCHEADER_ADDR_INDEX_V1=1;
+	private static final int RECORD_PCHEADER_VERSION_INDEX_V1=2;
+	private static final int RECORD_PCHEADER_LITTLE_ENDIAN_INDEX_V1=3;
+	private static final int RECORD_GO_VERSION_INDEX_V1=4;
+	public static final Schema SCHEMA_V1=new Schema(1, "GolangBinary",
+			new Field[] {
+					StringField.INSTANCE,
+					LongField.INSTANCE,
+					IntField.INSTANCE,
+					BooleanField.INSTANCE,
+					StringField.INSTANCE,
+					},
+			new String[] {
+					"GAEVersion",
+					"PcheaderAddr",
+					"PcheaderVersion",
+					"PcheaderLittleEndian",
+					"GoVersion",
+					}
+	);
 
 	public GolangBinary(Program program, TaskMonitor monitor, DBRecord record) throws IllegalArgumentException {
 		this.program=program;
@@ -139,20 +161,31 @@ public class GolangBinary {
 		this.program_listing=program.getListing();
 		this.memory=program.getMemory();
 
-		if(!record.hasSameSchema(SCHEMA)) {
-			throw new IllegalArgumentException("Invalid DBRecord schema");
-		}
 		long pcheader_addr_value;
 		int pcheader_version_num;
 		boolean pcheader_little_endian;
 		String go_version_str;
-		try {
-			pcheader_addr_value=record.getLongValue(RECORD_PCHEADER_ADDR_INDEX);
-			pcheader_version_num=record.getIntValue(RECORD_PCHEADER_VERSION_INDEX);
-			pcheader_little_endian=record.getBooleanValue(RECORD_PCHEADER_LITTLE_ENDIAN_INDEX);
-			go_version_str=record.getString(RECORD_GO_VERSION_INDEX);
-		} catch(IllegalFieldAccessException e) {
-			throw new IllegalArgumentException(String.format("Invalid DBRecord field: message=%s", e.getMessage()));
+
+		if(record.hasSameSchema(SCHEMA_V0)) {
+			try {
+				pcheader_addr_value=record.getLongValue(RECORD_PCHEADER_ADDR_INDEX_V0);
+				pcheader_version_num=record.getIntValue(RECORD_PCHEADER_VERSION_INDEX_V0);
+				pcheader_little_endian=record.getBooleanValue(RECORD_PCHEADER_LITTLE_ENDIAN_INDEX_V0);
+				go_version_str=record.getString(RECORD_GO_VERSION_INDEX_V0);
+			} catch(IllegalFieldAccessException e) {
+				throw new IllegalArgumentException(String.format("Invalid DBRecord field: message=%s", e.getMessage()));
+			}
+		} else if(record.hasSameSchema(SCHEMA_V1)) {
+			try {
+				pcheader_addr_value=record.getLongValue(RECORD_PCHEADER_ADDR_INDEX_V1);
+				pcheader_version_num=record.getIntValue(RECORD_PCHEADER_VERSION_INDEX_V1);
+				pcheader_little_endian=record.getBooleanValue(RECORD_PCHEADER_LITTLE_ENDIAN_INDEX_V1);
+				go_version_str=record.getString(RECORD_GO_VERSION_INDEX_V1);
+			} catch(IllegalFieldAccessException e) {
+				throw new IllegalArgumentException(String.format("Invalid DBRecord field: message=%s", e.getMessage()));
+			}
+		} else {
+			throw new IllegalArgumentException("Invalid DBRecord schema");
 		}
 		try {
 			this.pcheader=new PcHeader(this, get_address(pcheader_addr_value), GO_VERSION.from_integer(pcheader_version_num), pcheader_little_endian);
@@ -163,11 +196,12 @@ public class GolangBinary {
 	}
 
 	public DBRecord get_record() throws IllegalFieldAccessException {
-		DBRecord record=SCHEMA.createRecord(RECORD_KEY);
-		record.setLongValue(RECORD_PCHEADER_ADDR_INDEX, pcheader.get_addr().getOffset());
-		record.setIntValue(RECORD_PCHEADER_VERSION_INDEX, GO_VERSION.to_integer(pcheader.get_go_version()));
-		record.setBooleanValue(RECORD_PCHEADER_LITTLE_ENDIAN_INDEX, pcheader.is_little_endian());
-		record.setString(RECORD_GO_VERSION_INDEX, go_version.get_version_str());
+		DBRecord record=SCHEMA_V1.createRecord(RECORD_KEY);
+		record.setString(RECORD_GAE_VERSION_INDEX_V1, GolangAnalyzerExtensionAnalyzer.VERSION);
+		record.setLongValue(RECORD_PCHEADER_ADDR_INDEX_V1, pcheader.get_addr().getOffset());
+		record.setIntValue(RECORD_PCHEADER_VERSION_INDEX_V1, GO_VERSION.to_integer(pcheader.get_go_version()));
+		record.setBooleanValue(RECORD_PCHEADER_LITTLE_ENDIAN_INDEX_V1, pcheader.is_little_endian());
+		record.setString(RECORD_GO_VERSION_INDEX_V1, go_version.get_version_str());
 		return record;
 	}
 
