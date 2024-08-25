@@ -75,6 +75,7 @@ public class GolangBinary {
 	private PcHeader pcheader;
 	private ModuleData module_data;
 	private GolangVersion go_version;
+	private boolean guess_go_version;
 
 	public GolangBinary(Program program, String custom_go_version_str, TaskMonitor monitor) {
 		this.program=program;
@@ -84,6 +85,7 @@ public class GolangBinary {
 
 		pcheader=new PcHeader(this);
 		GolangVersionExtractor go_version_extractor=new GolangVersionExtractor(this);
+		guess_go_version=false;
 
 		if (GolangVersion.is_go_version(custom_go_version_str)) {
 			go_version=new GolangVersion(custom_go_version_str);
@@ -91,12 +93,14 @@ public class GolangBinary {
 			go_version=go_version_extractor.get_go_version();
 		} else {
 			go_version=GO_VERSION.to_go_version(pcheader.get_go_version());
+			guess_go_version=true;
 		}
 
 		try {
 			module_data=new ModuleData(this);
 			if (!GolangVersion.is_go_version(custom_go_version_str) && !go_version_extractor.get_is_scanned_result() && go_version.le(module_data.get_go_version().get_version_str())) {
 				go_version=module_data.get_go_version();
+				guess_go_version=true;
 			}
 		} catch(InvalidBinaryStructureException e) {
 			module_data=null;
@@ -112,6 +116,7 @@ public class GolangBinary {
 
 		this.pcheader=obj.pcheader;
 		this.go_version=obj.go_version;
+		this.guess_go_version=obj.guess_go_version;
 	}
 
 	public static final int RECORD_KEY=0;
@@ -138,6 +143,7 @@ public class GolangBinary {
 	private static final int RECORD_PCHEADER_VERSION_INDEX_V1=2;
 	private static final int RECORD_PCHEADER_LITTLE_ENDIAN_INDEX_V1=3;
 	private static final int RECORD_GO_VERSION_INDEX_V1=4;
+	private static final int RECORD_GUESS_GO_VERSION_INDEX_V1=5;
 	public static final Schema SCHEMA_V1=new Schema(1, "GolangBinary",
 			new Field[] {
 					StringField.INSTANCE,
@@ -145,6 +151,7 @@ public class GolangBinary {
 					IntField.INSTANCE,
 					BooleanField.INSTANCE,
 					StringField.INSTANCE,
+					BooleanField.INSTANCE,
 					},
 			new String[] {
 					"GAEVersion",
@@ -152,6 +159,7 @@ public class GolangBinary {
 					"PcheaderVersion",
 					"PcheaderLittleEndian",
 					"GoVersion",
+					"GuessGoVersion",
 					}
 	);
 
@@ -165,6 +173,7 @@ public class GolangBinary {
 		int pcheader_version_num;
 		boolean pcheader_little_endian;
 		String go_version_str;
+		boolean guess_go_version_flag=false;
 
 		if(record.hasSameSchema(SCHEMA_V0)) {
 			try {
@@ -181,6 +190,7 @@ public class GolangBinary {
 				pcheader_version_num=record.getIntValue(RECORD_PCHEADER_VERSION_INDEX_V1);
 				pcheader_little_endian=record.getBooleanValue(RECORD_PCHEADER_LITTLE_ENDIAN_INDEX_V1);
 				go_version_str=record.getString(RECORD_GO_VERSION_INDEX_V1);
+				guess_go_version_flag=record.getBooleanValue(RECORD_GUESS_GO_VERSION_INDEX_V1);
 			} catch(IllegalFieldAccessException e) {
 				throw new IllegalArgumentException(String.format("Invalid DBRecord field: message=%s", e.getMessage()));
 			}
@@ -190,6 +200,7 @@ public class GolangBinary {
 		try {
 			this.pcheader=new PcHeader(this, get_address(pcheader_addr_value), GO_VERSION.from_integer(pcheader_version_num), pcheader_little_endian);
 			this.go_version=new GolangVersion(go_version_str);
+			this.guess_go_version=guess_go_version_flag;
 		} catch(InvalidBinaryStructureException | BinaryAccessException | InvalidGolangVersionFormatException e) {
 			throw new IllegalArgumentException(String.format("Invalid GolangBinary arg: pcheader_addr=%x, pcheader_version=%x, go_version=%s, message=%s", pcheader_addr_value, pcheader_version_num, go_version_str, e.getMessage()));
 		}
@@ -202,6 +213,7 @@ public class GolangBinary {
 		record.setIntValue(RECORD_PCHEADER_VERSION_INDEX_V1, GO_VERSION.to_integer(pcheader.get_go_version()));
 		record.setBooleanValue(RECORD_PCHEADER_LITTLE_ENDIAN_INDEX_V1, pcheader.is_little_endian());
 		record.setString(RECORD_GO_VERSION_INDEX_V1, go_version.get_version_str());
+		record.setBooleanValue(RECORD_GUESS_GO_VERSION_INDEX_V1, guess_go_version);
 		return record;
 	}
 
@@ -657,6 +669,10 @@ public class GolangBinary {
 
 	public String get_go_version() {
 		return go_version.get_version_str();
+	}
+
+	public boolean get_guess_go_version() {
+		return guess_go_version;
 	}
 
 	public boolean eq_go_version(String cmp_go_version) throws InvalidGolangVersionFormatException {

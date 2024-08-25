@@ -121,10 +121,12 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 
 		String name="Not Analyzed";
 		String go_version="";
+		boolean guess_go_version=false;
 		int pointer_size=0;
 		if(go_bin!=null) {
 			name=go_bin.get_name();
 			go_version=go_bin.get_go_version();
+			guess_go_version=go_bin.get_guess_go_version();
 			pointer_size=go_bin.get_pointer_size();
 		}
 		int func_list_size=gae_plugin.get_function_list().size();
@@ -135,7 +137,7 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 		JLabel name_panel=new JLabel(String.format("Name: %s", name));
 		name_panel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
 		panel.add(name_panel);
-		JLabel go_version_panel=new JLabel(String.format("Go version: %s", go_version));
+		JLabel go_version_panel=new JLabel(String.format("Go version: %s%s", go_version, guess_go_version ? "?" : ""));
 		go_version_panel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
 		panel.add(go_version_panel);
 		JLabel pointer_size_panel=new JLabel(String.format("Pointer size: %d", pointer_size));
