@@ -20,12 +20,12 @@ import golanganalyzerextension.string.StringExtractor;
 
 public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 
-	public static final String VERSION="1.2.4-beta";
+	public static final String VERSION="1.2.4";
 	AnalyzerOption analyzer_option;
 
 	public GolangAnalyzerExtensionAnalyzer() {
 
-		super("Golang Analyzer", "Assist in analyzing Golang binaries", AnalyzerType.BYTE_ANALYZER);
+		super("Golang Analyzer", String.format("Assist in analyzing Golang binaries (version: %s)", VERSION), AnalyzerType.BYTE_ANALYZER);
 		setPriority(AnalysisPriority.LOW_PRIORITY);
 		setSupportsOneTimeAnalysis(true);
 
