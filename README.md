@@ -1,27 +1,27 @@
 # GolangAnalyzerExtension
-GolangAnalyzerExtension helps Ghidra analyze Golang binaries.
-It supports go1.6 through go1.21.
+The GolangAnalyzerExtension facilitates the analysis of Golang binaries using Ghidra.
+It supports go1.6 through go1.23.
 
 ## Features
-This plugin for Ghidra provides the following functionality for analyzing Golang binaries:
+This Ghidra plugin provides the following functionality for analyzing Golang binaries:
 
-- Detect the version of Golang
-- Rename functions
-- Correct function arguments
-- Include source file and line number information in comments
-- Add custom data types to Data Type Manager
-- Search for strings within the binary
+- Identification of the Golang version
+- Renaming of functions
+- Correction of function arguments
+- Documentation of source file names and line numbers in comments
+- Integration of custom data types into the Data Type Manager
+- Capability to search for strings within the binary
 
-Please see the attached image.
+Refer to the images below for a visual demonstration.
 
 <img src="img/demo.png">
 
 <img src="img/demo.gif">
 
 ## Usage
-1. Download the release
+1. Download the latest release
 2. Launch Ghidra
-3. Navigate to `File -> Install Extensions... -> Add extension -> Select zip file`
-4. Check the checkbox for `GolangAnalyzerExtension`
-5. Restart Ghidra
-6. Analyze your Golang binary
+3. Go to `File -> Install Extensions... -> Add extension -> Select zip file`
+4. Enable the `GolangAnalyzerExtension` by checking its checkbox
+5. Restart Ghidra to apply changes
+6. Begin analyzing your Golang binary
