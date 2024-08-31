@@ -21,7 +21,7 @@ public class AnalyzerOption {
 	private boolean datatype_option;
 
 	private static final String SEARCH_STRING="Search strings";
-	private static final String SEARCH_STRING_DESC="Search golang strings, add labels and set data types";
+	private static final String SEARCH_STRING_DESC="Search golang strings, add labels and set data types.";
 	private boolean string_option;
 
 	private static final String DEBUG_MODE="Use debug mode";
@@ -29,7 +29,7 @@ public class AnalyzerOption {
 	private boolean debugmode_option;
 
 	private static final String GOLANG_VERSION="Golang version";
-	private static final String GOLANG_VERSION_DESC="Use specified golang version(Optional)";
+	private static final String GOLANG_VERSION_DESC="Specify the Go version to use for analysis (optional).";
 	private String go_version_option;
 
 	public AnalyzerOption() {

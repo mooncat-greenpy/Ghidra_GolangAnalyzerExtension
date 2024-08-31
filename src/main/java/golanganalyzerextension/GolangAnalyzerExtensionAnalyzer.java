@@ -25,7 +25,7 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 
 	public GolangAnalyzerExtensionAnalyzer() {
 
-		super("Golang Analyzer", String.format("Assist in analyzing Golang binaries (version: %s)", VERSION), AnalyzerType.BYTE_ANALYZER);
+		super("Golang Analyzer", String.format("Assists in analyzing Golang binaries (version: %s)", VERSION), AnalyzerType.BYTE_ANALYZER);
 		setPriority(AnalysisPriority.LOW_PRIORITY);
 		setSupportsOneTimeAnalysis(true);
 
