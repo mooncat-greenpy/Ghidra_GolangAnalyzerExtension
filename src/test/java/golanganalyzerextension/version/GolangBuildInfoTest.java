@@ -40,7 +40,7 @@ public class GolangBuildInfoTest extends AbstractGhidraHeadlessIntegrationTest {
 	@MethodSource("test_get_build_info_addr_params")
 	public void test_get_build_info_addr(boolean expected, Map<String, String> bytes_map) throws Exception {
 		initialize(bytes_map);
-		GolangBinary go_bin=new GolangBinary(program, TaskMonitor.DUMMY);
+		GolangBinary go_bin=new GolangBinary(program, "", TaskMonitor.DUMMY);
 
 		boolean result=true;
 		GolangBuildInfo go_build_info;
@@ -76,7 +76,7 @@ public class GolangBuildInfoTest extends AbstractGhidraHeadlessIntegrationTest {
 	@MethodSource("test_find_go_version_params")
 	public void test_find_go_version(String expected, Map<String, String> bytes_map) throws Exception {
 		initialize(bytes_map);
-		GolangBinary go_bin=new GolangBinary(program, TaskMonitor.DUMMY);
+		GolangBinary go_bin=new GolangBinary(program, "", TaskMonitor.DUMMY);
 
 		GolangBuildInfo go_build_info=new GolangBuildInfo(go_bin);
 
@@ -125,7 +125,7 @@ public class GolangBuildInfoTest extends AbstractGhidraHeadlessIntegrationTest {
 	@MethodSource("test_find_module_version_params")
 	public void test_find_module_version(String expected, Map<String, String> bytes_map) throws Exception {
 		initialize(bytes_map);
-		GolangBinary go_bin=new GolangBinary(program, TaskMonitor.DUMMY);
+		GolangBinary go_bin=new GolangBinary(program, "", TaskMonitor.DUMMY);
 
 		GolangBuildInfo go_build_info=new GolangBuildInfo(go_bin);
 
@@ -158,7 +158,7 @@ public class GolangBuildInfoTest extends AbstractGhidraHeadlessIntegrationTest {
 	@MethodSource("test_golang_build_info_params")
 	public void test_golang_build_info(String expected_go_version, String expected_module_version, Map<String, String> bytes_map) throws Exception {
 		initialize(bytes_map);
-		GolangBinary go_bin=new GolangBinary(program, TaskMonitor.DUMMY);
+		GolangBinary go_bin=new GolangBinary(program, "", TaskMonitor.DUMMY);
 
 		GolangBuildInfo go_build_info=new GolangBuildInfo(go_bin);
 

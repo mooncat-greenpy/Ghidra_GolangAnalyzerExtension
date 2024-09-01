@@ -40,7 +40,7 @@ public class UncommonTypeTest extends AbstractGhidraHeadlessIntegrationTest {
 	@MethodSource("test_get_pkg_path_params")
 	public void test_get_pkg_path(String expected, boolean is_go16, Map<String, String> bytes_map) throws Exception {
 		initialize(bytes_map);
-		GolangBinary go_bin=new GolangBinary(program, TaskMonitor.DUMMY);
+		GolangBinary go_bin=new GolangBinary(program, "", TaskMonitor.DUMMY);
 
 		UncommonType go_uncommon_type=new UncommonType(go_bin, go_bin.get_address(0x004a94b0), go_bin.get_address(0x00492000), is_go16);
 
@@ -102,7 +102,7 @@ public class UncommonTypeTest extends AbstractGhidraHeadlessIntegrationTest {
 	@MethodSource("test_get_memthod_list_params")
 	public void test_get_memthod_list(List<String> name_list, List<Long> type_offset_list, List<Long> func_addr_value_list, boolean is_go16, Map<String, String> bytes_map) throws Exception {
 		initialize(bytes_map);
-		GolangBinary go_bin=new GolangBinary(program, TaskMonitor.DUMMY);
+		GolangBinary go_bin=new GolangBinary(program, "", TaskMonitor.DUMMY);
 
 		UncommonType go_uncommon_type=new UncommonType(go_bin, go_bin.get_address(0x004a94b0), go_bin.get_address(0x00492000), is_go16);
 
@@ -157,7 +157,7 @@ public class UncommonTypeTest extends AbstractGhidraHeadlessIntegrationTest {
 			put("0x0060000c", "00104000 00200000");
 			put("0x00602000", "00104000");
 		}});
-		GolangBinary go_bin=new GolangBinary(program, TaskMonitor.DUMMY);
+		GolangBinary go_bin=new GolangBinary(program, "", TaskMonitor.DUMMY);
 
 		UncommonType uncommon_type=new UncommonType(go_bin, go_bin.get_address(0x004a94b0), go_bin.get_address(0x00492000), true);
 		ByteArrayOutputStream byte_out = new ByteArrayOutputStream();

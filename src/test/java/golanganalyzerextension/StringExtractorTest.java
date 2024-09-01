@@ -48,7 +48,7 @@ public class StringExtractorTest {
 	@MethodSource("test_string_extractor_params")
 	public void test_string_extractor(Map<Long, String> expected, Map<String, String> bytes_map) throws Exception {
 		initialize(bytes_map);
-		GolangBinary go_bin=new GolangBinary(program, TaskMonitor.DUMMY);
+		GolangBinary go_bin=new GolangBinary(program, "", TaskMonitor.DUMMY);
 		GolangAnalyzerExtensionService service=new GolangAnalyzerExtensionDummyService();
 
 		StringExtractor string_extractor=new StringExtractor(go_bin, service);
@@ -175,7 +175,7 @@ public class StringExtractorTest {
 	@MethodSource("test_search_inst_params")
 	public void test_search_inst(Map<Long, String> expected, String lang_name, Map<String, String> bytes_map) throws Exception {
 		initialize_with_func(lang_name, bytes_map);
-		GolangBinary go_bin=new GolangBinary(program, TaskMonitor.DUMMY);
+		GolangBinary go_bin=new GolangBinary(program, "", TaskMonitor.DUMMY);
 		GolangAnalyzerExtensionService service=new GolangAnalyzerExtensionDummyService();
 
 		StringExtractor string_extractor=new StringExtractor(go_bin, service);

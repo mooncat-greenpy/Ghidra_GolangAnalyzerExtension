@@ -33,7 +33,7 @@ public class GolangVersionExtractorTest extends AbstractGhidraHeadlessIntegratio
 	@MethodSource("test_get_go_version_params")
 	public void test_get_go_version(String expected, Map<String, String> bytes_map) throws Exception {
 		initialize(bytes_map);
-		GolangBinary go_bin=new GolangBinary(program, TaskMonitor.DUMMY);
+		GolangBinary go_bin=new GolangBinary(program, "", TaskMonitor.DUMMY);
 
 		GolangVersionExtractor go_version_extractor=new GolangVersionExtractor(go_bin);
 		go_version_extractor.scan();

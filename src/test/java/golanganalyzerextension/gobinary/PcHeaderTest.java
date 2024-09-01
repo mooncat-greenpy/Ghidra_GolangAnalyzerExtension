@@ -36,7 +36,7 @@ public class PcHeaderTest extends AbstractGhidraHeadlessIntegrationTest {
 
 		boolean result=true;
 		try {
-			GolangBinary go_bin=new GolangBinary(program, TaskMonitor.DUMMY);
+			GolangBinary go_bin=new GolangBinary(program, "", TaskMonitor.DUMMY);
 			PcHeader pcheader=new PcHeader(go_bin);
 
 			assertEquals(pcheader.get_addr().getOffset(), expected_addr_value);

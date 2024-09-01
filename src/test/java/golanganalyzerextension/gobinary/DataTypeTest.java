@@ -37,7 +37,7 @@ public class DataTypeTest  extends AbstractGhidraHeadlessIntegrationTest {
 			put("0x502000", "00104000");
 		}});
 
-		GolangBinary go_bin=new GolangBinary(program, TaskMonitor.DUMMY);
+		GolangBinary go_bin=new GolangBinary(program, "", TaskMonitor.DUMMY);
 
 		assertEquals(go_bin.get_signed_numeric_datatype(size).getLength(), expected_size);
 		assertEquals(go_bin.get_unsigned_numeric_datatype(size).getLength(), expected_size);
@@ -66,7 +66,7 @@ public class DataTypeTest  extends AbstractGhidraHeadlessIntegrationTest {
 			put("0x502000", "00104000");
 		}});
 
-		GolangBinary go_bin=new GolangBinary(program, TaskMonitor.DUMMY);
+		GolangBinary go_bin=new GolangBinary(program, "", TaskMonitor.DUMMY);
 		boolean signed_result=true;
 		try {
 			go_bin.get_signed_numeric_datatype(size);

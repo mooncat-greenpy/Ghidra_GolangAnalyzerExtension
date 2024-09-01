@@ -34,7 +34,7 @@ public class SysTheVersionTest extends AbstractGhidraHeadlessIntegrationTest {
 	@MethodSource("test_sys_the_version_params")
 	public void test_sys_the_version(String expected, Map<String, String> bytes_map) throws Exception {
 		initialize(bytes_map);
-		GolangBinary go_bin=new GolangBinary(program, TaskMonitor.DUMMY);
+		GolangBinary go_bin=new GolangBinary(program, "", TaskMonitor.DUMMY);
 
 		SysTheVersion sys_the_version=new SysTheVersion(go_bin);
 

@@ -42,7 +42,7 @@ public class FileLineTest extends AbstractGhidraHeadlessIntegrationTest {
 		initialize(new HashMap<String, String>(){{
 			put("0x401000", "00000000000000000000000000000000");
 		}});
-		GolangBinary go_bin=new GolangBinary(program, TaskMonitor.DUMMY);
+		GolangBinary go_bin=new GolangBinary(program, "", TaskMonitor.DUMMY);
 
 		FileLine file_line=new FileLine(go_bin.get_address(addr_value), offset, 0, "", 0);
 
@@ -60,7 +60,7 @@ public class FileLineTest extends AbstractGhidraHeadlessIntegrationTest {
 	@MethodSource("test_get_file_name_params")
 	public void test_get_file_name(String file_name, int line_num) throws Exception {
 		initialize(new HashMap<String, String>());
-		GolangBinary go_bin=new GolangBinary(program, TaskMonitor.DUMMY);
+		GolangBinary go_bin=new GolangBinary(program, "", TaskMonitor.DUMMY);
 
 		FileLine file_line=new FileLine(go_bin.get_address(0x401000), 0, 0, file_name, line_num);
 
@@ -78,7 +78,7 @@ public class FileLineTest extends AbstractGhidraHeadlessIntegrationTest {
 	@MethodSource("test_get_line_num_params")
 	public void test_get_line_num(String file_name, int line_num) throws Exception {
 		initialize(new HashMap<String, String>());
-		GolangBinary go_bin=new GolangBinary(program, TaskMonitor.DUMMY);
+		GolangBinary go_bin=new GolangBinary(program, "", TaskMonitor.DUMMY);
 
 		FileLine file_line=new FileLine(go_bin.get_address(0x401000), 0, 0, file_name, line_num);
 
@@ -96,7 +96,7 @@ public class FileLineTest extends AbstractGhidraHeadlessIntegrationTest {
 	@MethodSource("test_to_string_params")
 	public void test_to_string(String file_name, int line_num) throws Exception {
 		initialize(new HashMap<String, String>());
-		GolangBinary go_bin=new GolangBinary(program, TaskMonitor.DUMMY);
+		GolangBinary go_bin=new GolangBinary(program, "", TaskMonitor.DUMMY);
 
 		FileLine file_line=new FileLine(go_bin.get_address(0x401000), 0, 0, file_name, line_num);
 
@@ -113,7 +113,7 @@ public class FileLineTest extends AbstractGhidraHeadlessIntegrationTest {
 	@Test
 	public void test_serialize() throws Exception {
 		initialize(new HashMap<String, String>());
-		GolangBinary go_bin=new GolangBinary(program, TaskMonitor.DUMMY);
+		GolangBinary go_bin=new GolangBinary(program, "", TaskMonitor.DUMMY);
 
 		FileLine file_line=new FileLine(go_bin.get_address(0x401000), 0, 0, "test.go", 4);
 		ByteArrayOutputStream byte_out = new ByteArrayOutputStream();
