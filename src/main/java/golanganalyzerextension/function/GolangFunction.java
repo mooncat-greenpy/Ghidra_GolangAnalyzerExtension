@@ -54,8 +54,7 @@ public class GolangFunction {
 	String func_name;
 	int arg_size;
 	List<Parameter> params;
-	// Disable in the next release
-	// ReturnParameterImpl ret_param;
+	ReturnParameterImpl ret_param;
 	Map<Integer, FileLine> file_line_comment_map;
 	Map<Integer, Long> frame_map;
 
@@ -70,8 +69,7 @@ public class GolangFunction {
 		this.func_size=func_size;
 
 		this.params=new ArrayList<>();
-		// Disable in the next release
-		// this.ret_param=null;
+		this.ret_param=null;
 		this.file_line_comment_map=new HashMap<>();
 		this.frame_map = new TreeMap<>();
 
@@ -95,8 +93,7 @@ public class GolangFunction {
 		this.func_name="not_init";
 		this.arg_size=0;
 		this.params=new ArrayList<>();
-		// Disable in the next release
-		// this.ret_param=null;
+		this.ret_param=null;
 		this.file_line_comment_map=new HashMap<>();
 		this.frame_map = new TreeMap<>();
 
@@ -161,10 +158,9 @@ public class GolangFunction {
 		return params;
 	}
 
-	// Disable in the next release
-	/*public Optional<Parameter> get_ret_param() {
+	public Optional<Parameter> get_ret_param() {
 		return Optional.ofNullable(ret_param);
-	}*/
+	}
 
 	public Map<Integer, FileLine> get_file_line_comment_map(){
 		return file_line_comment_map;
@@ -255,8 +251,7 @@ public class GolangFunction {
 
 		try {
 			params=new ArrayList<>();
-			// Disable in the next release
-			// List<Register> ret_regs=new ArrayList<>();
+			List<Register> ret_regs=new ArrayList<>();
 			int stack_base=get_arg_stack_base();
 			int stack_count=0;
 			for(int i=0;i<args_num && i<50;i++) {
@@ -291,10 +286,9 @@ public class GolangFunction {
 				Register reg=null;
 				if(is_reg_arg) {
 					reg=go_bin.get_register(get_reg_arg_name(i)).orElse(null);
-					// Disable in the next release
-					/*if(reg!=null) {
+					if(reg!=null) {
 						ret_regs.add(reg);
-					}*/
+					}
 				}else if(is_builtin_reg) {
 					reg=builtin_reg_arg.get(i);
 				}
@@ -307,15 +301,14 @@ public class GolangFunction {
 				}
 				params.add(add_param);
 			}
-			// Disable in the next release
-			/*if(ret_regs.size() > 0) {
+			if(ret_regs.size() > 0) {
 				StructureDataType ret_datatype=new StructureDataType(String.format("ret_datatype_%x", ret_regs.size()), 0);
 				for(int i=0; i<ret_regs.size(); i++) {
 					ret_datatype.add(go_bin.get_unsigned_numeric_datatype(go_bin.get_pointer_size()), String.format("ret_%x", ret_regs.size()-i), null);
 				}
 				VariableStorage vs=new VariableStorage(func.getProgram(), (Register[])ret_regs.toArray(new Register[ret_regs.size()]));
 				ret_param=new ReturnParameterImpl(ret_datatype, vs, func.getProgram());
-			}*/
+			}
 		}catch(Exception e) {
 			Logger.append_message(String.format("Failed to set function parameters: %s", e.getMessage()));
 			return false;
@@ -434,8 +427,7 @@ public class GolangFunction {
 		}
 
 		for(GolangDatatypeRecord record : service.get_datatype_map().values()) {
-			// Disable in the next release
-			/*if(func_name.equals("fmt.Fprintln")) {
+			if(func_name.equals("fmt.Fprintln")) {
 				if(record.get_name().equals("io.Writer")) {
 					insert_params("w", 0, record.get_struct());
 				} else if(record.get_name().equals("[]interface {}")) {
@@ -449,7 +441,7 @@ public class GolangFunction {
 					break;
 				}
 				continue;
-			}*/
+			}
 
 			if(record.get_uncommon_type().isEmpty()) {
 				continue;

@@ -258,8 +258,7 @@ public class FunctionModifier {
 
 		try {
 			func.setReturnType(new VoidDataType(), SourceType.USER_DEFINED);
-			// Disable in the next release
-			func.updateFunction(null, null/*gofunc.get_ret_param().orElse(null)*/, new_params, FunctionUpdateType.CUSTOM_STORAGE, true, SourceType.USER_DEFINED);
+			func.updateFunction(null, gofunc.get_ret_param().orElse(null), new_params, FunctionUpdateType.CUSTOM_STORAGE, true, SourceType.USER_DEFINED);
 		}catch(Exception e) {
 			Logger.append_message(String.format("Failed to set function parameters: %s", e.getMessage()));
 		}
