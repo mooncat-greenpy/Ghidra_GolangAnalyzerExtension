@@ -9,6 +9,7 @@ import java.util.TreeMap;
 
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.DataType;
+import ghidra.program.model.data.PointerDataType;
 import ghidra.program.model.data.StructureDataType;
 import ghidra.program.model.data.Undefined1DataType;
 import ghidra.program.model.data.Undefined2DataType;
@@ -25,9 +26,11 @@ import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.listing.Parameter;
 import ghidra.program.model.listing.ParameterImpl;
 import ghidra.program.model.listing.ReturnParameterImpl;
+import ghidra.program.model.listing.Variable;
 import ghidra.program.model.listing.VariableStorage;
 import ghidra.program.model.pcode.Varnode;
 import ghidra.program.model.symbol.SourceType;
+import ghidra.util.exception.InvalidInputException;
 import golanganalyzerextension.datatype.GolangDatatypeRecord;
 import golanganalyzerextension.datatype.UncommonType.UncommonMethod;
 import golanganalyzerextension.exceptions.InvalidBinaryStructureException;
@@ -53,6 +56,7 @@ public class GolangFunction {
 	Function func;
 	String func_name;
 	int arg_size;
+	List<Varnode> var_list;
 	List<Parameter> params;
 	ReturnParameterImpl ret_param;
 	Map<Integer, FileLine> file_line_comment_map;
@@ -207,7 +211,11 @@ public class GolangFunction {
 		return false;
 	}
 
-	private boolean init_params() {
+	private int args_num=0;
+	private boolean is_reg_arg=false;
+	private boolean is_builtin_reg=false;
+	private List<Register> builtin_reg_arg;
+	private boolean init_regs() {
 		boolean is_go118=false;
 		if(go_bin.ge_go_version(GolangVersion.GO_1_18_LOWEST)) {
 			is_go118=true;
@@ -220,7 +228,7 @@ public class GolangFunction {
 			Logger.append_message(String.format("Failed to get arg size: info_addr=%s", info_addr));
 			return false;
 		}
-		int args_num=arg_size/pointer_size+(arg_size%pointer_size==0?0:1);
+		args_num=arg_size/pointer_size+(arg_size%pointer_size==0?0:1);
 
 		init_frame_map();
 
@@ -228,9 +236,9 @@ public class GolangFunction {
 			return true;
 		}
 		// TODO: Define each function if necessary
-		boolean is_reg_arg=false;
+		is_reg_arg=false;
 		Map<Register, REG_FLAG> builtin_reg_state=new HashMap<>();
-		List<Register> builtin_reg_arg=new ArrayList<>();
+		builtin_reg_arg=new ArrayList<>();
 		boolean is_checked_builtin_reg=false;
 		Instruction inst=go_bin.get_instruction(func_addr).orElse(null);
 		while(inst!=null && inst.getAddress().getOffset()<func_addr.getOffset()+func_size) {
@@ -243,17 +251,23 @@ public class GolangFunction {
 			inst=inst.getNext();
 		}
 
-		boolean is_builtin_reg=false;
+		is_builtin_reg=false;
 		if(args_num==0 && builtin_reg_arg.size()>=2 && !is_reg_arg) {
 			is_builtin_reg=true;
 			args_num=builtin_reg_arg.size();
 		}
+		return true;
+	}
 
+	private boolean init_params() {
+		init_regs();
+
+		int pointer_size=go_bin.get_pointer_size();
 		try {
-			params=new ArrayList<>();
+			var_list=new ArrayList<>();
 			List<Register> ret_regs=new ArrayList<>();
-			int stack_base=get_arg_stack_base();
 			int stack_count=0;
+			int offset=0;
 			for(int i=0;i<args_num && i<50;i++) {
 				int size=pointer_size;
 				if(i==args_num-1 && arg_size%pointer_size>0) {
@@ -261,6 +275,42 @@ public class GolangFunction {
 				}else if(is_builtin_reg && !is_reg_arg) {
 					size=builtin_reg_arg.get(i).getBitLength()/8;
 				}
+
+				int stack_base=get_arg_stack_base();
+
+				Register reg=null;
+				if(is_reg_arg) {
+					reg=go_bin.get_register(get_reg_arg_name(i)).orElse(null);
+					if(reg!=null) {
+						ret_regs.add(reg);
+					}
+				}else if(is_builtin_reg) {
+					reg=builtin_reg_arg.get(i);
+				}
+				Varnode varnode;
+				if(reg==null) {
+					varnode=new Varnode(func.getProgram().getAddressFactory().getStackSpace().getAddress(stack_base+(stack_count+1)*pointer_size), size);
+					stack_count++;
+				}else {
+					varnode=new Varnode(reg.getAddress(), reg.getBitLength()/8);
+				}
+				List<Varnode> var_l=new ArrayList<>();
+				var_l.add(varnode);
+				var_list.add(varnode);
+
+				Logger.append_message(String.format("for=%d %d", offset, pointer_size));
+				offset+=pointer_size;
+			}
+
+			params=new ArrayList<>();
+			for(int i=0; i<var_list.size(); i++) {
+				int size=pointer_size;
+				if(i==args_num-1 && arg_size%pointer_size>0) {
+					size=arg_size%pointer_size;
+				}else if(is_builtin_reg && !is_reg_arg) {
+					size=builtin_reg_arg.get(i).getBitLength()/8;
+				}
+
 				DataType datatype;
 				if(size==8) {
 					datatype=new Undefined8DataType();
@@ -283,22 +333,10 @@ public class GolangFunction {
 				}else {
 					datatype=new Undefined8DataType();
 				}
-				Register reg=null;
-				if(is_reg_arg) {
-					reg=go_bin.get_register(get_reg_arg_name(i)).orElse(null);
-					if(reg!=null) {
-						ret_regs.add(reg);
-					}
-				}else if(is_builtin_reg) {
-					reg=builtin_reg_arg.get(i);
-				}
+
 				Parameter add_param;
-				if(reg==null) {
-					add_param=new ParameterImpl(String.format("param_%d", i+1), datatype, stack_base+(stack_count+1)*pointer_size, func.getProgram(), SourceType.USER_DEFINED);
-					stack_count++;
-				}else {
-					add_param=new ParameterImpl(String.format("param_%d", i+1), datatype, reg, func.getProgram(), SourceType.USER_DEFINED);
-				}
+				VariableStorage var = new VariableStorage(func.getProgram(), (Varnode[])var_list.subList(i, i+1).toArray(new Varnode[1]));
+				add_param=new ParameterImpl(String.format("param_%d", i+1), datatype, var, func.getProgram(), SourceType.USER_DEFINED);
 				params.add(add_param);
 			}
 			if(ret_regs.size() > 0) {
@@ -422,12 +460,20 @@ public class GolangFunction {
 		if(!init_file_line_map()) {
 			return false;
 		}
+
 		if(!init_params()) {
 			return false;
 		}
+		try {
+		    Variable[] vars = func.getLocalVariables();
+		    if(vars.length > 0) {
+			    vars[0].setName("test", SourceType.USER_DEFINED);
+		    }
+		} catch(Exception e) {
+		}
 
 		for(GolangDatatypeRecord record : service.get_datatype_map().values()) {
-			if(func_name.equals("fmt.Fprintln")) {
+			/*if(func_name.equals("fmt.Fprintln")) {
 				if(record.get_name().equals("io.Writer")) {
 					insert_params("w", 0, record.get_struct());
 				} else if(record.get_name().equals("[]interface {}")) {
@@ -441,7 +487,7 @@ public class GolangFunction {
 					break;
 				}
 				continue;
-			}
+			}*/
 
 			if(record.get_uncommon_type().isEmpty()) {
 				continue;

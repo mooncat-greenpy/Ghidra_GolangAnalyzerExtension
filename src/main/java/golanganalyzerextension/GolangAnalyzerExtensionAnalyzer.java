@@ -20,7 +20,7 @@ import golanganalyzerextension.string.StringExtractor;
 
 public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 
-	public static final String VERSION="1.2.4";
+	public static final String VERSION="1.2.5-beta1";
 	AnalyzerOption analyzer_option;
 
 	public GolangAnalyzerExtensionAnalyzer() {

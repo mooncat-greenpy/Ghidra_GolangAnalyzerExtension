@@ -217,6 +217,10 @@ public class GolangBinary {
 		return record;
 	}
 
+	public Program get_program() {
+		return program;
+	}
+
 	public String get_name() {
 		return program.getName();
 	}
