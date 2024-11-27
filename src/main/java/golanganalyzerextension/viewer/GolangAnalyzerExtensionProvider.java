@@ -17,6 +17,7 @@ import golanganalyzerextension.datatype.GolangDatatypeRecord;
 import golanganalyzerextension.function.GolangFunctionRecord;
 import golanganalyzerextension.gobinary.GolangBinary;
 import golanganalyzerextension.service.GolangAnalyzerExtensionPlugin;
+import golanganalyzerextension.string.GolangString;
 import resources.Icons;
 import resources.ResourceManager;
 
@@ -47,8 +48,8 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 
 	private GhidraTable string_table;
 	private StringTableModel string_model;
-	private GhidraThreadedTablePanel<String> string_threaded_table_panel;
-	private GhidraTableFilterPanel<String> string_filter_panel;
+	private GhidraThreadedTablePanel<GolangString> string_threaded_table_panel;
+	private GhidraTableFilterPanel<GolangString> string_filter_panel;
 
 	private JPanel info_panel;
 	private JButton function_toggle_show_info_panel_button;
@@ -198,7 +199,7 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 	}
 
 	private class StringTable extends GhidraTable {
-		public StringTable(ThreadedTableModel<String, ?> model) {
+		public StringTable(ThreadedTableModel<GolangString, ?> model) {
 			super(model);
 		}
 	}
@@ -250,7 +251,7 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 		string_model = new StringTableModel(tool, current_program, null, gae_plugin);
 		string_threaded_table_panel = new GhidraThreadedTablePanel<>(string_model, 1000) {
 			@Override
-			protected GTable createTable(ThreadedTableModel<String, ?> model) {
+			protected GTable createTable(ThreadedTableModel<GolangString, ?> model) {
 				return new StringTable(model);
 			}
 		};

@@ -8,17 +8,20 @@ import ghidra.docking.settings.Settings;
 import ghidra.framework.plugintool.PluginTool;
 import ghidra.framework.plugintool.ServiceProvider;
 import ghidra.program.model.address.Address;
+import ghidra.program.model.address.AddressSet;
 import ghidra.program.model.listing.Program;
+import ghidra.program.util.ProgramSelection;
 import ghidra.util.datastruct.Accumulator;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.table.AddressBasedTableModel;
 import ghidra.util.table.field.AbstractProgramBasedDynamicTableColumn;
+import ghidra.util.table.field.AddressBasedLocation;
 import ghidra.util.task.TaskMonitor;
 import golanganalyzerextension.service.GolangAnalyzerExtensionPlugin;
 import golanganalyzerextension.service.GolangAnalyzerExtensionService;
 import golanganalyzerextension.string.GolangString;
 
-class StringTableModel extends AddressBasedTableModel<String> {
+class StringTableModel extends AddressBasedTableModel<GolangString> {
 	private PluginTool plugin_tool;
 
 	StringTableModel(PluginTool tool, Program program, TaskMonitor monitor, GolangAnalyzerExtensionPlugin gae_plugin) {
@@ -33,12 +36,27 @@ class StringTableModel extends AddressBasedTableModel<String> {
 	}
 
 	@Override
-	public Address getAddress(int row) {
-		return null;
+	public ProgramSelection getProgramSelection(int[] rows) {
+
+		AddressSet address_set = new AddressSet();
+		for (int row : rows) {
+			GolangString string = getRowObject(row);
+			Address addr = string.get_addr();
+			if (addr != null) {
+				address_set.addRange(addr, addr);
+			}
+		}
+		return new ProgramSelection(address_set);
 	}
 
 	@Override
-	protected void doLoad(Accumulator<String> accumulator, TaskMonitor monitor)
+	public Address getAddress(int row) {
+		GolangString string = getRowObject(row);
+		return string.get_addr();
+	}
+
+	@Override
+	protected void doLoad(Accumulator<GolangString> accumulator, TaskMonitor monitor)
 			throws CancelledException {
 		Map<Long, GolangString> string_map=null;
 		GolangAnalyzerExtensionService service=plugin_tool.getService(GolangAnalyzerExtensionService.class);
@@ -47,13 +65,14 @@ class StringTableModel extends AddressBasedTableModel<String> {
 			return;
 		}
 		for(GolangString string : string_map.values()) {
-			accumulator.add(string.get_str());
+			accumulator.add(string);
 		}
 	}
 
 	@Override
-	protected TableColumnDescriptor<String> createTableColumnDescriptor() {
-		TableColumnDescriptor<String> descriptor = new TableColumnDescriptor<>();
+	protected TableColumnDescriptor<GolangString> createTableColumnDescriptor() {
+		TableColumnDescriptor<GolangString> descriptor = new TableColumnDescriptor<>();
+		descriptor.addVisibleColumn(new AddressTableColumn());
 		descriptor.addVisibleColumn(new StringTableColumn());
 
 		return descriptor;
@@ -63,17 +82,36 @@ class StringTableModel extends AddressBasedTableModel<String> {
 // Inner Classes
 //==================================================================================================
 
+	private static class AddressTableColumn
+			extends AbstractProgramBasedDynamicTableColumn<GolangString, AddressBasedLocation> {
+		@Override
+		public String getColumnName() {
+			return "Location";
+		}
+
+		@Override
+		public AddressBasedLocation getValue(GolangString rowObject, Settings settings, Program pgm,
+				ServiceProvider serviceProvider) throws IllegalArgumentException {
+			return new AddressBasedLocation(pgm, rowObject.get_addr());
+		}
+
+		@Override
+		public int getColumnPreferredWidth() {
+			return 80;
+		}
+	}
+
 	private static class StringTableColumn
-			extends AbstractProgramBasedDynamicTableColumn<String, String> {
+			extends AbstractProgramBasedDynamicTableColumn<GolangString, String> {
 		@Override
 		public String getColumnName() {
 			return "String";
 		}
 
 		@Override
-		public String getValue(String rowObject, Settings settings, Program program,
+		public String getValue(GolangString rowObject, Settings settings, Program program,
 				ServiceProvider services) throws IllegalArgumentException {
-			return rowObject;
+			return "\"" + rowObject.get_str() + "\"";
 		}
 
 		@Override
