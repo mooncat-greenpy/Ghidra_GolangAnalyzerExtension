@@ -45,10 +45,16 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 	private GhidraThreadedTablePanel<GolangDatatypeRecord> datatype_threaded_table_panel;
 	private GhidraTableFilterPanel<GolangDatatypeRecord> datatype_filter_panel;
 
+	private GhidraTable string_table;
+	private StringTableModel string_model;
+	private GhidraThreadedTablePanel<String> string_threaded_table_panel;
+	private GhidraTableFilterPanel<String> string_filter_panel;
+
 	private JPanel info_panel;
 	private JButton function_toggle_show_info_panel_button;
 	private JButton filename_toggle_show_info_panel_button;
 	private JButton datatype_toggle_show_info_panel_button;
+	private JButton string_toggle_show_info_panel_button;
 	private JButton refresh_button;
 
 	public GolangAnalyzerExtensionProvider(GolangAnalyzerExtensionPlugin plugin) {
@@ -101,6 +107,7 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 		function_table.repaint();
 		filename_table.repaint();
 		datatype_table.repaint();
+		string_table.repaint();
 	}
 
 	private JPanel create_main_panel() {
@@ -132,7 +139,7 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 		int func_list_size=gae_plugin.get_function_list().size();
 		int filename_list_size=gae_plugin.get_filename_list().size();
 		int datatype_map_size=gae_plugin.get_datatype_map().size();
-		// int string_map_size=gae_plugin.get_string_map().size();
+		int string_map_size=gae_plugin.get_string_map().size();
 
 		JLabel name_panel=new JLabel(String.format("Name: %s", name));
 		name_panel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
@@ -152,9 +159,9 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 		JLabel datatype_num_panel=new JLabel(String.format("Number of datatyeps: %d", datatype_map_size));
 		datatype_num_panel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
 		panel.add(datatype_num_panel);
-		// JLabel string_num_panel=new JLabel(String.format("Number of strings: %d", string_map_size));
-		// string_num_panel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
-		// panel.add(string_num_panel);
+		JLabel string_num_panel=new JLabel(String.format("Number of strings: %d", string_map_size));
+		string_num_panel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
+		panel.add(string_num_panel);
 
 		refresh_button = new JButton(Icons.REFRESH_ICON);
 		refresh_button.setText("Refresh");
@@ -186,6 +193,12 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 
 	private class DatatypeTable extends GhidraTable {
 		public DatatypeTable(ThreadedTableModel<GolangDatatypeRecord, ?> model) {
+			super(model);
+		}
+	}
+
+	private class StringTable extends GhidraTable {
+		public StringTable(ThreadedTableModel<String, ?> model) {
 			super(model);
 		}
 	}
@@ -234,6 +247,20 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 		datatype_table.installNavigation(go_to_service, go_to_service.getDefaultNavigatable());
 		datatype_filter_panel = new GhidraTableFilterPanel<>(datatype_table, datatype_model);
 
+		string_model = new StringTableModel(tool, current_program, null, gae_plugin);
+		string_threaded_table_panel = new GhidraThreadedTablePanel<>(string_model, 1000) {
+			@Override
+			protected GTable createTable(ThreadedTableModel<String, ?> model) {
+				return new StringTable(model);
+			}
+		};
+		string_table = string_threaded_table_panel.getTable();
+		string_table.setActionsEnabled(true);
+		string_table.setName("String");
+		string_table.setPreferredScrollableViewportSize(new Dimension(350, 150));
+		string_table.installNavigation(go_to_service, go_to_service.getDefaultNavigatable());
+		string_filter_panel = new GhidraTableFilterPanel<>(string_table, string_model);
+
 		function_toggle_show_info_panel_button = new JButton(COLLAPSE_ICON);
 		function_toggle_show_info_panel_button.setToolTipText("Toggle Info Panel On/Off");
 		function_toggle_show_info_panel_button.addActionListener(e -> toggle_show_info_panel());
@@ -245,6 +272,10 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 		datatype_toggle_show_info_panel_button = new JButton(COLLAPSE_ICON);
 		datatype_toggle_show_info_panel_button.setToolTipText("Toggle Info Panel On/Off");
 		datatype_toggle_show_info_panel_button.addActionListener(e -> toggle_show_info_panel());
+
+		string_toggle_show_info_panel_button = new JButton(COLLAPSE_ICON);
+		string_toggle_show_info_panel_button.setToolTipText("Toggle Info Panel On/Off");
+		string_toggle_show_info_panel_button.addActionListener(e -> toggle_show_info_panel());
 
 		JPanel function_panel = new JPanel(new BorderLayout());
 		function_panel.add(function_threaded_table_panel, BorderLayout.CENTER);
@@ -267,10 +298,18 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 		datatype_bottom_panel.add(datatype_toggle_show_info_panel_button, BorderLayout.EAST);
 		datatype_panel.add(datatype_bottom_panel, BorderLayout.SOUTH);
 
+		JPanel string_panel = new JPanel(new BorderLayout());
+		string_panel.add(string_threaded_table_panel, BorderLayout.CENTER);
+		JPanel string_bottom_panel = new JPanel(new BorderLayout());
+		string_bottom_panel.add(string_filter_panel, BorderLayout.CENTER);
+		string_bottom_panel.add(string_toggle_show_info_panel_button, BorderLayout.EAST);
+		string_panel.add(string_bottom_panel, BorderLayout.SOUTH);
+
 		JTabbedPane tabbed_pane=new JTabbedPane();
 		tabbed_pane.add("functions", function_panel);
 		tabbed_pane.add("filenames", filename_panel);
 		tabbed_pane.add("datatypes", datatype_panel);
+		tabbed_pane.add("strings", string_panel);
 		return tabbed_pane;
 	}
 
@@ -278,6 +317,7 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 		function_model.update_table(current_program);
 		filename_model.update_table(current_program);
 		datatype_model.update_table(current_program);
+		string_model.update_table(current_program);
 	}
 
 	private void toggle_show_info_panel() {
@@ -287,6 +327,7 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 			function_toggle_show_info_panel_button.setIcon(COLLAPSE_ICON);
 			filename_toggle_show_info_panel_button.setIcon(COLLAPSE_ICON);
 			datatype_toggle_show_info_panel_button.setIcon(COLLAPSE_ICON);
+			string_toggle_show_info_panel_button.setIcon(COLLAPSE_ICON);
 			info_panel=create_info_panel();
 			main_panel.add(info_panel, BorderLayout.WEST);
 		}
@@ -294,6 +335,7 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 			function_toggle_show_info_panel_button.setIcon(EXPAND_ICON);
 			filename_toggle_show_info_panel_button.setIcon(EXPAND_ICON);
 			datatype_toggle_show_info_panel_button.setIcon(EXPAND_ICON);
+			string_toggle_show_info_panel_button.setIcon(EXPAND_ICON);
 			main_panel.remove(info_panel);
 		}
 		main_panel.validate();
