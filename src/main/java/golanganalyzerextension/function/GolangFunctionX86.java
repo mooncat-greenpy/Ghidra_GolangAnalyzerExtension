@@ -85,6 +85,11 @@ public class GolangFunctionX86 extends GolangFunction {
 	}
 
 	@Override
+	int get_reg_arg_count() {
+		return reg_arg_str.length;
+	}
+
+	@Override
 	boolean check_inst_reg_arg(Instruction inst, Map<Register, REG_FLAG> builtin_reg_state) {
 		if(go_bin.lt_go_version(GolangVersion.GO_1_17_LOWEST) || go_bin.get_pointer_size()!=8) {
 			return false;

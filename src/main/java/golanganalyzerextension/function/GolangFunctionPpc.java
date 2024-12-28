@@ -31,6 +31,11 @@ public class GolangFunctionPpc extends GolangFunction {
 	}
 
 	@Override
+	int get_reg_arg_count() {
+		return reg_arg_str.length;
+	}
+
+	@Override
 	int get_arg_stack_base() {
 		return go_bin.get_pointer_size()*3;
 	}
