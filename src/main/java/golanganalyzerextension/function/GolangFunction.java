@@ -412,7 +412,7 @@ public class GolangFunction {
 		if((offset%pointer_size)!=0) {
 			return false;
 		}
-		if(idx+datatype.getLength()/pointer_size+(datatype.getLength()%pointer_size==0?0:1)<param_dt_list.size()) {
+		if(idx+datatype.getLength()/pointer_size+(datatype.getLength()%pointer_size==0?0:1)>=param_dt_list.size()) {
 			return false;
 		}
 		for (int i=0; i<datatype.getLength()/pointer_size-1; i++) {
