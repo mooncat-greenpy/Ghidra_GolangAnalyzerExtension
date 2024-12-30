@@ -10,6 +10,7 @@ import java.util.TreeMap;
 
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.DataType;
+import ghidra.program.model.data.PointerDataType;
 import ghidra.program.model.data.StructureDataType;
 import ghidra.program.model.data.Undefined1DataType;
 import ghidra.program.model.data.Undefined2DataType;
@@ -289,18 +290,49 @@ public class GolangFunction {
 		return true;
 	}
 	private boolean init_ret_dt_list() {
+		int pointer_size=go_bin.get_pointer_size();
+		for(int i=0; i<ret_num; i++) {
+			int size=pointer_size;
+			if(i==ret_num-1 && ret_size%pointer_size>0) {
+				size=ret_size%pointer_size;
+			}
+
+			DataType datatype;
+			if(size==8) {
+				datatype=new Undefined8DataType();
+			}else if(size==7) {
+				datatype=new Undefined7DataType();
+			}else if(size==6) {
+				datatype=new Undefined6DataType();
+			}else if(size==5) {
+				datatype=new Undefined5DataType();
+			}else if(size==4) {
+				datatype=new Undefined4DataType();
+			}else if(size==3) {
+				datatype=new Undefined3DataType();
+			}else if(size==2) {
+				datatype=new Undefined2DataType();
+			}else if(size==1) {
+				datatype=new Undefined1DataType();
+			}else if(size==16) {
+				datatype=new UnsignedInteger16DataType();
+			}else {
+				datatype=new Undefined8DataType();
+			}
+			ret_dt_list.add(datatype);
+		}
 		return true;
 	}
 
-	private int add_param_var(int start, int size, List<VariableStorage> var_storage_list, boolean reverse) {
+	private int add_param_var(int start, int size, List<Register> regs, List<VariableStorage> var_storage_list, boolean reverse) {
 		int pointer_size=go_bin.get_pointer_size();
 		int start_idx = start/pointer_size+(start%pointer_size==0?0:1);
 		int size_idx = size/pointer_size+(size%pointer_size==0?0:1);
 		int end_idx = start_idx+size_idx;
 
-		if (end_idx>reg_arg.size()) {
+		if (end_idx>regs.size()) {
 			int stack_base = get_arg_stack_base();
-			int stack_count = start_idx - reg_arg.size();
+			int stack_count = start_idx - regs.size();
 			if(stack_count<0) {
 				stack_count=0;
 			}
@@ -308,7 +340,7 @@ public class GolangFunction {
 			try {
 				VariableStorage vs=new VariableStorage(func.getProgram(), varnode);
 				var_storage_list.add(vs);
-				return (reg_arg.size()+stack_count+size_idx)*pointer_size;
+				return (regs.size()+stack_count+size_idx)*pointer_size;
 			}catch(Exception e) {
 				Logger.append_message(String.format("Failed to set function parameters(stack): %s", e.getMessage()));
 				return 0;
@@ -316,7 +348,7 @@ public class GolangFunction {
 		}
 		List<Varnode> vars=new ArrayList<>();
 		for(int i=end_idx-1; i>=start_idx; i--) {
-			Register reg=reg_arg.get(i);
+			Register reg=regs.get(i);
 			if(reg==null) {
 				return 0;
 			}
@@ -335,7 +367,7 @@ public class GolangFunction {
 		List<VariableStorage> var_storage_list=new LinkedList<>();
 		int cur=0;
 		for(DataType dt : param_dt_list) {
-			cur=add_param_var(cur, dt.getLength(), var_storage_list, true);
+			cur=add_param_var(cur, dt.getLength(), reg_arg, var_storage_list, true);
 			if(cur==0) {
 				return false;
 			}
@@ -354,6 +386,37 @@ public class GolangFunction {
 		return true;
 	}
 	private boolean init_ret_var() {
+		if (ret_dt_list.size()==0) {
+			return true;
+		}
+
+		DataType ret_datatype;
+		if(ret_dt_list.size()==1) {
+			ret_datatype=ret_dt_list.get(0);
+		} else {
+			StructureDataType struct_dt=new StructureDataType(String.format("ret_datatype_%x", ret_dt_list.size()), 0);
+			for(int i=0; i<ret_dt_list.size(); i++) {
+				struct_dt.add(ret_dt_list.get(i), String.format("ret_%x", i+1), null);
+			}
+			ret_datatype=struct_dt;
+		}
+
+		List<VariableStorage> var_storage_list=new LinkedList<>();
+		int cur=add_param_var(0, ret_datatype.getLength(), reg_ret, var_storage_list, true);
+		if(cur==0 && var_storage_list.size()==1) {
+			return false;
+		}
+		if(var_storage_list.get(0).isStackStorage()) {
+			return true;
+		}
+
+		try{
+			ret_param=new ReturnParameterImpl(ret_datatype, var_storage_list.get(0), func.getProgram());
+		}catch(Exception e) {
+			Logger.append_message(String.format("Failed to set function return: %s", e.getMessage()));
+			return false;
+		}
+
 		return true;
 	}
 
@@ -361,7 +424,7 @@ public class GolangFunction {
 	private boolean is_builtin_reg=false;
 	private List<Register> builtin_reg_arg;
 	private List<Register> reg_arg;
-	private boolean init_regs() {
+	private boolean init_regs_arg() {
 		reg_arg=new ArrayList<>();
 
 		init_frame_map();
@@ -403,6 +466,30 @@ public class GolangFunction {
 			}
 		}
 
+		return true;
+	}
+	private boolean is_reg_ret=false;
+	private List<Register> reg_ret;
+	private boolean init_regs_ret() {
+		reg_ret=new ArrayList<>();
+		boolean is_go117=false;
+		if(go_bin.ge_go_version(GolangVersion.GO_1_17_LOWEST)) {
+			is_go117=true;
+		}
+		if(!is_go117 || go_bin.get_pointer_size() != 8) {
+			is_reg_ret=false;
+			ret_size=0;
+			ret_num=0;
+			return true;
+		}
+		is_reg_ret=true;
+		for(int i=0; i<ret_num&&i<get_reg_arg_count(); i++) {
+			Register reg=go_bin.get_register(get_reg_arg_name(i)).orElse(null);
+			if(reg==null) {
+				return false;
+			}
+			reg_ret.add(reg);
+		}
 		return true;
 	}
 
@@ -465,8 +552,22 @@ public class GolangFunction {
 		if(!init_param_dt_list()) {
 			return false;
 		}
+		if(!init_ret_size()) {
+			return false;
+		}
+		if(!init_ret_dt_list()) {
+			return false;
+		}
 
 		for(GolangDatatypeRecord record : service.get_datatype_map().values()) {
+			if(func_name.equals("runtime.makemap_small")) {
+				if(record.get_name().equals("runtime.hmap")) {
+					ret_size=go_bin.get_pointer_size();
+					ret_num=1;
+					ret_dt_list.add(new PointerDataType(record.get_datatype(), go_bin.get_pointer_size()));
+				}
+			}
+
 			if(record.get_uncommon_type().isEmpty()) {
 				continue;
 			}
@@ -485,8 +586,13 @@ public class GolangFunction {
 			}
 		}
 
-		init_regs();
+		init_regs_arg();
+		init_regs_ret();
+
 		if(!init_params_var()) {
+			return false;
+		}
+		if(!init_ret_var()) {
 			return false;
 		}
 
