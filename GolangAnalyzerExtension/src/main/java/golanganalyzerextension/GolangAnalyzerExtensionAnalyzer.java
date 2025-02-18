@@ -1,5 +1,7 @@
 package golanganalyzerextension;
 
+import java.util.Map;
+
 import ghidra.app.services.AbstractAnalyzer;
 import ghidra.app.services.AnalysisPriority;
 import ghidra.app.services.AnalyzerType;
@@ -7,11 +9,13 @@ import ghidra.app.util.importer.MessageLog;
 import ghidra.framework.options.Options;
 import ghidra.framework.plugintool.PluginTool;
 import ghidra.program.model.address.AddressSetView;
+import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Program;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.task.TaskMonitor;
 import golanganalyzerextension.exceptions.InvalidBinaryStructureException;
 import golanganalyzerextension.gobinary.GolangBinary;
+import golanganalyzerextension.guess.FuncNameGuesser;
 import golanganalyzerextension.log.Logger;
 import golanganalyzerextension.service.GolangAnalyzerExtensionDummyService;
 import golanganalyzerextension.service.GolangAnalyzerExtensionService;
@@ -61,6 +65,12 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 			throws CancelledException {
 		Logger.set_logger(log, analyzer_option.get_debugmode());
 		try {
+			if (analyzer_option.get_guess_func()) {
+				FuncNameGuesser guesser = new FuncNameGuesser(program);
+				Map<Address, String> func_name_map = guesser.guess_function_names();
+				guesser.rename_func_for_guess(func_name_map);
+			}
+
 			GolangBinary go_bin=new GolangBinary(program, analyzer_option.get_go_version(), monitor);
 
 			GolangAnalyzerExtensionService service=null;

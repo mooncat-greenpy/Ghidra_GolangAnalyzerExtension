@@ -32,6 +32,10 @@ public class AnalyzerOption {
 	private static final String GOLANG_VERSION_DESC="Specify the Go version to use for analysis (optional).";
 	private String go_version_option;
 
+	private static final String GUESS_FUNC="Guess function names";
+	private static final String GUESS_FUNC_DESC="Predicting the function name via pattern matching.";
+	private boolean guess_func_option;
+
 	public AnalyzerOption() {
 		set_default();
 	}
@@ -45,6 +49,7 @@ public class AnalyzerOption {
 		string_option=true;
 		debugmode_option=false;
 		go_version_option="";
+		guess_func_option=false;
 	}
 
 	public boolean get_rename() {
@@ -79,6 +84,10 @@ public class AnalyzerOption {
 		return go_version_option;
 	}
 
+	public boolean get_guess_func() {
+		return guess_func_option;
+	}
+
 	public void register(Options options) {
 		options.registerOption(RENAME_FUNC, rename_option, null, RENAME_FUNC_DESC);
 		options.registerOption(CORRECT_ARG, param_option, null, CORRECT_ARG_DESC);
@@ -88,6 +97,7 @@ public class AnalyzerOption {
 		options.registerOption(SEARCH_STRING, string_option, null, SEARCH_STRING_DESC);
 		options.registerOption(DEBUG_MODE, debugmode_option, null, DEBUG_MODE_DESC);
 		options.registerOption(GOLANG_VERSION, go_version_option, null, GOLANG_VERSION_DESC);
+		options.registerOption(GUESS_FUNC, guess_func_option, null, GUESS_FUNC_DESC);
 	}
 
 	public void change(Options options) {
@@ -99,5 +109,6 @@ public class AnalyzerOption {
 		string_option=options.getBoolean(SEARCH_STRING, string_option);
 		debugmode_option=options.getBoolean(DEBUG_MODE, debugmode_option);
 		go_version_option=options.getString(GOLANG_VERSION, go_version_option);
+		guess_func_option=options.getBoolean(GUESS_FUNC, guess_func_option);
 	}
 }
