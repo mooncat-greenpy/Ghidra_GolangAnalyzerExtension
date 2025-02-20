@@ -15,6 +15,7 @@ import java.util.Set;
 
 import ghidra.features.bsim.query.BSimClientFactory;
 import ghidra.features.bsim.query.description.FunctionDescription;
+import ghidra.features.bsim.query.description.ExecutableRecord;
 import ghidra.features.bsim.query.facade.FunctionSymbolIterator;
 import ghidra.features.bsim.query.FunctionDatabase;
 import ghidra.features.bsim.query.GenSignatures;
@@ -27,22 +28,40 @@ import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressOutOfBoundsException;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionIterator;
+import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.listing.Program;
+import ghidra.program.model.symbol.Reference;
 import ghidra.program.model.symbol.SourceType;
 import ghidra.util.task.TaskMonitor;
 import resources.ResourceManager;
 
 import golanganalyzerextension.log.Logger;
+import golanganalyzerextension.version.GolangVersion;
 
 
 public class FuncNameGuesser {
 	private static String PATTERN_FILE = "golang.mv.db";
+	private static int IS_GOLANG_FUNC_NUM_THRESHOLD = 200;
+
+	private static double SIMILARITY_BOUND = 0.8;
+	private static int MAXIMUM_BSIM_MATCHES_PER_FUNCTION = 10000;
+	private static double CONFIDENCE_BOUND = 0.0;
 
 	private Program program;
 	private FunctionDatabase database;
 
+	private GolangVersion go_version;
+	private String os;
+	private String arch;
+	private Map<Address, String> funcs;
+
 	public FuncNameGuesser(Program program) {
 		this.program = program;
+		go_version = null;
+		os = null;
+		arch = null;
+		funcs = null;
+
 		Path temp_path = null;
 		try {
 			temp_path = create_resource_temp_file(PATTERN_FILE);
@@ -72,6 +91,22 @@ public class FuncNameGuesser {
 			} catch(Exception e) {
 			}
 		}
+	}
+
+	public GolangVersion get_go_version() {
+		return go_version;
+	}
+
+	public String get_os() {
+		return os;
+	}
+
+	public String get_arch() {
+		return arch;
+	}
+
+	public Map<Address, String> get_funcs() {
+		return funcs;
 	}
 
 	private Path create_resource_temp_file(String name) {
@@ -165,45 +200,112 @@ public class FuncNameGuesser {
 		QueryNearest query = new QueryNearest();
 		query.manage = gensig.getDescriptionManager();
 
-		double SIMILARITY_BOUND = Double.parseDouble("0.8");
-		int MAXIMUM_BSIM_MATCHES_PER_FUNCTION = 10000;
-		double CONFIDENCE_BOUND = 0.0;
 		query.max = MAXIMUM_BSIM_MATCHES_PER_FUNCTION;
 		query.thresh = SIMILARITY_BOUND;
 		query.signifthresh = CONFIDENCE_BOUND;
 		return query;
 	}
 
-	public Map<Address, String> guess_function_names() {
-		Map<Address, String> func_name_map = new HashMap<>();
+	public void guess_golang_version(Iterator<SimilarityResult> sim_result_itr) {
+		Map<String, Double> exec_score = new HashMap<>();
+		while (sim_result_itr.hasNext()) {
+			SimilarityResult sim_rsult = sim_result_itr.next();
+
+			Iterator<SimilarityNote> sim_note_itr = sim_rsult.iterator();
+			while (sim_note_itr.hasNext()) {
+				SimilarityNote sim_note = sim_note_itr.next();
+				FunctionDescription func_desc = sim_note.getFunctionDescription();
+				ExecutableRecord exec_record = func_desc.getExecutableRecord();
+				String exec = exec_record.getNameExec();
+				double score = sim_note.getSimilarity();
+				exec_score.put(exec, exec_score.getOrDefault(exec, 0.0) + score);
+			}
+		}
+
+		String exec = "";
+		double score = 0;
+		for (Map.Entry<String, Double> entry : exec_score.entrySet()) {
+			if (entry.getValue() > score) {
+				exec = entry.getKey();
+				score = entry.getValue();
+			}
+		}
+		String[] exec_split = exec.split("_");
+		if (exec_split.length < 3) {
+			return;
+		}
+		os = exec_split[exec_split.length - 3];
+		arch = exec_split[exec_split.length - 2];
+		go_version = new GolangVersion(exec_split[exec_split.length - 1]);
+	}
+
+	private ResponseNearest execute_bsim() {
 		if (database == null) {
-			return func_name_map;
+			return null;
 		}
 		try {
 			GenSignatures gensig = create_gen_signatures();
 			QueryNearest query = create_query(gensig);
 
-			ResponseNearest response = query.execute(database);
-			if (response == null) {
-				return func_name_map;
-			}
+			return query.execute(database);
+		} catch(Exception e) {
+			Logger.append_message(String.format("Failed to execute bsim: message=%s", e.getMessage()));
+		}
+		return null;
+	}
 
-			Iterator<SimilarityResult> sim_result_itr = response.result.iterator();
+	public void guess_function_names(Iterator<SimilarityResult> sim_result_itr) {
+		try {
 			while (sim_result_itr.hasNext()) {
 				SimilarityResult sim_rsult = sim_result_itr.next();
 				Map.Entry<Address, String> match_func = judge_func(sim_rsult);
 
 				if (match_func != null) {
-					func_name_map.put(match_func.getKey(), match_func.getValue());
+					funcs.put(match_func.getKey(), match_func.getValue());
 				}
 			}
 
-			remove_match_mistakes(func_name_map);
+			remove_match_mistakes(funcs);
+
+			if (funcs.size() > IS_GOLANG_FUNC_NUM_THRESHOLD) {
+				return;
+			}
 		} catch(Exception e) {
 			Logger.append_message(String.format("Failed to guess function names: message=%s", e.getMessage()));
 		}
+	}
 
-		return func_name_map;
+	public void guess() {
+		ResponseNearest response = execute_bsim();
+		if (response == null) {
+			return;
+		}
+		go_version = null;
+		os = null;
+		arch = null;
+		funcs = new HashMap<>();
+
+		guess_golang_version(response.result.iterator());
+		guess_function_names(response.result.iterator());
+
+		Address entry_point = get_entry_point();
+		funcs.put(entry_point, String.format("rt0_%s_%s", arch, os));
+	}
+
+
+	private Address get_entry_point() {
+		FunctionIterator itr = program.getListing().getFunctions(true);
+		while (itr.hasNext()) {
+			Function func = itr.next();
+			Address addr = func.getEntryPoint();
+			Instruction inst = program.getListing().getInstructionAt(addr);
+			for (Reference ref : inst.getReferenceIteratorTo()) {
+				if (ref.getFromAddress().toString().equals("Entry Point")) {
+					return addr;
+				}
+			}
+		}
+		return null;
 	}
 
 	private Function get_function(Address addr) {
