@@ -7,12 +7,16 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.AbstractMap;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import ghidra.app.cmd.function.CreateFunctionCmd;
 import ghidra.features.bsim.query.BSimClientFactory;
 import ghidra.features.bsim.query.description.FunctionDescription;
 import ghidra.features.bsim.query.description.ExecutableRecord;
@@ -289,9 +293,111 @@ public class FuncNameGuesser {
 		guess_function_names(response.result.iterator());
 
 		Address entry_point = get_entry_point();
-		funcs.put(entry_point, String.format("rt0_%s_%s", arch, os));
+		funcs.put(entry_point, String.format("_rt0_%s_%s", arch, os));
+
+		guess_calling_func();
 	}
 
+	private void create_function(String name, Address addr) {
+		CreateFunctionCmd cmd=new CreateFunctionCmd(name, addr, null, SourceType.ANALYSIS);
+		cmd.applyTo(program, TaskMonitor.DUMMY);
+	}
+
+	private List<Address> get_calling_func_list(Address addr) {
+		Instruction inst = program.getListing().getInstructionAt(addr);
+		List<Address> calling_func_list = new LinkedList<>();
+		while (inst != null) {
+			for (Reference ref : inst.getReferencesFrom()) {
+				if (ref.getReferenceType().isCall()) {
+					calling_func_list.add(ref.getToAddress());
+				} else if (ref.getReferenceType().isJump()) {
+					if (is_go_func_entry_point(ref.getToAddress())) {
+						calling_func_list.add(ref.getToAddress());
+					}
+				}
+			}
+
+			inst = program.getListing().getInstructionAt(inst.getAddress().add(inst.getParsedLength()));
+		}
+		return calling_func_list;
+	}
+
+	public List<List<String>> get_calling_func_name(String name) {
+		if (name.equals("_rt0_amd64_windows")) {
+			return new LinkedList<>() {{add(Arrays.asList("_rt0_amd64"));}};
+		} else if (name.equals("_rt0_amd64")) {
+			return new LinkedList<>() {{add(Arrays.asList("runtime.rt0_go"));}};
+		} else if (name.equals("runtime.rt0_go")) {
+			return new LinkedList<>() {{add(Arrays.asList("runtime.settls", "runtime.abort", "runtime.check", "runtime.args",
+										"runtime.osinit", "runtime.schedinit", "runtime.newproc",
+										"runtime.mstart", "runtime.abort"));
+										add(Arrays.asList("runtime.schedinit"));}};
+		} else {
+			Logger.append_message("get_calling_func_name null " + name);
+			return null;
+		}
+	}
+
+	private void analyze_calling_func(Address addr) {
+		String name = funcs.get(addr);
+		if (name == null) {
+			return;
+		}
+		List<List<String>> calling_name_lists = get_calling_func_name(name);
+		if (calling_name_lists == null) {
+			return;
+		}
+
+		List<Address> calling_func_list = get_calling_func_list(addr);
+		List<String> calling_name_list = null;
+		for (List<String> elem : calling_name_lists) {
+			if (calling_name_list == null) {
+				calling_name_list = elem;
+				continue;
+			}
+			if (Math.abs(elem.size() - calling_func_list.size()) < Math.abs(calling_name_list.size() - calling_func_list.size())) {
+				calling_name_list = elem;
+			}
+		}
+		if (calling_name_list == null) {
+			return;
+		}
+
+		for (int i = 0; i < calling_func_list.size() && i < calling_name_list.size(); i++) {
+			String calling_name = calling_name_list.get(i);
+			Address calling_addr = calling_func_list.get(i);
+			if (funcs.containsKey(calling_addr)) {
+				continue;
+			}
+			funcs.put(calling_addr, calling_name);
+
+			analyze_calling_func(calling_addr);
+		}
+	}
+
+	private void guess_calling_func() {
+		int count = 0;
+		for (Address addr : new HashSet<>(funcs.keySet())) {
+			analyze_calling_func(addr);
+		}
+	}
+
+	private boolean is_go_func_entry_point(Address addr) {
+		Function func = get_function(addr);
+		if (func != null && func.getEntryPoint().equals(addr)) {
+			return true;
+		}
+		Instruction inst = program.getListing().getInstructionAt(addr);
+		Instruction prev_inst = inst.getPrevious();
+		if (prev_inst == null) {
+			return true;
+		}
+		Address prev_addr = prev_inst.getAddress();
+		if (addr.getOffset() != prev_addr.getOffset() + prev_inst.getParsedLength()) {
+			return true;
+		}
+		return false;
+	}
 
 	private Address get_entry_point() {
 		FunctionIterator itr = program.getListing().getFunctions(true);
@@ -319,6 +425,7 @@ public class FuncNameGuesser {
 		for (Map.Entry<Address, String> entry : func_name_map.entrySet()) {
 			Function func = get_function(entry.getKey());
 			if (func == null) {
+				create_function(entry.getValue(), entry.getKey());
 				continue;
 			}
 			try {
