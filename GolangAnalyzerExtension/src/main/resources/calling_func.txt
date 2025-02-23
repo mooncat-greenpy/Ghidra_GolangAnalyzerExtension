@@ -1,0 +1,5 @@
+runtime.schedinit|runtime.moduledataverify1|runtime.stackinit|runtime.mallocinit|runtime.getRandomData|runtime.mcommoninit|runtime.cpuinit|runtime.alginit|runtime.modulesinit|runtime.typelinksinit|runtime.itabsinit|runtime.goenvs|runtime.parsedebugvars|runtime.gcinit|runtime.lock2|runtime.nanotime1|runtime.gogetenv|runtime.atoi|runtime.procresize|runtime.unlock2|runtime.gcWriteBarrier|runtime.gcWriteBarrier|runtime.(*wbBuf).reset|runtime.throw|runtime.morestack|runtime.schedinit
+_rt0_amd64|runtime.rt0_go
+runtime.rt0_go|runtime.settls|runtime.abort|runtime.check|runtime.args|runtime.osinit|runtime.schedinit|runtime.newproc|runtime.mstart
+_rt0_amd64_windows|_rt0_amd64
+runtime.schedinit|runtime.schedinit

@@ -322,43 +322,19 @@ public class FuncNameGuesser {
 		return calling_func_list;
 	}
 
-	public List<List<String>> get_calling_func_name(String name) {
-		if (name.equals("_rt0_amd64_windows")) {
-			return new LinkedList<>() {{add(Arrays.asList("_rt0_amd64"));}};
-		} else if (name.equals("_rt0_amd64")) {
-			return new LinkedList<>() {{add(Arrays.asList("runtime.rt0_go"));}};
-		} else if (name.equals("runtime.rt0_go")) {
-			return new LinkedList<>() {{add(Arrays.asList("runtime.settls", "runtime.abort", "runtime.check", "runtime.args",
-										"runtime.osinit", "runtime.schedinit", "runtime.newproc",
-										"runtime.mstart", "runtime.abort"));
-										add(Arrays.asList("runtime.schedinit"));}};
-		} else {
-			Logger.append_message("get_calling_func_name null " + name);
-			return null;
-		}
-	}
+	private CallingFuncNameResource calling_func_name_res;
 
 	private void analyze_calling_func(Address addr) {
 		String name = funcs.get(addr);
 		if (name == null) {
 			return;
 		}
-		List<List<String>> calling_name_lists = get_calling_func_name(name);
-		if (calling_name_lists == null) {
-			return;
-		}
-
 		List<Address> calling_func_list = get_calling_func_list(addr);
-		List<String> calling_name_list = null;
-		for (List<String> elem : calling_name_lists) {
-			if (calling_name_list == null) {
-				calling_name_list = elem;
-				continue;
-			}
-			if (Math.abs(elem.size() - calling_func_list.size()) < Math.abs(calling_name_list.size() - calling_func_list.size())) {
-				calling_name_list = elem;
-			}
+
+		if (calling_func_name_res == null) {
+			calling_func_name_res = new CallingFuncNameResource("calling_func.txt");
 		}
+		List<String> calling_name_list = calling_func_name_res.get_calling_func_name_list(name, calling_func_list.size());
 		if (calling_name_list == null) {
 			return;
 		}
