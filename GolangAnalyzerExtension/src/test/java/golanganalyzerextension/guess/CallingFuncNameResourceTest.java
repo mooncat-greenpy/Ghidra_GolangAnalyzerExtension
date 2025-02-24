@@ -41,7 +41,7 @@ public class CallingFuncNameResourceTest extends AbstractGhidraHeadlessIntegrati
 	static Stream<Arguments> test_calling_func_name_lists_params() throws Throwable {
 		return Stream.of(
 				Arguments.of(
-						"calling_func.txt",
+						"calling_func_name/calling_func.txt",
 						new HashMap<>() {{
 							put("_rt0_amd64_windows",
 								new LinkedList<>() {{
@@ -121,9 +121,9 @@ public class CallingFuncNameResourceTest extends AbstractGhidraHeadlessIntegrati
 	static Stream<Arguments> test_calling_func_name_list_params() throws Throwable {
 		return Stream.of(
 				Arguments.of(
-						"calling_func.txt",
+						"calling_func_name/calling_func.txt",
 						"runtime.schedinit",
-						15,
+						22,
 						new LinkedList<>() {{
 							add("runtime.moduledataverify1");
 							add("runtime.stackinit");
@@ -152,12 +152,27 @@ public class CallingFuncNameResourceTest extends AbstractGhidraHeadlessIntegrati
 							add("runtime.schedinit");
 						}}),
 				Arguments.of(
-						"calling_func.txt",
+						"calling_func_name/calling_func.txt",
 						"runtime.schedinit",
-						3,
+						4,
 						new LinkedList<>() {{
 							add("runtime.schedinit");
-						}})
+						}}),
+				Arguments.of(
+						"calling_func_name/calling_func.txt",
+						"runtime.schedinit",
+						5,
+						null),
+				Arguments.of(
+						"calling_func_name/calling_func.txt",
+						"runtime.schedinit",
+						21,
+						null),
+				Arguments.of(
+						"calling_func_name/calling_func.txt",
+						"runtime.schedinit",
+						29,
+						null)
 		);
 	}
 }

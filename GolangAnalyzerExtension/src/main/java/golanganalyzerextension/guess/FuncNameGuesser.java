@@ -45,6 +45,7 @@ import golanganalyzerextension.version.GolangVersion;
 
 public class FuncNameGuesser {
 	private static String PATTERN_FILE = "golang.mv.db";
+	private static String CALLING_FUNC_NAME_FILE_FORMAT = "calling_func_name/%s_%s_%s.txt";
 	private static int IS_GOLANG_FUNC_NUM_THRESHOLD = 200;
 
 	private static double SIMILARITY_BOUND = 0.8;
@@ -332,7 +333,7 @@ public class FuncNameGuesser {
 		List<Address> calling_func_list = get_calling_func_list(addr);
 
 		if (calling_func_name_res == null) {
-			calling_func_name_res = new CallingFuncNameResource("calling_func.txt");
+			calling_func_name_res = new CallingFuncNameResource(String.format(CALLING_FUNC_NAME_FILE_FORMAT, os, arch, go_version.get_version_str()));
 		}
 		List<String> calling_name_list = calling_func_name_res.get_calling_func_name_list(name, calling_func_list.size());
 		if (calling_name_list == null) {

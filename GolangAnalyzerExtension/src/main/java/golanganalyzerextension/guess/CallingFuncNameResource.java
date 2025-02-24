@@ -11,8 +11,9 @@ import java.util.Map;
 import resources.ResourceManager;
 
 public class CallingFuncNameResource {
+	private static int CALLING_NUM_THRESHOLD = 3;
 
-	Map<String, List<List<String>>> calling_func_map;
+	private Map<String, List<List<String>>> calling_func_map;
 
 	public CallingFuncNameResource(String file_name) {
 		calling_func_map = parse_calling_func_file(file_name);
@@ -33,10 +34,14 @@ public class CallingFuncNameResource {
 
 		List<String> calling_name_list = null;
 		for (List<String> elem : calling_name_lists) {
+			if (Math.abs(elem.size() - call_count) > CALLING_NUM_THRESHOLD) {
+				continue;
+			}
 			if (calling_name_list == null) {
 				calling_name_list = elem;
 				continue;
 			}
+
 			if (Math.abs(elem.size() - call_count) < Math.abs(calling_name_list.size() - call_count)) {
 				calling_name_list = elem;
 			}
