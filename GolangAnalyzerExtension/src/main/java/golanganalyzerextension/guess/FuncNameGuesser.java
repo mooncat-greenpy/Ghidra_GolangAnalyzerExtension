@@ -221,7 +221,7 @@ public class FuncNameGuesser {
 				FunctionDescription func_desc = sim_note.getFunctionDescription();
 				ExecutableRecord exec_record = func_desc.getExecutableRecord();
 				String exec = exec_record.getNameExec();
-				double score = sim_note.getSimilarity();
+				double score = sim_note.getSignificance();
 				exec_score.put(exec, exec_score.getOrDefault(exec, 0.0) + score);
 			}
 		}
