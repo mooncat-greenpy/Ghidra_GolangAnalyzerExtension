@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.AbstractMap;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -325,11 +326,7 @@ public class FuncNameGuesser {
 
 	private CallingFuncNameResource calling_func_name_res;
 
-	private void analyze_calling_func(Address addr) {
-		String name = funcs.get(addr);
-		if (name == null) {
-			return;
-		}
+	private void analyze_calling_func(Address addr, String name, Map<Address, List<String>> func_name_map) {
 		List<Address> calling_func_list = get_calling_func_list(addr);
 
 		if (calling_func_name_res == null) {
@@ -343,19 +340,42 @@ public class FuncNameGuesser {
 		for (int i = 0; i < calling_func_list.size() && i < calling_name_list.size(); i++) {
 			String calling_name = calling_name_list.get(i);
 			Address calling_addr = calling_func_list.get(i);
-			if (funcs.containsKey(calling_addr)) {
+			if (!func_name_map.containsKey(calling_addr)) {
+				func_name_map.put(calling_addr, new LinkedList<>() {{add(calling_name);}});
+			} else {
+				func_name_map.get(calling_addr).add(calling_name);
+			}
+			if (Collections.frequency(func_name_map.get(calling_addr), calling_name) >= 2) {
 				continue;
 			}
-			funcs.put(calling_addr, calling_name);
 
-			analyze_calling_func(calling_addr);
+			analyze_calling_func(calling_addr, calling_name, func_name_map);
 		}
 	}
 
 	private void guess_calling_func() {
-		int count = 0;
+		Map<Address, List<String>> func_name_map = new HashMap<>();
 		for (Address addr : new HashSet<>(funcs.keySet())) {
-			analyze_calling_func(addr);
+			analyze_calling_func(addr, funcs.get(addr), func_name_map);
+		}
+
+		for (Map.Entry<Address, List<String>> entry : func_name_map.entrySet()) {
+			Map<String, Integer> freq_map = new HashMap<>();
+			for (String str : entry.getValue()) {
+				freq_map.put(str, freq_map.getOrDefault(str, 0) + 1);
+			}
+			int count = 0;
+			String freq_name = null;
+			for (Map.Entry<String, Integer> freq_entry : freq_map.entrySet()) {
+				if (freq_entry.getValue() >= count) {
+					freq_name = freq_entry.getKey();
+					count = freq_entry.getValue();
+				}
+			}
+			if (freq_name == null) {
+				continue;
+			}
+			funcs.put(entry.getKey(), freq_name);
 		}
 	}
 
