@@ -377,6 +377,21 @@ public class FuncNameGuesser {
 			}
 			funcs.put(entry.getKey(), freq_name);
 		}
+
+		if (calling_func_name_res != null) {
+			FunctionIterator itr = program.getListing().getFunctions(true);
+			while (itr.hasNext()) {
+				Function func = itr.next();
+				if (funcs.containsKey(func.getEntryPoint())) {
+					continue;
+				}
+				String name = calling_func_name_res.get_func_name_by_placement(func.getEntryPoint(), funcs);
+				if (name == null) {
+					continue;
+				}
+				funcs.put(func.getEntryPoint(), name);
+			}
+		}
 	}
 
 	private boolean is_go_func_entry_point(Address addr) {

@@ -8,22 +8,59 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import ghidra.program.model.address.Address;
 import resources.ResourceManager;
+
+class FuncInfo {
+	private long addr;
+	private String name;
+	private List<String> calling;
+
+	FuncInfo(long addr, String name, List<String> calling) {
+		this.addr = addr;
+		this.name = name;
+		this.calling = calling;
+	}
+
+	public long get_addr() {
+		return addr;
+	}
+
+	public String get_name() {
+		return name;
+	}
+
+	public List<String> get_calling() {
+		return calling;
+	}
+}
 
 public class CallingFuncNameResource {
 	private static int CALLING_NUM_THRESHOLD = 3;
 
-	private Map<String, List<List<String>>> calling_func_map;
+	private List<FuncInfo> func_info_list;
 
 	public CallingFuncNameResource(String file_name) {
-		calling_func_map = parse_calling_func_file(file_name);
+		func_info_list = parse_calling_func_file(file_name);
+	}
+
+	public FuncInfo get_func_info_by_addr(long addr) {
+		for (FuncInfo info : func_info_list) {
+			if (info.get_addr() == addr) {
+				return info;
+			}
+		}
+		return null;
 	}
 
 	public List<List<String>> get_calling_func_name_lists(String name) {
-		if (calling_func_map == null) {
-			return null;
+		List<List<String>> ret = new LinkedList<>();
+		for (FuncInfo info : func_info_list) {
+			if (info.get_name().equals(name)) {
+				ret.add(info.get_calling());
+			}
 		}
-		return calling_func_map.get(name);
+		return ret;
 	}
 
 	public List<String> get_calling_func_name_list(String name, int call_count) {
@@ -50,32 +87,57 @@ public class CallingFuncNameResource {
 		return calling_name_list;
 	}
 
-	private void parse_calling_func_line(String line, Map<String, List<List<String>>> calling_func_map) {
+	public String get_func_name_by_placement(Address addr, Map<Address, String> guessed_map) {
+		Map<String, Integer> freq_map = new HashMap<>();
+		for (Map.Entry<Address, String> guessed_entry : guessed_map.entrySet()) {
+			for (int i = 0; i < func_info_list.size(); i++) {
+				if (!guessed_entry.getValue().equals(func_info_list.get(i).get_name())) {
+					continue;
+				}
+				long diff = addr.getOffset() - guessed_entry.getKey().getOffset();
+				FuncInfo matched_info = get_func_info_by_addr(func_info_list.get(i).get_addr() + diff);
+				if (matched_info == null) {
+					continue;
+				}
+				String name = matched_info.get_name();
+				freq_map.put(name, freq_map.getOrDefault(name, 0) + 1);
+				}
+		}
+
+		int count = 0;
+		String freq_name = null;
+		for (Map.Entry<String, Integer> freq_entry : freq_map.entrySet()) {
+			if (freq_entry.getValue() >= count) {
+				count = freq_entry.getValue();
+				freq_name = freq_entry.getKey();
+			}
+		}
+		return freq_name;
+	}
+
+	private void parse_line(String line, List<FuncInfo> holder) {
 		String[] line_split = line.split("\\|");
-		if (line_split[0].isEmpty()) {
+		if (line_split[1].isEmpty()) {
 			return;
 		}
 		List<String> calling_func_list = new LinkedList<>();
-		for (int i = 1; i < line_split.length; i++) {
+		for (int i = 2; i < line_split.length; i++) {
 			calling_func_list.add(line_split[i]);
 		}
-		List<List<String>> new_calling_func = calling_func_map.getOrDefault(line_split[0], new LinkedList<>());
-		new_calling_func.add(calling_func_list);
-		calling_func_map.put(line_split[0], new_calling_func);
+		holder.add(new FuncInfo(Long.valueOf(line_split[0], 16), line_split[1], calling_func_list));
 	}
 
-	private Map<String, List<List<String>>> parse_calling_func_file(String file_name) {
-		Map<String, List<List<String>>> ret = new HashMap<>();
+	private List<FuncInfo> parse_calling_func_file(String file_name) {
+		List<FuncInfo> ret = new LinkedList<>();
 		InputStream input_stream = ResourceManager.getResourceAsStream(file_name);
 		try (InputStreamReader input_reader = new InputStreamReader(input_stream);
 			BufferedReader reader = new BufferedReader(input_reader)) {
 			String line;
 			while ((line = reader.readLine()) != null) {
-				parse_calling_func_line(line, ret);
+				parse_line(line, ret);
 			}
 		} catch (Exception e) {
 		}
 		return ret;
 	}
-
 }

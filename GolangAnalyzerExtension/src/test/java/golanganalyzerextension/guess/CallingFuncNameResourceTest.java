@@ -13,6 +13,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import ghidra.program.database.ProgramBuilder;
+import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Program;
 import ghidra.test.AbstractGhidraHeadlessIntegrationTest;
 
@@ -175,4 +176,52 @@ public class CallingFuncNameResourceTest extends AbstractGhidraHeadlessIntegrati
 						null)
 		);
 	}
+
+	@ParameterizedTest
+	@MethodSource("test_get_func_name_by_placement_params")
+	public void test_get_func_name_by_placement(String file_name, long addr, Map<Long, String> data, String expected) throws Exception {
+		initialize(new HashMap<>());
+		CallingFuncNameResource calling_func_name_res = new CallingFuncNameResource(file_name);
+
+		Map<Address, String> input_map = new HashMap<>();
+		for (Map.Entry<Long, String> entry : data.entrySet()) {
+			input_map.put(program.getAddressFactory().getDefaultAddressSpace().getAddress(entry.getKey()), entry.getValue());
+		}
+		assertEquals(
+			calling_func_name_res.get_func_name_by_placement(program.getAddressFactory().getDefaultAddressSpace().getAddress(addr), input_map),
+			expected);
+	}
+
+	static Stream<Arguments> test_get_func_name_by_placement_params() throws Throwable {
+		return Stream.of(
+				Arguments.of(
+						"calling_func_name/calling_func.txt",
+						0x803000,
+						new HashMap<>() {{
+							put((long) 0x802000, "_rt0_amd64");
+							put((long) 0x804000, "_rt0_amd64_windows");
+						}},
+						"runtime.rt0_go"
+				),
+				Arguments.of(
+						"calling_func_name/calling_func.txt",
+						0x801000,
+						new HashMap<>() {{
+							put((long) 0x802000, "_rt0_amd64");
+							put((long) 0x804000, "_rt0_amd64_windows");
+						}},
+						"runtime.schedinit"
+				),
+				Arguments.of(
+						"calling_func_name/calling_func.txt",
+						0x805000,
+						new HashMap<>() {{
+							put((long) 0x802000, "_rt0_amd64");
+							put((long) 0x804000, "_rt0_amd64_windows");
+						}},
+						"runtime.schedinit"
+				)
+		);
+	}
+
 }
