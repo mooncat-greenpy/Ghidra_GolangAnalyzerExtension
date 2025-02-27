@@ -405,7 +405,7 @@ public class FuncNameGuesser {
 			return true;
 		}
 		Address prev_addr = prev_inst.getAddress();
-		if (addr.getOffset() != prev_addr.getOffset() + prev_inst.getParsedLength()) {
+		if (addr.getOffset() > prev_addr.getOffset() + prev_inst.getParsedLength() + 1) {
 			return true;
 		}
 		return false;
