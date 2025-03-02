@@ -115,6 +115,53 @@ public class CallingFuncNameResource {
 		return freq_name;
 	}
 
+	public void collect_func_name_by_placement(Map<Address, String> guessed_map) {
+		Map<Address, Long> guessed_info_addr_map = new HashMap<>();
+		Map<Long, Address> info_guessed_addr_map = new HashMap<>();
+		boolean[] mapped_arr = new boolean[func_info_list.size()];
+		for (Map.Entry<Address, String> guessed_entry : guessed_map.entrySet()) {
+			for (int i = 0; i < func_info_list.size(); i++) {
+				if (!guessed_entry.getValue().equals(func_info_list.get(i).get_name())) {
+					continue;
+				}
+				guessed_info_addr_map.put(guessed_entry.getKey(), func_info_list.get(i).get_addr());
+				info_guessed_addr_map.put(func_info_list.get(i).get_addr(), guessed_entry.getKey());
+				mapped_arr[i] = true;
+			}
+		}
+
+		for (int i = 0; i < mapped_arr.length; i++) {
+			if (i < 2 || i >= mapped_arr.length - 3) {
+				continue;
+			}
+			boolean[] segment = {mapped_arr[i-2], mapped_arr[i-1], mapped_arr[i], mapped_arr[i+1], mapped_arr[i+2], mapped_arr[i+3]};
+			int false_count = 0;
+			int false_index = -1;
+			for (int j = 0; j < segment.length; j++) {
+				if (!segment[j]) {
+					false_count++;
+					false_index = j;
+				}
+			}
+			if (false_count == 1 && false_index != 0 && false_index != 5) {
+				int idx = i - 2 + false_index;
+				long diff = func_info_list.get(idx).get_addr() - func_info_list.get(idx - 1).get_addr();
+				Address addr = info_guessed_addr_map.get(func_info_list.get(idx - 1).get_addr());
+				if (addr == null) {
+					continue;
+				}
+				String matched_name = func_info_list.get(idx).get_name();
+				if (matched_name == null) {
+					continue;
+				}
+				guessed_map.put(addr.add(diff), matched_name);
+				guessed_info_addr_map.put(addr, func_info_list.get(idx).get_addr());
+				info_guessed_addr_map.put(func_info_list.get(idx).get_addr(), addr);
+				mapped_arr[idx] = true;
+			}
+		}
+	}
+
 	private void parse_line(String line, List<FuncInfo> holder) {
 		String[] line_split = line.split("\\|");
 		if (line_split[1].isEmpty()) {

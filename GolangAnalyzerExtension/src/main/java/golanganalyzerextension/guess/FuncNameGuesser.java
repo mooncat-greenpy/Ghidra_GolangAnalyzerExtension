@@ -391,6 +391,8 @@ public class FuncNameGuesser {
 				}
 				funcs.put(func.getEntryPoint(), name);
 			}
+
+			calling_func_name_res.collect_func_name_by_placement(funcs);
 		}
 	}
 
