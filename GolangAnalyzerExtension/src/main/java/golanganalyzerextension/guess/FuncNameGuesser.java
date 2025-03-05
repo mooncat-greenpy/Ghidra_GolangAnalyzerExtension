@@ -175,7 +175,7 @@ public class FuncNameGuesser {
 		}
 	}
 
-	public void remove_match_mistakes(Map<Address, String> func_name_map) {
+	private void remove_match_mistakes(Map<Address, String> func_name_map) {
 		Map<String, Integer> freq_map = new HashMap<>();
 		for (String value : func_name_map.values()) {
 			freq_map.put(value, freq_map.getOrDefault(value, 0) + 1);
@@ -212,7 +212,7 @@ public class FuncNameGuesser {
 		return query;
 	}
 
-	public void guess_golang_version(Iterator<SimilarityResult> sim_result_itr) {
+	private void guess_golang_version(Iterator<SimilarityResult> sim_result_itr) {
 		Map<String, Double> exec_score = new HashMap<>();
 		while (sim_result_itr.hasNext()) {
 			SimilarityResult sim_rsult = sim_result_itr.next();
@@ -260,7 +260,7 @@ public class FuncNameGuesser {
 		return null;
 	}
 
-	public void guess_function_names(Iterator<SimilarityResult> sim_result_itr) {
+	private void guess_function_names(Iterator<SimilarityResult> sim_result_itr) {
 		try {
 			while (sim_result_itr.hasNext()) {
 				SimilarityResult sim_rsult = sim_result_itr.next();

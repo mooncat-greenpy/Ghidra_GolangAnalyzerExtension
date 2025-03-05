@@ -3,3 +3,4 @@
 403000|runtime.rt0_go|runtime.settls|runtime.abort|runtime.check|runtime.args|runtime.osinit|runtime.schedinit|runtime.newproc|runtime.mstart
 404000|_rt0_amd64_windows|_rt0_amd64
 405000|runtime.schedinit|runtime.schedinit
+406000|runtime.memmove

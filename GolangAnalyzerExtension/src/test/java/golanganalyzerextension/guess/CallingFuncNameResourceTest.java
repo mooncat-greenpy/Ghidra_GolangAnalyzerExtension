@@ -30,6 +30,45 @@ public class CallingFuncNameResourceTest extends AbstractGhidraHeadlessIntegrati
 	}
 
 	@ParameterizedTest
+	@MethodSource("test_get_func_info_by_addr_params")
+	public void test_get_func_info_by_addr(String file_name, long expected_addr, String expected_name, List<String> expected_calling) throws Exception {
+		initialize(new HashMap<>());
+		CallingFuncNameResource calling_func_name_res = new CallingFuncNameResource(file_name);
+		FuncInfo info = calling_func_name_res.get_func_info_by_addr(expected_addr);
+		assertEquals(info.get_addr(), expected_addr);
+		assertEquals(info.get_name(), expected_name);
+		assertEquals(info.get_calling(), expected_calling);
+	}
+
+	static Stream<Arguments> test_get_func_info_by_addr_params() throws Throwable {
+		return Stream.of(
+				Arguments.of(
+						"calling_func_name/calling_func.txt",
+						0x402000,
+						"_rt0_amd64",
+						new LinkedList<>() {{
+							add("runtime.rt0_go");
+						}}
+				),
+				Arguments.of(
+						"calling_func_name/calling_func.txt",
+						0x403000,
+						"runtime.rt0_go",
+						new LinkedList<>() {{
+							add("runtime.settls");
+							add("runtime.abort");
+							add("runtime.check");
+							add("runtime.args");
+							add("runtime.osinit");
+							add("runtime.schedinit");
+							add("runtime.newproc");
+							add("runtime.mstart");
+						}}
+				)
+		);
+	}
+
+	@ParameterizedTest
 	@MethodSource("test_calling_func_name_lists_params")
 	public void test_calling_func_name_lists(String file_name, Map<String, List<List<String>>> expected) throws Exception {
 		initialize(new HashMap<>());
@@ -224,4 +263,84 @@ public class CallingFuncNameResourceTest extends AbstractGhidraHeadlessIntegrati
 		);
 	}
 
+	@ParameterizedTest
+	@MethodSource("test_collect_func_name_by_placement_params")
+	public void test_collect_func_name_by_placement(String file_name, Map<Long, String> data, Map<Long, String> expected) throws Exception {
+		initialize(new HashMap<>());
+		CallingFuncNameResource calling_func_name_res = new CallingFuncNameResource(file_name);
+
+
+		Map<Address, String> input_map = new HashMap<>();
+		for (Map.Entry<Long, String> entry : data.entrySet()) {
+			input_map.put(program.getAddressFactory().getDefaultAddressSpace().getAddress(entry.getKey()), entry.getValue());
+		}
+		Map<Address, String> expected_map = new HashMap<>();
+		for (Map.Entry<Long, String> entry : expected.entrySet()) {
+			expected_map.put(program.getAddressFactory().getDefaultAddressSpace().getAddress(entry.getKey()), entry.getValue());
+		}
+		calling_func_name_res.collect_func_name_by_placement(input_map);
+		assertEquals(input_map, expected_map);
+	}
+
+	static Stream<Arguments> test_collect_func_name_by_placement_params() throws Throwable {
+		return Stream.of(
+				Arguments.of(
+						"calling_func_name/calling_func.txt",
+						new HashMap<>() {{
+							put((long) 0x401000, "runtime.schedinit");
+							put((long) 0x402000, "_rt0_amd64");
+							put((long) 0x403000, "runtime.rt0_go");
+							put((long) 0x404000, "_rt0_amd64_windows");
+							put((long) 0x405000, "runtime.schedinit");
+							put((long) 0x406000, "runtime.memmove");
+						}},
+						new HashMap<>() {{
+							put((long) 0x401000, "runtime.schedinit");
+							put((long) 0x402000, "_rt0_amd64");
+							put((long) 0x403000, "runtime.rt0_go");
+							put((long) 0x404000, "_rt0_amd64_windows");
+							put((long) 0x405000, "runtime.schedinit");
+							put((long) 0x406000, "runtime.memmove");
+						}}
+				),
+				Arguments.of(
+						"calling_func_name/calling_func.txt",
+						new HashMap<>() {{
+							put((long) 0x401000, "runtime.schedinit");
+							put((long) 0x402000, "_rt0_amd64");
+							put((long) 0x403000, "test");
+							put((long) 0x404000, "_rt0_amd64_windows");
+							put((long) 0x405000, "runtime.schedinit");
+							put((long) 0x406000, "runtime.memmove");
+						}},
+						new HashMap<>() {{
+							put((long) 0x401000, "runtime.schedinit");
+							put((long) 0x402000, "_rt0_amd64");
+							put((long) 0x403000, "runtime.rt0_go");
+							put((long) 0x404000, "_rt0_amd64_windows");
+							put((long) 0x405000, "runtime.schedinit");
+							put((long) 0x406000, "runtime.memmove");
+						}}
+				),
+				Arguments.of(
+						"calling_func_name/calling_func.txt",
+						new HashMap<>() {{
+							put((long) 0x401000, "runtime.schedinit");
+							put((long) 0x402000, "_rt0_amd64");
+							put((long) 0x403000, "runtime.rt0_go");
+							put((long) 0x404000, "test");
+							put((long) 0x405000, "runtime.schedinit");
+							put((long) 0x406000, "runtime.memmove");
+						}},
+						new HashMap<>() {{
+							put((long) 0x401000, "runtime.schedinit");
+							put((long) 0x402000, "_rt0_amd64");
+							put((long) 0x403000, "runtime.rt0_go");
+							put((long) 0x404000, "_rt0_amd64_windows");
+							put((long) 0x405000, "runtime.schedinit");
+							put((long) 0x406000, "runtime.memmove");
+						}}
+				)
+		);
+	}
 }
