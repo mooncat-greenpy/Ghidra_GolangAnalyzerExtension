@@ -264,6 +264,77 @@ public class CallingFuncNameResourceTest extends AbstractGhidraHeadlessIntegrati
 	}
 
 	@ParameterizedTest
+	@MethodSource("test_is_reliable_params")
+	public void test_is_reliable(String file_name, long addr_value, Map<Long, String> data, boolean expected) throws Exception {
+		initialize(new HashMap<>());
+		CallingFuncNameResource calling_func_name_res = new CallingFuncNameResource(file_name);
+
+		Address addr = program.getAddressFactory().getDefaultAddressSpace().getAddress(addr_value);
+		Map<Address, String> input_map = new HashMap<>();
+		for (Map.Entry<Long, String> entry : data.entrySet()) {
+			input_map.put(program.getAddressFactory().getDefaultAddressSpace().getAddress(entry.getKey()), entry.getValue());
+		}
+		assertEquals(calling_func_name_res.is_reliable(addr, input_map), expected);
+	}
+
+	static Stream<Arguments> test_is_reliable_params() throws Throwable {
+		return Stream.of(
+				Arguments.of(
+						"calling_func_name/calling_func.txt",
+						0x404000,
+						new HashMap<>() {{
+							put((long) 0x401000, "runtime.schedinit");
+							put((long) 0x402000, "_rt0_amd64");
+							put((long) 0x403000, "runtime.rt0_go");
+							put((long) 0x404000, "_rt0_amd64_windows");
+							put((long) 0x405000, "runtime.schedinit");
+							put((long) 0x406000, "runtime.memmove");
+						}},
+						true
+				),
+				Arguments.of(
+						"calling_func_name/calling_func.txt",
+						0x404000,
+						new HashMap<>() {{
+							put((long) 0x401000, "test");
+							put((long) 0x402000, "_rt0_amd64");
+							put((long) 0x403000, "runtime.rt0_go");
+							put((long) 0x404000, "_rt0_amd64_windows");
+							put((long) 0x405000, "runtime.schedinit");
+							put((long) 0x406000, "runtime.memmove");
+						}},
+						true
+				),
+				Arguments.of(
+						"calling_func_name/calling_func.txt",
+						0x404000,
+						new HashMap<>() {{
+							put((long) 0x401000, "runtime.schedinit");
+							put((long) 0x402000, "test");
+							put((long) 0x403000, "runtime.rt0_go");
+							put((long) 0x404000, "_rt0_amd64_windows");
+							put((long) 0x405000, "runtime.schedinit");
+							put((long) 0x406000, "runtime.memmove");
+						}},
+						false
+				),
+				Arguments.of(
+						"calling_func_name/calling_func.txt",
+						0x404000,
+						new HashMap<>() {{
+							put((long) 0x401000, "runtime.schedinit");
+							put((long) 0x402000, "_rt0_amd64");
+							put((long) 0x403000, "runtime.rt0_go");
+							put((long) 0x404000, "_rt0_amd64_windows");
+							put((long) 0x405000, "runtime.schedinit");
+							put((long) 0x406000, "test");
+						}},
+						false
+				)
+		);
+	}
+
+	@ParameterizedTest
 	@MethodSource("test_collect_func_name_by_placement_params")
 	public void test_collect_func_name_by_placement(String file_name, Map<Long, String> data, Map<Long, String> expected) throws Exception {
 		initialize(new HashMap<>());

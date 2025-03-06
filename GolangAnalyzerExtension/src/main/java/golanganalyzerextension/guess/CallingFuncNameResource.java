@@ -115,6 +115,29 @@ public class CallingFuncNameResource {
 		return freq_name;
 	}
 
+	public boolean is_reliable(Address addr, Map<Address, String> guessed_map) {
+		for (int i = 0; i < func_info_list.size(); i++) {
+			if (!guessed_map.get(addr).equals(func_info_list.get(i).get_name())) {
+				continue;
+			}
+			for (int j = i - 2; j < i + 3; j++) {
+				if (j < 0 || j >= func_info_list.size()) {
+					continue;
+				}
+				long diff = func_info_list.get(j).get_addr() - func_info_list.get(i).get_addr();
+				String name = guessed_map.get(addr.add(diff));
+				if (name == null) {
+					return false;
+				}
+				if (!name.equals(func_info_list.get(j).get_name())) {
+					return false;
+				}
+			}
+			return true;
+		}
+		return false;
+	}
+
 	public void collect_func_name_by_placement(Map<Address, String> guessed_map) {
 		Map<Address, Long> guessed_info_addr_map = new HashMap<>();
 		Map<Long, Address> info_guessed_addr_map = new HashMap<>();
