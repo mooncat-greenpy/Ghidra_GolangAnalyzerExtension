@@ -59,6 +59,7 @@ public class FuncNameGuesser {
 	private GolangVersion go_version;
 	private String os;
 	private String arch;
+	private CallingFuncNameResource calling_func_name_res;
 	private Map<Address, String> funcs;
 
 	public FuncNameGuesser(Program program) {
@@ -297,6 +298,7 @@ public class FuncNameGuesser {
 		Address entry_point = get_entry_point();
 		funcs.put(entry_point, String.format("_rt0_%s_%s", arch, os));
 
+		calling_func_name_res = new CallingFuncNameResource(String.format(CALLING_FUNC_NAME_FILE_FORMAT, os, arch, go_version.get_version_str()));
 		guess_calling_func();
 	}
 
@@ -324,14 +326,9 @@ public class FuncNameGuesser {
 		return calling_func_list;
 	}
 
-	private CallingFuncNameResource calling_func_name_res;
-
 	private void analyze_calling_func(Address addr, String name, Map<Address, List<String>> func_name_map) {
 		List<Address> calling_func_list = get_calling_func_list(addr);
 
-		if (calling_func_name_res == null) {
-			calling_func_name_res = new CallingFuncNameResource(String.format(CALLING_FUNC_NAME_FILE_FORMAT, os, arch, go_version.get_version_str()));
-		}
 		List<String> calling_name_list = calling_func_name_res.get_calling_func_name_list(name, calling_func_list.size());
 		if (calling_name_list == null) {
 			return;
@@ -378,22 +375,20 @@ public class FuncNameGuesser {
 			funcs.put(entry.getKey(), freq_name);
 		}
 
-		if (calling_func_name_res != null) {
-			FunctionIterator itr = program.getListing().getFunctions(true);
-			while (itr.hasNext()) {
-				Function func = itr.next();
-				if (funcs.containsKey(func.getEntryPoint())) {
-					continue;
-				}
-				String name = calling_func_name_res.get_func_name_by_placement(func.getEntryPoint(), funcs);
-				if (name == null) {
-					continue;
-				}
-				funcs.put(func.getEntryPoint(), name);
+		FunctionIterator itr = program.getListing().getFunctions(true);
+		while (itr.hasNext()) {
+			Function func = itr.next();
+			if (funcs.containsKey(func.getEntryPoint())) {
+				continue;
 			}
-
-			calling_func_name_res.collect_func_name_by_placement(funcs);
+			String name = calling_func_name_res.get_func_name_by_placement(func.getEntryPoint(), funcs);
+			if (name == null) {
+				continue;
+			}
+			funcs.put(func.getEntryPoint(), name);
 		}
+
+		calling_func_name_res.collect_func_name_by_placement(funcs);
 	}
 
 	private boolean is_go_func_entry_point(Address addr) {
