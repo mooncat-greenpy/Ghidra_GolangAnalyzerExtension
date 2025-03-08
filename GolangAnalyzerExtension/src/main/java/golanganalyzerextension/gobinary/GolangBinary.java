@@ -108,6 +108,46 @@ public class GolangBinary {
 		}
 	}
 
+	public GolangBinary(Program program, String pcheader_addr_str, String custom_go_version_str, TaskMonitor monitor) {
+		this.program=program;
+		this.monitor=monitor;
+		this.program_listing=program.getListing();
+		this.memory=program.getMemory();
+
+		Address pcheader_addr=null;
+		try {
+			pcheader_addr = get_address(pcheader_addr_str);
+		} catch (BinaryAccessException e) {
+		}
+		if (pcheader_addr==null) {
+			Logger.append_message(String.format("Invalid PcHeader address: addr=%s", pcheader_addr_str));
+			return;
+		}
+		pcheader=new PcHeader(this, pcheader_addr);
+		GolangVersionExtractor go_version_extractor=new GolangVersionExtractor(this);
+		guess_go_version=false;
+
+		if (GolangVersion.is_go_version(custom_go_version_str)) {
+			go_version=new GolangVersion(custom_go_version_str);
+		} else if (go_version_extractor.scan()) {
+			go_version=go_version_extractor.get_go_version();
+		} else {
+			go_version=GO_VERSION.to_go_version(pcheader.get_go_version());
+			guess_go_version=true;
+		}
+
+		try {
+			module_data=new ModuleData(this);
+			if (!GolangVersion.is_go_version(custom_go_version_str) && !go_version_extractor.get_is_scanned_result() && go_version.le(module_data.get_go_version().get_version_str())) {
+				go_version=module_data.get_go_version();
+				guess_go_version=true;
+			}
+		} catch(InvalidBinaryStructureException e) {
+			module_data=null;
+			Logger.append_message(String.format("Failed to get module data: message=%s", e.getMessage()));
+		}
+	}
+
 	public GolangBinary(GolangBinary obj) {
 		this.program=obj.program;
 		this.monitor=obj.monitor;
@@ -198,7 +238,7 @@ public class GolangBinary {
 			throw new IllegalArgumentException("Invalid DBRecord schema");
 		}
 		try {
-			this.pcheader=new PcHeader(this, get_address(pcheader_addr_value), GO_VERSION.from_integer(pcheader_version_num), pcheader_little_endian);
+			this.pcheader=new PcHeader(this, get_address(pcheader_addr_value), GO_VERSION.from_integer(pcheader_version_num), pcheader_little_endian, false);
 			this.go_version=new GolangVersion(go_version_str);
 			this.guess_go_version=guess_go_version_flag;
 		} catch(InvalidBinaryStructureException | BinaryAccessException | InvalidGolangVersionFormatException e) {

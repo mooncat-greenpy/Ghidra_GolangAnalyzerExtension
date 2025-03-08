@@ -74,7 +74,13 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 				}
 			}
 
-			GolangBinary go_bin=new GolangBinary(program, analyzer_option.get_go_version(), monitor);
+			GolangBinary go_bin;
+			String pcheader_addr_str = analyzer_option.get_pcheader_addr_str();
+			if (pcheader_addr_str.isEmpty()) {
+				go_bin=new GolangBinary(program, analyzer_option.get_go_version(), monitor);
+			} else {
+				go_bin=new GolangBinary(program, pcheader_addr_str, analyzer_option.get_go_version(), monitor);
+			}
 
 			GolangAnalyzerExtensionService service=null;
 			for(Object obj : program.getConsumerList()) {

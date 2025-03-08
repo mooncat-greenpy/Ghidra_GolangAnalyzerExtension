@@ -28,6 +28,9 @@ public class AnalyzerOption {
 	private static final String DEBUG_MODE_DESC="Enable logging.";
 	private boolean debugmode_option;
 
+	private static final String PCHEADER_ADDR="PcHeader Address";
+	private static final String PCHEADER_ADDR_DESC="Specify the address of PcHeader (optional).";
+	private String pcheader_addr_option;
 	private static final String GOLANG_VERSION="Golang version";
 	private static final String GOLANG_VERSION_DESC="Specify the Go version to use for analysis (optional).";
 	private String go_version_option;
@@ -48,6 +51,7 @@ public class AnalyzerOption {
 		datatype_option=true;
 		string_option=true;
 		debugmode_option=false;
+		pcheader_addr_option="";
 		go_version_option="";
 		guess_func_option=false;
 	}
@@ -80,6 +84,10 @@ public class AnalyzerOption {
 		return debugmode_option;
 	}
 
+	public String get_pcheader_addr_str() {
+		return pcheader_addr_option;
+	}
+
 	public String get_go_version() {
 		return go_version_option;
 	}
@@ -96,6 +104,7 @@ public class AnalyzerOption {
 		options.registerOption(ADD_DATATYPE, datatype_option, null, ADD_DATATYPE_DESC);
 		options.registerOption(SEARCH_STRING, string_option, null, SEARCH_STRING_DESC);
 		options.registerOption(DEBUG_MODE, debugmode_option, null, DEBUG_MODE_DESC);
+		options.registerOption(PCHEADER_ADDR, pcheader_addr_option, null, PCHEADER_ADDR_DESC);
 		options.registerOption(GOLANG_VERSION, go_version_option, null, GOLANG_VERSION_DESC);
 		options.registerOption(GUESS_FUNC, guess_func_option, null, GUESS_FUNC_DESC);
 	}
@@ -108,6 +117,7 @@ public class AnalyzerOption {
 		datatype_option=options.getBoolean(ADD_DATATYPE, datatype_option);
 		string_option=options.getBoolean(SEARCH_STRING, string_option);
 		debugmode_option=options.getBoolean(DEBUG_MODE, debugmode_option);
+		pcheader_addr_option=options.getString(PCHEADER_ADDR, pcheader_addr_option);
 		go_version_option=options.getString(GOLANG_VERSION, go_version_option);
 		guess_func_option=options.getBoolean(GUESS_FUNC, guess_func_option);
 	}

@@ -26,6 +26,7 @@ public class PcHeader {
 	private boolean little_endian;
 
 	public enum GO_VERSION {
+		UNKNOWN,
 		GO_12,
 		GO_116,
 		GO_118,
@@ -33,6 +34,8 @@ public class PcHeader {
 
 		public static GO_VERSION from_integer(int num) throws IllegalArgumentException {
 			switch(num) {
+			case 0:
+				return UNKNOWN;
 			case 12:
 				return GO_12;
 			case 116:
@@ -48,6 +51,8 @@ public class PcHeader {
 
 		public static int to_integer(GO_VERSION go_version) {
 			switch(go_version) {
+			case UNKNOWN:
+				return 0;
 			case GO_12:
 				return 12;
 			case GO_116:
@@ -61,6 +66,8 @@ public class PcHeader {
 
 		public static GolangVersion to_go_version(GO_VERSION go_version) {
 			switch(go_version) {
+			case UNKNOWN:
+				return null;
 			case GO_12:
 				return new GolangVersion(GolangVersion.GO_1_2_LOWEST);
 			case GO_116:
@@ -79,10 +86,33 @@ public class PcHeader {
 		this.addr=search_by_magic_all_ver();
 	}
 
-	public PcHeader(GolangBinary go_bin, Address target_addr, GO_VERSION go_version, boolean little_endian) throws InvalidBinaryStructureException {
+	public PcHeader(GolangBinary go_bin, Address target_addr, GO_VERSION go_version, boolean little_endian, boolean force) throws InvalidBinaryStructureException {
 		this.go_bin=go_bin;
 
 		this.addr=search_by_magic(target_addr, go_version, little_endian);
+		if (addr == null) {
+			throw new InvalidBinaryStructureException("Not found pcHeader");
+		}
+	}
+
+	public PcHeader(GolangBinary go_bin, Address target_addr) throws InvalidBinaryStructureException {
+		this.go_bin=go_bin;
+
+		this.addr=target_addr;
+		if (init_vars(target_addr, GO_VERSION.GO_118, true)) {
+			return;
+		} else if (init_vars(target_addr, GO_VERSION.GO_116, true)) {
+			return;
+		} else if (init_vars(target_addr, GO_VERSION.GO_12, true)) {
+			return;
+		} else if (init_vars(target_addr, GO_VERSION.GO_118, false)) {
+			return;
+		} else if (init_vars(target_addr, GO_VERSION.GO_116, false)) {
+			return;
+		} else if (init_vars(target_addr, GO_VERSION.GO_12, false)) {
+			return;
+		}
+		throw new InvalidBinaryStructureException("Not found pcHeader");
 	}
 
 	public Address get_addr() {
@@ -177,39 +207,8 @@ public class PcHeader {
 				break;
 			}
 
-			try {
-				// magic
-				// two zero bytes
-				quantum=(int)go_bin.get_address_value(tmp_addr, 6, 1);      // arch(x86=1, ?=2, arm=4)
-				pointer_size=(int)go_bin.get_address_value(tmp_addr, 7, 1); // pointer size
-
-				Address func_list_base;
-				if(is_go118) {
-					func_list_base=go_bin.get_address(tmp_addr, go_bin.get_address_value(tmp_addr, 8+pointer_size*7, pointer_size));
-				}else if(is_go116) {
-					func_list_base=go_bin.get_address(tmp_addr, go_bin.get_address_value(tmp_addr, 8+pointer_size*6, pointer_size));
-				}else {
-					func_list_base=go_bin.get_address(tmp_addr, 8+pointer_size);
-				}
-				int functab_field_size=is_go118?4:pointer_size;
-				long func_addr_value=go_bin.get_address_value(func_list_base, 0, functab_field_size);
-				long func_info_offset=go_bin.get_address_value(func_list_base, functab_field_size, functab_field_size);
-				long func_entry_value;
-				if(is_go118) {
-					func_entry_value=go_bin.get_address_value(func_list_base, func_info_offset, 4);
-				} else if(is_go116) {
-					func_entry_value=go_bin.get_address_value(func_list_base, func_info_offset, pointer_size);
-				} else {
-					func_entry_value=go_bin.get_address_value(tmp_addr, func_info_offset, pointer_size);
-				}
-
-				if((quantum==1 || quantum==2 || quantum==4) && (pointer_size==4 || pointer_size==8) &&
-						func_addr_value==func_entry_value && (is_go118 || func_addr_value!=0)) {
-					go_version=target_go_version;
-					little_endian=target_little_endian;
-					return tmp_addr;
-				}
-			} catch (BinaryAccessException e) {
+			if (init_vars(tmp_addr, target_go_version, target_little_endian)) {
+				return tmp_addr;
 			}
 			try {
 				tmp_addr=go_bin.get_address(tmp_addr, 4);
@@ -219,5 +218,47 @@ public class PcHeader {
 		}
 
 		return null;
+	}
+
+	private boolean init_vars(Address target_addr, GO_VERSION target_go_version, boolean target_little_endian) {
+		boolean is_go118=target_go_version.equals(GO_VERSION.GO_118) | target_go_version.equals(GO_VERSION.GO_120);
+		boolean is_go116=target_go_version.equals(GO_VERSION.GO_116);
+
+		try {
+			// magic
+			// two zero bytes
+			quantum=(int)go_bin.get_address_value(target_addr, 6, 1);      // arch(x86=1, ?=2, arm=4)
+			pointer_size=(int)go_bin.get_address_value(target_addr, 7, 1); // pointer size
+
+			Address func_list_base;
+			if(is_go118) {
+				func_list_base=go_bin.get_address(target_addr, go_bin.get_address_value(target_addr, 8+pointer_size*7, pointer_size));
+			}else if(is_go116) {
+				func_list_base=go_bin.get_address(target_addr, go_bin.get_address_value(target_addr, 8+pointer_size*6, pointer_size));
+			}else {
+				func_list_base=go_bin.get_address(target_addr, 8+pointer_size);
+			}
+			int functab_field_size=is_go118?4:pointer_size;
+			long func_addr_value=go_bin.get_address_value(func_list_base, 0, functab_field_size);
+			long func_info_offset=go_bin.get_address_value(func_list_base, functab_field_size, functab_field_size);
+			long func_entry_value;
+			if(is_go118) {
+				func_entry_value=go_bin.get_address_value(func_list_base, func_info_offset, 4);
+			} else if(is_go116) {
+				func_entry_value=go_bin.get_address_value(func_list_base, func_info_offset, pointer_size);
+			} else {
+				func_entry_value=go_bin.get_address_value(target_addr, func_info_offset, pointer_size);
+			}
+
+			if((quantum==1 || quantum==2 || quantum==4) && (pointer_size==4 || pointer_size==8) &&
+					func_addr_value==func_entry_value && (is_go118 || func_addr_value!=0)) {
+				go_version=target_go_version;
+				little_endian=target_little_endian;
+				return true;
+			}
+		} catch (BinaryAccessException e) {
+		}
+
+		return false;
 	}
 }
