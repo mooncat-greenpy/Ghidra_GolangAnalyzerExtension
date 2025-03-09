@@ -14,6 +14,7 @@ import ghidra.program.model.listing.ParameterImpl;
 import ghidra.program.model.scalar.Scalar;
 import ghidra.program.model.symbol.SourceType;
 import ghidra.util.exception.InvalidInputException;
+import golanganalyzerextension.gobinary.FuncInfo;
 import golanganalyzerextension.gobinary.GolangBinary;
 import golanganalyzerextension.service.GolangAnalyzerExtensionService;
 import golanganalyzerextension.version.GolangVersion;
@@ -23,8 +24,8 @@ public class GolangFunctionX86 extends GolangFunction {
 
 	private static final String[] reg_arg_str={"RAX", "RBX", "RCX", "RDI", "RSI", "R8", "R9", "R10", "R11"};
 
-	GolangFunctionX86(GolangBinary go_bin, GolangAnalyzerExtensionService service, Address func_info_addr, long func_size, boolean disasm_option) {
-		super(go_bin, service, func_info_addr, func_size, disasm_option);
+	GolangFunctionX86(GolangBinary go_bin, GolangAnalyzerExtensionService service, FuncInfo info, boolean disasm_option) {
+		super(go_bin, service, info, disasm_option);
 	}
 
 	GolangFunctionX86(GolangBinary go_bin, GolangAnalyzerExtensionService service, Function func, boolean disasm_option) {

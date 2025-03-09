@@ -13,6 +13,7 @@ import ghidra.program.model.symbol.SourceType;
 import golanganalyzerextension.exceptions.InvalidBinaryStructureException;
 import golanganalyzerextension.function.FileLine;
 import golanganalyzerextension.function.GolangFunction;
+import golanganalyzerextension.gobinary.FuncInfo;
 import golanganalyzerextension.gobinary.GolangBinary;
 import golanganalyzerextension.gobinary.exceptions.BinaryAccessException;
 import golanganalyzerextension.log.Logger;
@@ -168,48 +169,17 @@ public class FunctionModifier {
 		}
 
 		for(int i=0; i<func_num; i++) {
-			long func_addr_value;
-			long func_info_offset;
-			Address func_info_addr;
-			long func_entry_value;
-			long func_end_value;
+			FuncInfo info;
 			try {
 				int functab_field_size=is_go118?4:pointer_size;
-				func_addr_value=go_bin.get_address_value(func_list_base, i*functab_field_size*2, functab_field_size);
-				if(is_go118) {
-					func_addr_value+=go_bin.get_address_value(pcheader_base, 8+pointer_size*2, pointer_size);
-				}
-				func_info_offset=go_bin.get_address_value(func_list_base, i*functab_field_size*2+functab_field_size, functab_field_size);
-
-				if(is_go116) {
-					func_info_addr=go_bin.get_address(func_list_base, func_info_offset);
-				}else {
-					func_info_addr=go_bin.get_address(pcheader_base, func_info_offset);
-				}
-
-				func_entry_value=go_bin.get_address_value(func_info_addr, functab_field_size);
-				func_end_value=go_bin.get_address_value(func_list_base, i*functab_field_size*2+functab_field_size*2, functab_field_size);
-				if(is_go118) {
-					long text=go_bin.get_address_value(pcheader_base, 8+pointer_size*2, pointer_size);
-					func_entry_value+=text;
-					func_end_value+=text;
-				}
-			} catch (BinaryAccessException e) {
-				Logger.append_message(String.format("Failed to init func: pcheader_addr=%s, func_list_base=%s, i=%d, message=%s", pcheader_base, func_list_base, i, e.getMessage()));
-				return false;
-			}
-
-			if(func_addr_value==0 || func_info_offset==0 || func_entry_value==0) {
-				return false;
-			}
-			if(func_addr_value!=func_entry_value)
-			{
-				Logger.append_message(String.format("Function addr mismatch: %x != %x", func_addr_value, func_entry_value));
+				info=new FuncInfo(go_bin, func_list_base, go_bin.get_address(func_list_base, i*functab_field_size*2));
+			} catch (BinaryAccessException | InvalidBinaryStructureException e) {
+				Logger.append_message(String.format("Failed to get func info: pcheader_addr=%s, func_list_base=%s, i=%d, message=%s", pcheader_base, func_list_base, i, e.getMessage()));
 				continue;
 			}
 
 			try {
-				GolangFunction gofunc=GolangFunction.create_function(go_bin, service, func_info_addr, func_end_value-func_entry_value, disasm_option);
+				GolangFunction gofunc=GolangFunction.create_function(go_bin, service, info, disasm_option);
 				gofunc_list.add(gofunc);
 			} catch (InvalidBinaryStructureException e) {
 				Logger.append_message(String.format("Failed to create function: %s", e.getMessage()));

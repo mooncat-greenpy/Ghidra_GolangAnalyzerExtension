@@ -6,6 +6,7 @@ import ghidra.program.model.address.Address;
 import ghidra.program.model.lang.Register;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Instruction;
+import golanganalyzerextension.gobinary.FuncInfo;
 import golanganalyzerextension.gobinary.GolangBinary;
 import golanganalyzerextension.service.GolangAnalyzerExtensionService;
 import golanganalyzerextension.version.GolangVersion;
@@ -14,8 +15,8 @@ public class GolangFunctionPpc extends GolangFunction {
 
 	private static final String[] reg_arg_str={"r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r14", "r15", "r16", "r17"};
 
-	GolangFunctionPpc(GolangBinary go_bin, GolangAnalyzerExtensionService service, Address func_info_addr, long func_size, boolean disasm_option) {
-		super(go_bin, service, func_info_addr, func_size, disasm_option);
+	GolangFunctionPpc(GolangBinary go_bin, GolangAnalyzerExtensionService service, FuncInfo info, boolean disasm_option) {
+		super(go_bin, service, info, disasm_option);
 	}
 
 	GolangFunctionPpc(GolangBinary go_bin, GolangAnalyzerExtensionService service, Function func, boolean disasm_option) {
