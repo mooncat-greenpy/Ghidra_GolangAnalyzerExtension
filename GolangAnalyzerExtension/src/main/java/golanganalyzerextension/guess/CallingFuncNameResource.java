@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Map;
 
 import ghidra.program.model.address.Address;
+import ghidra.program.model.listing.Function;
+import ghidra.program.model.listing.FunctionIterator;
 import resources.ResourceManager;
 
 class FuncInfo {
@@ -87,32 +89,62 @@ public class CallingFuncNameResource {
 		return calling_name_list;
 	}
 
-	public String get_func_name_by_placement(Address addr, Map<Address, String> guessed_map) {
-		Map<String, Integer> freq_map = new HashMap<>();
+	public void get_func_name_by_placement(FunctionIterator itr, Map<Address, String> guessed_map) {
+		Map<Address, Long> guessed_info_addr_map = new HashMap<>();
+		Map<Long, Address> info_guessed_addr_map = new HashMap<>();
 		for (Map.Entry<Address, String> guessed_entry : guessed_map.entrySet()) {
 			for (int i = 0; i < func_info_list.size(); i++) {
 				if (!guessed_entry.getValue().equals(func_info_list.get(i).get_name())) {
 					continue;
 				}
+				guessed_info_addr_map.put(guessed_entry.getKey(), func_info_list.get(i).get_addr());
+				info_guessed_addr_map.put(func_info_list.get(i).get_addr(), guessed_entry.getKey());
+			}
+		}
+		Map<Long, Integer> info_addr_idx_map = new HashMap<>();
+		for (int i = 0; i < func_info_list.size(); i++) {
+			info_addr_idx_map.put(func_info_list.get(i).get_addr(), i);
+		}
+
+		while (itr.hasNext()) {
+			Function func = itr.next();
+			Address addr = func.getEntryPoint();
+			if (guessed_map.containsKey(addr)) {
+				continue;
+			}
+
+			Map<Long, Integer> freq_map = new HashMap<>();
+			for (Map.Entry<Address, String> guessed_entry : guessed_map.entrySet()) {
 				long diff = addr.getOffset() - guessed_entry.getKey().getOffset();
-				FuncInfo matched_info = get_func_info_by_addr(func_info_list.get(i).get_addr() + diff);
+				long info_addr = guessed_info_addr_map.getOrDefault(guessed_entry.getKey(), (long) -1);
+				if (info_addr == -1) {
+					continue;
+				}
+				FuncInfo matched_info = get_func_info_by_addr(info_addr + diff);
 				if (matched_info == null) {
 					continue;
 				}
-				String name = matched_info.get_name();
-				freq_map.put(name, freq_map.getOrDefault(name, 0) + 1);
-				}
-		}
+				freq_map.put(matched_info.get_addr(), freq_map.getOrDefault(matched_info.get_addr(), 0) + 1);
+			}
 
-		int count = 0;
-		String freq_name = null;
-		for (Map.Entry<String, Integer> freq_entry : freq_map.entrySet()) {
-			if (freq_entry.getValue() >= count) {
-				count = freq_entry.getValue();
-				freq_name = freq_entry.getKey();
+			int count = 0;
+			long freq_addr = -1;
+			for (Map.Entry<Long, Integer> freq_entry : freq_map.entrySet()) {
+				if (freq_entry.getValue() >= count) {
+					count = freq_entry.getValue();
+					freq_addr = freq_entry.getKey();
+				}
+			}
+			if (freq_addr != -1) {
+				int i = info_addr_idx_map.getOrDefault(freq_addr, -1);
+				if (i == -1) {
+					continue;
+				}
+				guessed_map.put(addr, func_info_list.get(i).get_name());
+				guessed_info_addr_map.put(addr, func_info_list.get(i).get_addr());
+				info_guessed_addr_map.put(func_info_list.get(i).get_addr(), addr);
 			}
 		}
-		return freq_name;
 	}
 
 	public boolean is_reliable(Address addr, Map<Address, String> guessed_map) {
