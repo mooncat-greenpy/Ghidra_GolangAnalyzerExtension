@@ -26,6 +26,18 @@ public class CallingFuncNameResourceTest extends AbstractGhidraHeadlessIntegrati
 		for(Map.Entry<String, String> entry : bytes_map.entrySet()) {
 			builder.setBytes(entry.getKey(), entry.getValue());
 		}
+        builder.setBytes("0x801000", "c3");
+        builder.createEmptyFunction("FUN_801000", "0x801000", 0x1, null);
+        builder.setBytes("0x802000", "c3");
+        builder.createEmptyFunction("FUN_802000", "0x802000", 0x1, null);
+        builder.setBytes("0x803000", "c3");
+        builder.createEmptyFunction("FUN_803000", "0x803000", 0x1, null);
+        builder.setBytes("0x804000", "c3");
+        builder.createEmptyFunction("FUN_804000", "0x804000", 0x1, null);
+        builder.setBytes("0x805000", "c3");
+        builder.createEmptyFunction("FUN_805000", "0x805000", 0x1, null);
+        builder.setBytes("0x806000", "c3");
+        builder.createEmptyFunction("FUN_806000", "0x806000", 0x1, null);
 		program = builder.getProgram();
 	}
 
@@ -226,8 +238,10 @@ public class CallingFuncNameResourceTest extends AbstractGhidraHeadlessIntegrati
 		for (Map.Entry<Long, String> entry : data.entrySet()) {
 			input_map.put(program.getAddressFactory().getDefaultAddressSpace().getAddress(entry.getKey()), entry.getValue());
 		}
+
+		calling_func_name_res.get_func_name_by_placement(program.getListing().getFunctions(true), input_map);
 		assertEquals(
-			calling_func_name_res.get_func_name_by_placement(program.getAddressFactory().getDefaultAddressSpace().getAddress(addr), input_map),
+			input_map.get(program.getAddressFactory().getDefaultAddressSpace().getAddress(addr)),
 			expected);
 	}
 
