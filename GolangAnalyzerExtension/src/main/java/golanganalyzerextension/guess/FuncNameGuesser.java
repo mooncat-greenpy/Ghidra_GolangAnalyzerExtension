@@ -427,8 +427,11 @@ public class FuncNameGuesser {
 				create_function(entry.getValue(), entry.getKey());
 				continue;
 			}
+			if (!func.getName().contains("FUN_")) {
+				continue;
+			}
 			try {
-				func.setName(entry.getValue(), SourceType.USER_DEFINED);
+				func.setName(entry.getValue() + "_GAEguess", SourceType.USER_DEFINED);
 			}catch(Exception e) {
 				Logger.append_message(String.format("Failed to set function name: addr=%s, message=%s", entry.getKey(), e.getMessage()));
 			}

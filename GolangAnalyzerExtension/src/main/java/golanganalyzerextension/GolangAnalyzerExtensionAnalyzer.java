@@ -65,15 +65,6 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 			throws CancelledException {
 		Logger.set_logger(log, analyzer_option.get_debugmode());
 		try {
-			if (analyzer_option.get_guess_func()) {
-				FuncNameGuesser guesser = new FuncNameGuesser(program);
-				guesser.guess();
-				Map<Address, String> func_name_map = guesser.get_funcs();
-				if (func_name_map != null) {
-					guesser.rename_func_for_guess(func_name_map);
-				}
-			}
-
 			GolangBinary go_bin;
 			String pcheader_addr_str = analyzer_option.get_pcheader_addr_str();
 			if (pcheader_addr_str.isEmpty()) {
@@ -112,6 +103,14 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 		} catch(Exception e) {
 			Logger.append_message(String.format("Error: %s", e.getMessage()));
 			return false;
+
+		if (analyzer_option.get_guess_func()) {
+			FuncNameGuesser guesser = new FuncNameGuesser(program);
+			guesser.guess();
+			Map<Address, String> func_name_map = guesser.get_funcs();
+			if (func_name_map != null) {
+				guesser.rename_func_for_guess(func_name_map);
+			}
 		}
 
 		return true;
