@@ -11,16 +11,19 @@ import java.util.Map;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionIterator;
+import ghidra.program.model.listing.Program;
 import resources.ResourceManager;
 
 class FuncInfo {
 	private long addr;
 	private String name;
+	private String file_line;
 	private List<String> calling;
 
-	FuncInfo(long addr, String name, List<String> calling) {
+	FuncInfo(long addr, String name, String file_line, List<String> calling) {
 		this.addr = addr;
 		this.name = name;
+		this.file_line = file_line;
 		this.calling = calling;
 	}
 
@@ -30,6 +33,10 @@ class FuncInfo {
 
 	public String get_name() {
 		return name;
+	}
+
+	public String get_file_line() {
+		return file_line;
 	}
 
 	public List<String> get_calling() {
@@ -53,6 +60,20 @@ public class CallingFuncNameResource {
 			}
 		}
 		return null;
+	}
+
+	public FuncInfo get_func_info_by_file_line(String file_line) {
+		FuncInfo ret = null;
+		for (FuncInfo info : func_info_list) {
+			if (!file_line.contains(info.get_file_line())) {
+				continue;
+			}
+			if (ret != null) {
+				return null;
+			}
+			ret = info;
+		}
+		return ret;
 	}
 
 	public List<List<String>> get_calling_func_name_lists(String name) {
@@ -87,6 +108,22 @@ public class CallingFuncNameResource {
 		}
 
 		return calling_name_list;
+	}
+
+	public void guess_func_name_by_file_line(Program program, FunctionIterator itr, Map<Address, String> guessed_map) {
+		while (itr.hasNext()) {
+			Function func = itr.next();
+			Address addr = func.getEntryPoint();
+			String comment = program.getListing().getComment(ghidra.program.model.listing.CodeUnit.PRE_COMMENT, addr);
+			if (comment == null) {
+				continue;
+			}
+			FuncInfo info = get_func_info_by_file_line(comment);
+			if (info == null) {
+				continue;
+			}
+			guessed_map.put(addr, info.get_name());
+		}
 	}
 
 	public void get_func_name_by_placement(FunctionIterator itr, Map<Address, String> guessed_map) {
@@ -223,10 +260,10 @@ public class CallingFuncNameResource {
 			return;
 		}
 		List<String> calling_func_list = new LinkedList<>();
-		for (int i = 2; i < line_split.length; i++) {
+		for (int i = 3; i < line_split.length; i++) {
 			calling_func_list.add(line_split[i]);
 		}
-		holder.add(new FuncInfo(Long.valueOf(line_split[0], 16), line_split[1], calling_func_list));
+		holder.add(new FuncInfo(Long.valueOf(line_split[0], 16), line_split[1], line_split[2], calling_func_list));
 	}
 
 	private List<FuncInfo> parse_calling_func_file(String file_name) {

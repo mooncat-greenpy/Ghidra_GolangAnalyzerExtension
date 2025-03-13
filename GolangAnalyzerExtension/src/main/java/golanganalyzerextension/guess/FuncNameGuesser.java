@@ -299,6 +299,7 @@ public class FuncNameGuesser {
 		funcs.put(entry_point, String.format("_rt0_%s_%s", arch, os));
 
 		calling_func_name_res = new CallingFuncNameResource(String.format(CALLING_FUNC_NAME_FILE_FORMAT, os, arch, go_version.get_version_str()));
+		calling_func_name_res.guess_func_name_by_file_line(program, program.getListing().getFunctions(true), funcs);
 		guess_calling_func();
 	}
 
