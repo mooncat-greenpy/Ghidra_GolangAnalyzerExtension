@@ -12,6 +12,8 @@ import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionIterator;
 import ghidra.program.model.listing.Program;
+import golanganalyzerextension.guess.GuessedFuncNames.GuessedName;
+import golanganalyzerextension.guess.GuessedFuncNames.GuessedConfidence;
 import resources.ResourceManager;
 
 class FuncInfo {
@@ -110,7 +112,7 @@ public class CallingFuncNameResource {
 		return calling_name_list;
 	}
 
-	public void guess_func_name_by_file_line(Program program, FunctionIterator itr, Map<Address, String> guessed_map) {
+	public void guess_func_name_by_file_line(Program program, FunctionIterator itr, GuessedFuncNames guessed_names_holder) {
 		while (itr.hasNext()) {
 			Function func = itr.next();
 			Address addr = func.getEntryPoint();
@@ -122,20 +124,20 @@ public class CallingFuncNameResource {
 			if (info == null) {
 				continue;
 			}
-			guessed_map.put(addr, info.get_name());
+			guessed_names_holder.put(addr, info.get_name(), GuessedConfidence.HIGH);
 		}
 	}
 
-	public void get_func_name_by_placement(FunctionIterator itr, Map<Address, String> guessed_map) {
+	public void get_func_name_by_placement(FunctionIterator itr, GuessedFuncNames guessed_names_holder) {
 		Map<Address, Long> guessed_info_addr_map = new HashMap<>();
 		Map<Long, Address> info_guessed_addr_map = new HashMap<>();
-		for (Map.Entry<Address, String> guessed_entry : guessed_map.entrySet()) {
+		for (GuessedName guessed_name : guessed_names_holder.guessed_names()) {
 			for (int i = 0; i < func_info_list.size(); i++) {
-				if (!guessed_entry.getValue().equals(func_info_list.get(i).get_name())) {
+				if (!guessed_name.get_name().equals(func_info_list.get(i).get_name())) {
 					continue;
 				}
-				guessed_info_addr_map.put(guessed_entry.getKey(), func_info_list.get(i).get_addr());
-				info_guessed_addr_map.put(func_info_list.get(i).get_addr(), guessed_entry.getKey());
+				guessed_info_addr_map.put(guessed_name.get_addr(), func_info_list.get(i).get_addr());
+				info_guessed_addr_map.put(func_info_list.get(i).get_addr(), guessed_name.get_addr());
 			}
 		}
 		Map<Long, Integer> info_addr_idx_map = new HashMap<>();
@@ -146,14 +148,14 @@ public class CallingFuncNameResource {
 		while (itr.hasNext()) {
 			Function func = itr.next();
 			Address addr = func.getEntryPoint();
-			if (guessed_map.containsKey(addr)) {
+			if (guessed_names_holder.get_name(addr) != null) {
 				continue;
 			}
 
 			Map<Long, Integer> freq_map = new HashMap<>();
-			for (Map.Entry<Address, String> guessed_entry : guessed_map.entrySet()) {
-				long diff = addr.getOffset() - guessed_entry.getKey().getOffset();
-				long info_addr = guessed_info_addr_map.getOrDefault(guessed_entry.getKey(), (long) -1);
+			for (GuessedName guessed_name : guessed_names_holder.guessed_names()) {
+				long diff = addr.getOffset() - guessed_name.get_addr().getOffset();
+				long info_addr = guessed_info_addr_map.getOrDefault(guessed_name.get_addr(), (long) -1);
 				if (info_addr == -1) {
 					continue;
 				}
@@ -177,16 +179,16 @@ public class CallingFuncNameResource {
 				if (i == -1) {
 					continue;
 				}
-				guessed_map.put(addr, func_info_list.get(i).get_name());
+				guessed_names_holder.put(addr, func_info_list.get(i).get_name(), GuessedConfidence.MEDIUM);
 				guessed_info_addr_map.put(addr, func_info_list.get(i).get_addr());
 				info_guessed_addr_map.put(func_info_list.get(i).get_addr(), addr);
 			}
 		}
 	}
 
-	public boolean is_reliable(Address addr, Map<Address, String> guessed_map) {
+	public boolean is_reliable(Address addr, GuessedFuncNames guessed_names_holder) {
 		for (int i = 0; i < func_info_list.size(); i++) {
-			if (!guessed_map.get(addr).equals(func_info_list.get(i).get_name())) {
+			if (!guessed_names_holder.get_name(addr).equals(func_info_list.get(i).get_name())) {
 				continue;
 			}
 			for (int j = i - 2; j < i + 3; j++) {
@@ -194,7 +196,7 @@ public class CallingFuncNameResource {
 					continue;
 				}
 				long diff = func_info_list.get(j).get_addr() - func_info_list.get(i).get_addr();
-				String name = guessed_map.get(addr.add(diff));
+				String name = guessed_names_holder.get_name(addr.add(diff));
 				if (name == null) {
 					return false;
 				}
@@ -207,17 +209,17 @@ public class CallingFuncNameResource {
 		return false;
 	}
 
-	public void collect_func_name_by_placement(Map<Address, String> guessed_map) {
+	public void collect_func_name_by_placement(GuessedFuncNames guessed_names_holder) {
 		Map<Address, Long> guessed_info_addr_map = new HashMap<>();
 		Map<Long, Address> info_guessed_addr_map = new HashMap<>();
 		boolean[] mapped_arr = new boolean[func_info_list.size()];
-		for (Map.Entry<Address, String> guessed_entry : guessed_map.entrySet()) {
+		for (GuessedName guessed_name : guessed_names_holder.guessed_names()) {
 			for (int i = 0; i < func_info_list.size(); i++) {
-				if (!guessed_entry.getValue().equals(func_info_list.get(i).get_name())) {
+				if (!guessed_name.get_name().equals(func_info_list.get(i).get_name())) {
 					continue;
 				}
-				guessed_info_addr_map.put(guessed_entry.getKey(), func_info_list.get(i).get_addr());
-				info_guessed_addr_map.put(func_info_list.get(i).get_addr(), guessed_entry.getKey());
+				guessed_info_addr_map.put(guessed_name.get_addr(), func_info_list.get(i).get_addr());
+				info_guessed_addr_map.put(func_info_list.get(i).get_addr(), guessed_name.get_addr());
 				mapped_arr[i] = true;
 			}
 		}
@@ -246,7 +248,7 @@ public class CallingFuncNameResource {
 				if (matched_name == null) {
 					continue;
 				}
-				guessed_map.put(addr.add(diff), matched_name);
+				guessed_names_holder.put(addr.add(diff), matched_name, GuessedConfidence.MEDIUM);
 				guessed_info_addr_map.put(addr, func_info_list.get(idx).get_addr());
 				info_guessed_addr_map.put(func_info_list.get(idx).get_addr(), addr);
 				mapped_arr[idx] = true;

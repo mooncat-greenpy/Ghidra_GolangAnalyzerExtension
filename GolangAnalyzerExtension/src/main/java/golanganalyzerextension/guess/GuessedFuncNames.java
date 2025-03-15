@@ -1,13 +1,15 @@
 package golanganalyzerextension.guess;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import ghidra.program.model.address.Address;
 
 public class GuessedFuncNames {
 
-	public enum GuessedTrusted {
+	public enum GuessedConfidence {
 		VERY_LOW,
 		LOW,
 		MEDIUM,
@@ -15,21 +17,27 @@ public class GuessedFuncNames {
 		VERY_HIGH;
 	}
 
-	class GuessedName {
+	public class GuessedName {
+		private Address addr;
 		private String name;
-		private GuessedTrusted trusted;
+		private GuessedConfidence confidence;
 
-		GuessedName(String name, GuessedTrusted trusted) {
+		GuessedName(Address addr, String name, GuessedConfidence confidence) {
+			this.addr = addr;
 			this.name = name;
-			this.trusted = trusted;
+			this.confidence = confidence;
+		}
+
+		public Address get_addr() {
+			return addr;
 		}
 
 		public String get_name() {
 			return name;
 		}
 
-		public GuessedTrusted get_trusted() {
-			return trusted;
+		public GuessedConfidence get_confidence() {
+			return confidence;
 		}
 	}
 
@@ -47,19 +55,35 @@ public class GuessedFuncNames {
 		return gussed.get_name();
 	}
 
-	public GuessedTrusted get_trusted(Address addr) {
+	public GuessedConfidence get_confidence(Address addr) {
 		GuessedName gussed = funcs.get(addr);
 		if (gussed == null) {
 			return null;
 		}
-		return gussed.get_trusted();
+		return gussed.get_confidence();
 	}
 
-	public void put(Address addr, String name, GuessedTrusted trusted) {
-		GuessedTrusted old_trusted = get_trusted(addr);
-		if (old_trusted != null && old_trusted.ordinal() > trusted.ordinal()) {
+	public Set<Address> keys() {
+		return funcs.keySet();
+	}
+
+	public Collection<GuessedName> guessed_names() {
+		return funcs.values();
+	}
+
+	public int size() {
+		return funcs.size();
+	}
+
+	public void put(Address addr, String name, GuessedConfidence confidence) {
+		GuessedConfidence old_confidence = get_confidence(addr);
+		if (old_confidence != null && old_confidence.ordinal() > confidence.ordinal()) {
 			return;
 		}
-		funcs.put(addr, new GuessedName(name, trusted));
+		funcs.put(addr, new GuessedName(addr, name, confidence));
+	}
+
+	public void remove(Address addr) {
+		funcs.remove(addr);
 	}
 }

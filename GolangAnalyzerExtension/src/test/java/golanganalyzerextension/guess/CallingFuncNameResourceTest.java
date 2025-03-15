@@ -17,6 +17,7 @@ import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.FunctionIterator;
 import ghidra.program.model.listing.Program;
 import ghidra.test.AbstractGhidraHeadlessIntegrationTest;
+import golanganalyzerextension.guess.GuessedFuncNames.GuessedConfidence;
 
 public class CallingFuncNameResourceTest extends AbstractGhidraHeadlessIntegrationTest {
 
@@ -135,9 +136,9 @@ public class CallingFuncNameResourceTest extends AbstractGhidraHeadlessIntegrati
 		initialize(new HashMap<>());
 		CallingFuncNameResource calling_func_name_res = new CallingFuncNameResource(file_name);
 
-		Map<Address, String> input_map = new HashMap<>();
+		GuessedFuncNames input_map = new GuessedFuncNames();
 		for (Map.Entry<Long, String> entry : data.entrySet()) {
-			input_map.put(program.getAddressFactory().getDefaultAddressSpace().getAddress(entry.getKey()), entry.getValue());
+			input_map.put(program.getAddressFactory().getDefaultAddressSpace().getAddress(entry.getKey()), entry.getValue(), GuessedConfidence.VERY_LOW);
 		}
 
 		FunctionIterator itr = program.getListing().getFunctions(true);
@@ -149,7 +150,7 @@ public class CallingFuncNameResourceTest extends AbstractGhidraHeadlessIntegrati
 
 		calling_func_name_res.guess_func_name_by_file_line(program, program.getListing().getFunctions(true), input_map);
 		assertEquals(
-			input_map.get(program.getAddressFactory().getDefaultAddressSpace().getAddress(addr)),
+			input_map.get_name(program.getAddressFactory().getDefaultAddressSpace().getAddress(addr)),
 			expected);
 	}
 
@@ -342,14 +343,14 @@ public class CallingFuncNameResourceTest extends AbstractGhidraHeadlessIntegrati
 		initialize(new HashMap<>());
 		CallingFuncNameResource calling_func_name_res = new CallingFuncNameResource(file_name);
 
-		Map<Address, String> input_map = new HashMap<>();
+		GuessedFuncNames input_map = new GuessedFuncNames();
 		for (Map.Entry<Long, String> entry : data.entrySet()) {
-			input_map.put(program.getAddressFactory().getDefaultAddressSpace().getAddress(entry.getKey()), entry.getValue());
+			input_map.put(program.getAddressFactory().getDefaultAddressSpace().getAddress(entry.getKey()), entry.getValue(), GuessedConfidence.VERY_LOW);
 		}
 
 		calling_func_name_res.get_func_name_by_placement(program.getListing().getFunctions(true), input_map);
 		assertEquals(
-			input_map.get(program.getAddressFactory().getDefaultAddressSpace().getAddress(addr)),
+			input_map.get_name(program.getAddressFactory().getDefaultAddressSpace().getAddress(addr)),
 			expected);
 	}
 
@@ -392,9 +393,9 @@ public class CallingFuncNameResourceTest extends AbstractGhidraHeadlessIntegrati
 		CallingFuncNameResource calling_func_name_res = new CallingFuncNameResource(file_name);
 
 		Address addr = program.getAddressFactory().getDefaultAddressSpace().getAddress(addr_value);
-		Map<Address, String> input_map = new HashMap<>();
+		GuessedFuncNames input_map = new GuessedFuncNames();
 		for (Map.Entry<Long, String> entry : data.entrySet()) {
-			input_map.put(program.getAddressFactory().getDefaultAddressSpace().getAddress(entry.getKey()), entry.getValue());
+			input_map.put(program.getAddressFactory().getDefaultAddressSpace().getAddress(entry.getKey()), entry.getValue(), GuessedConfidence.VERY_LOW);
 		}
 		assertEquals(calling_func_name_res.is_reliable(addr, input_map), expected);
 	}
@@ -463,16 +464,19 @@ public class CallingFuncNameResourceTest extends AbstractGhidraHeadlessIntegrati
 		CallingFuncNameResource calling_func_name_res = new CallingFuncNameResource(file_name);
 
 
-		Map<Address, String> input_map = new HashMap<>();
+		GuessedFuncNames input_map = new GuessedFuncNames();
 		for (Map.Entry<Long, String> entry : data.entrySet()) {
-			input_map.put(program.getAddressFactory().getDefaultAddressSpace().getAddress(entry.getKey()), entry.getValue());
+			input_map.put(program.getAddressFactory().getDefaultAddressSpace().getAddress(entry.getKey()), entry.getValue(), GuessedConfidence.LOW);
 		}
-		Map<Address, String> expected_map = new HashMap<>();
+		GuessedFuncNames expected_map = new GuessedFuncNames();
 		for (Map.Entry<Long, String> entry : expected.entrySet()) {
-			expected_map.put(program.getAddressFactory().getDefaultAddressSpace().getAddress(entry.getKey()), entry.getValue());
+			expected_map.put(program.getAddressFactory().getDefaultAddressSpace().getAddress(entry.getKey()), entry.getValue(), GuessedConfidence.LOW);
 		}
 		calling_func_name_res.collect_func_name_by_placement(input_map);
-		assertEquals(input_map, expected_map);
+		assertEquals(input_map.size(), expected_map.size());
+		for (Address addr : input_map.keys()) {
+			assertEquals(input_map.get_name(addr), expected_map.get_name(addr));
+		}
 	}
 
 	static Stream<Arguments> test_collect_func_name_by_placement_params() throws Throwable {

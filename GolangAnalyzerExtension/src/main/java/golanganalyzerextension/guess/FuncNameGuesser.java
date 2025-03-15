@@ -40,6 +40,8 @@ import ghidra.program.model.symbol.SourceType;
 import ghidra.util.task.TaskMonitor;
 import resources.ResourceManager;
 
+import golanganalyzerextension.guess.GuessedFuncNames.GuessedName;
+import golanganalyzerextension.guess.GuessedFuncNames.GuessedConfidence;
 import golanganalyzerextension.log.Logger;
 import golanganalyzerextension.version.GolangVersion;
 
@@ -60,14 +62,14 @@ public class FuncNameGuesser {
 	private String os;
 	private String arch;
 	private CallingFuncNameResource calling_func_name_res;
-	private Map<Address, String> funcs;
+	private GuessedFuncNames guessed_names_holder;
 
 	public FuncNameGuesser(Program program) {
 		this.program = program;
 		go_version = null;
 		os = null;
 		arch = null;
-		funcs = null;
+		guessed_names_holder = new GuessedFuncNames();
 
 		Path temp_path = null;
 		try {
@@ -112,8 +114,8 @@ public class FuncNameGuesser {
 		return arch;
 	}
 
-	public Map<Address, String> get_funcs() {
-		return funcs;
+	public GuessedFuncNames get_funcs() {
+		return guessed_names_holder;
 	}
 
 	private Path create_resource_temp_file(String name) {
@@ -176,17 +178,16 @@ public class FuncNameGuesser {
 		}
 	}
 
-	private void remove_match_mistakes(Map<Address, String> func_name_map) {
+	private void remove_match_mistakes(GuessedFuncNames func_name_map) {
 		Map<String, Integer> freq_map = new HashMap<>();
-		for (String value : func_name_map.values()) {
+		for (Address addr : func_name_map.keys()) {
+			String value = func_name_map.get_name(addr);
 			freq_map.put(value, freq_map.getOrDefault(value, 0) + 1);
 		}
-		Iterator<Map.Entry<Address, String>> func_name_map_itr = func_name_map.entrySet().iterator();
-		while (func_name_map_itr.hasNext()) {
-			Map.Entry<Address, String> entry = func_name_map_itr.next();
-			String value = entry.getValue();
+		for (GuessedName guessed_name : func_name_map.guessed_names()) {
+			String value = guessed_name.get_name();
 			if (freq_map.get(value) > 1) {
-				func_name_map_itr.remove();
+				func_name_map.remove(guessed_name.get_addr());
 			}
 		}
 	}
@@ -268,13 +269,13 @@ public class FuncNameGuesser {
 				Map.Entry<Address, String> match_func = judge_func(sim_rsult);
 
 				if (match_func != null) {
-					funcs.put(match_func.getKey(), match_func.getValue());
+					guessed_names_holder.put(match_func.getKey(), match_func.getValue(), GuessedConfidence.LOW);
 				}
 			}
 
-			remove_match_mistakes(funcs);
+			remove_match_mistakes(guessed_names_holder);
 
-			if (funcs.size() > IS_GOLANG_FUNC_NUM_THRESHOLD) {
+			if (guessed_names_holder.size() > IS_GOLANG_FUNC_NUM_THRESHOLD) {
 				return;
 			}
 		} catch(Exception e) {
@@ -290,16 +291,16 @@ public class FuncNameGuesser {
 		go_version = null;
 		os = null;
 		arch = null;
-		funcs = new HashMap<>();
+		guessed_names_holder = new GuessedFuncNames();
 
 		guess_golang_version(response.result.iterator());
 		guess_function_names(response.result.iterator());
 
 		Address entry_point = get_entry_point();
-		funcs.put(entry_point, String.format("_rt0_%s_%s", arch, os));
+		guessed_names_holder.put(entry_point, String.format("_rt0_%s_%s", arch, os), GuessedConfidence.VERY_HIGH);
 
-		calling_func_name_res = new CallingFuncNameResource(String.format(CALLING_FUNC_NAME_FILE_FORMAT, os, arch, go_version.get_version_str()));
-		calling_func_name_res.guess_func_name_by_file_line(program, program.getListing().getFunctions(true), funcs);
+		calling_func_name_res = new CallingFuncNameResource(String.format(CALLING_FUNC_NAME_FILE_FORMAT, get_os(), get_arch(), get_go_version().get_version_str()));
+		calling_func_name_res.guess_func_name_by_file_line(program, program.getListing().getFunctions(true), guessed_names_holder);
 		guess_calling_func();
 	}
 
@@ -353,8 +354,8 @@ public class FuncNameGuesser {
 
 	private void guess_calling_func() {
 		Map<Address, List<String>> func_name_map = new HashMap<>();
-		for (Address addr : new HashSet<>(funcs.keySet())) {
-			analyze_calling_func(addr, funcs.get(addr), func_name_map);
+		for (Address addr : new HashSet<>(guessed_names_holder.keys())) {
+			analyze_calling_func(addr, guessed_names_holder.get_name(addr), func_name_map);
 		}
 
 		for (Map.Entry<Address, List<String>> entry : func_name_map.entrySet()) {
@@ -373,13 +374,13 @@ public class FuncNameGuesser {
 			if (freq_name == null) {
 				continue;
 			}
-			funcs.put(entry.getKey(), freq_name);
+			guessed_names_holder.put(entry.getKey(), freq_name, GuessedConfidence.MEDIUM);
 		}
 
 		FunctionIterator itr = program.getListing().getFunctions(true);
-		calling_func_name_res.get_func_name_by_placement(itr, funcs);
+		calling_func_name_res.get_func_name_by_placement(itr, guessed_names_holder);
 
-		calling_func_name_res.collect_func_name_by_placement(funcs);
+		calling_func_name_res.collect_func_name_by_placement(guessed_names_holder);
 	}
 
 	private boolean is_go_func_entry_point(Address addr) {
@@ -421,20 +422,20 @@ public class FuncNameGuesser {
 	// TODO: Fix
 	// Parser -> Modifier
 	// Guesser -> Modifier
-	public void rename_func_for_guess(Map<Address, String> func_name_map) {
-		for (Map.Entry<Address, String> entry : func_name_map.entrySet()) {
-			Function func = get_function(entry.getKey());
+	public void rename_func_for_guess(GuessedFuncNames func_name_map) {
+		for (GuessedName entry : func_name_map.guessed_names()) {
+			Function func = get_function(entry.get_addr());
 			if (func == null) {
-				create_function(entry.getValue(), entry.getKey());
+				create_function(entry.get_name(), entry.get_addr());
 				continue;
 			}
-			if (!func.getName().contains("FUN_")) {
+			if (!func.getName().contains("FUN_") && !func.getName().contains("entry")) {
 				continue;
 			}
 			try {
-				func.setName(entry.getValue() + "_GAEguess", SourceType.USER_DEFINED);
+				func.setName(entry.get_name() + "_GAEguess", SourceType.USER_DEFINED);
 			}catch(Exception e) {
-				Logger.append_message(String.format("Failed to set function name: addr=%s, message=%s", entry.getKey(), e.getMessage()));
+				Logger.append_message(String.format("Failed to set function name: addr=%s, message=%s", entry.get_addr(), e.getMessage()));
 			}
 		}
 	}
