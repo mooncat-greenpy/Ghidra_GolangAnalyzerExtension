@@ -105,7 +105,7 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 			return false;
 
 		if (analyzer_option.get_guess_func()) {
-			FuncNameGuesser guesser = new FuncNameGuesser(program);
+			FuncNameGuesser guesser = new FuncNameGuesser(program, analyzer_option);
 			guesser.guess();
 			guesser.rename_func_for_guess(guesser.get_funcs());
 		}

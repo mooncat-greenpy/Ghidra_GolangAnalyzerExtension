@@ -40,6 +40,7 @@ import ghidra.program.model.symbol.SourceType;
 import ghidra.util.task.TaskMonitor;
 import resources.ResourceManager;
 
+import golanganalyzerextension.AnalyzerOption;
 import golanganalyzerextension.guess.GuessedFuncNames.GuessedName;
 import golanganalyzerextension.guess.GuessedFuncNames.GuessedConfidence;
 import golanganalyzerextension.log.Logger;
@@ -56,6 +57,7 @@ public class FuncNameGuesser {
 	private static double CONFIDENCE_BOUND = 0.0;
 
 	private Program program;
+	private AnalyzerOption analyzer_option;
 	private FunctionDatabase database;
 
 	private GolangVersion go_version;
@@ -64,8 +66,9 @@ public class FuncNameGuesser {
 	private CallingFuncNameResource calling_func_name_res;
 	private GuessedFuncNames guessed_names_holder;
 
-	public FuncNameGuesser(Program program) {
+	public FuncNameGuesser(Program program, AnalyzerOption analyzer_option) {
 		this.program = program;
+		this.analyzer_option = analyzer_option;
 		go_version = null;
 		os = null;
 		arch = null;
@@ -103,6 +106,9 @@ public class FuncNameGuesser {
 	}
 
 	public GolangVersion get_go_version() {
+		if (GolangVersion.is_go_version(analyzer_option.get_go_version())) {
+			return new GolangVersion(analyzer_option.get_go_version());
+		}
 		return go_version;
 	}
 
