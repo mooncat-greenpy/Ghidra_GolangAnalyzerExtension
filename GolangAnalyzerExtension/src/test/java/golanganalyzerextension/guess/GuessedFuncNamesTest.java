@@ -31,7 +31,7 @@ public class GuessedFuncNamesTest extends AbstractGhidraHeadlessIntegrationTest 
 
 	@ParameterizedTest
 	@MethodSource("test_guessed_func_names_params")
-	public void test_guessed_func_names(long addr_value, String expected_name, GuessedFuncNames.GuessedConfidence expected_confidence) throws Exception {
+	public void test_guessed_func_names(long addr_value, String expected_name, GuessedConfidence expected_confidence) throws Exception {
 		initialize(new HashMap<>());
 		GuessedFuncNames guessed_names_holder = new GuessedFuncNames();
 		Address addr = program.getAddressFactory().getDefaultAddressSpace().getAddress(addr_value);
@@ -47,34 +47,34 @@ public class GuessedFuncNamesTest extends AbstractGhidraHeadlessIntegrationTest 
 				Arguments.of(
 						0x401000,
 						"runtime.schedinit",
-						GuessedFuncNames.GuessedConfidence.VERY_LOW
+						GuessedConfidence.VERY_LOW
 				),
 				Arguments.of(
 						0x402000,
 						"_rt0_amd64",
-						GuessedFuncNames.GuessedConfidence.LOW
+						GuessedConfidence.LOW
 				),
 				Arguments.of(
 						0x403000,
 						"runtime.rt0_go",
-						GuessedFuncNames.GuessedConfidence.MEDIUM
+						GuessedConfidence.MEDIUM
 				),
 				Arguments.of(
 						0x404000,
 						"_rt0_amd64_windows",
-						GuessedFuncNames.GuessedConfidence.HIGH
+						GuessedConfidence.HIGH
 				),
 				Arguments.of(
 						0x405000,
 						"runtime.schedinit",
-						GuessedFuncNames.GuessedConfidence.VERY_HIGH
+						GuessedConfidence.VERY_HIGH
 				)
 		);
 	}
 
 	@ParameterizedTest
 	@MethodSource("test_guessed_func_names_confidence_params")
-	public void test_guessed_func_names_confidence(long addr_value_1, String name_1, GuessedFuncNames.GuessedConfidence confidence_1, long addr_value_2, String name_2, GuessedFuncNames.GuessedConfidence confidence_2, String expected_name) throws Exception {
+	public void test_guessed_func_names_confidence(long addr_value_1, String name_1, GuessedConfidence confidence_1, long addr_value_2, String name_2, GuessedConfidence confidence_2, String expected_name) throws Exception {
 		initialize(new HashMap<>());
 		GuessedFuncNames guessed_names_holder = new GuessedFuncNames();
 		Address addr_1 = program.getAddressFactory().getDefaultAddressSpace().getAddress(addr_value_1);
@@ -89,46 +89,46 @@ public class GuessedFuncNamesTest extends AbstractGhidraHeadlessIntegrationTest 
 				Arguments.of(
 						0x401000,
 						"runtime.schedinit_1",
-						GuessedFuncNames.GuessedConfidence.VERY_LOW,
+						GuessedConfidence.VERY_LOW,
 						0x401000,
 						"runtime.schedinit_2",
-						GuessedFuncNames.GuessedConfidence.VERY_LOW,
+						GuessedConfidence.VERY_LOW,
 						"runtime.schedinit_2"
 				),
 				Arguments.of(
 						0x402000,
 						"_rt0_amd64_1",
-						GuessedFuncNames.GuessedConfidence.VERY_HIGH,
+						GuessedConfidence.VERY_HIGH,
 						0x402000,
 						"_rt0_amd64_2",
-						GuessedFuncNames.GuessedConfidence.VERY_HIGH,
+						GuessedConfidence.VERY_HIGH,
 						"_rt0_amd64_2"
 				),
 				Arguments.of(
 						0x403000,
 						"runtime.rt0_go_1",
-						GuessedFuncNames.GuessedConfidence.LOW,
+						GuessedConfidence.LOW,
 						0x403000,
 						"runtime.rt0_go_2",
-						GuessedFuncNames.GuessedConfidence.VERY_LOW,
+						GuessedConfidence.VERY_LOW,
 						"runtime.rt0_go_1"
 				),
 				Arguments.of(
 						0x404000,
 						"_rt0_amd64_windows_1",
-						GuessedFuncNames.GuessedConfidence.VERY_LOW,
+						GuessedConfidence.VERY_LOW,
 						0x404000,
 						"_rt0_amd64_windows_2",
-						GuessedFuncNames.GuessedConfidence.VERY_HIGH,
+						GuessedConfidence.VERY_HIGH,
 						"_rt0_amd64_windows_2"
 				),
 				Arguments.of(
 						0x405000,
 						"runtime.schedinit_1",
-						GuessedFuncNames.GuessedConfidence.MEDIUM,
+						GuessedConfidence.MEDIUM,
 						0x405000,
 						"runtime.schedinit_2",
-						GuessedFuncNames.GuessedConfidence.HIGH,
+						GuessedConfidence.HIGH,
 						"runtime.schedinit_2"
 				)
 		);

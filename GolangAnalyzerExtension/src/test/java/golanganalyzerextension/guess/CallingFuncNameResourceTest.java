@@ -17,7 +17,6 @@ import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.FunctionIterator;
 import ghidra.program.model.listing.Program;
 import ghidra.test.AbstractGhidraHeadlessIntegrationTest;
-import golanganalyzerextension.guess.GuessedFuncNames.GuessedConfidence;
 
 public class CallingFuncNameResourceTest extends AbstractGhidraHeadlessIntegrationTest {
 

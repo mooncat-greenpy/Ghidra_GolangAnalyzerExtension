@@ -12,8 +12,6 @@ import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionIterator;
 import ghidra.program.model.listing.Program;
-import golanganalyzerextension.guess.GuessedFuncNames.GuessedName;
-import golanganalyzerextension.guess.GuessedFuncNames.GuessedConfidence;
 import resources.ResourceManager;
 
 class FuncInfo {
@@ -179,7 +177,7 @@ public class CallingFuncNameResource {
 				if (i == -1) {
 					continue;
 				}
-				guessed_names_holder.put(addr, func_info_list.get(i).get_name(), GuessedConfidence.MEDIUM);
+				guessed_names_holder.put(addr, func_info_list.get(i).get_name(), GuessedConfidence.LOW);
 				guessed_info_addr_map.put(addr, func_info_list.get(i).get_addr());
 				info_guessed_addr_map.put(func_info_list.get(i).get_addr(), addr);
 			}

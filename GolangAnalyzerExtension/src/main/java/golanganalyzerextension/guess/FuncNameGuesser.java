@@ -41,8 +41,6 @@ import ghidra.util.task.TaskMonitor;
 import resources.ResourceManager;
 
 import golanganalyzerextension.AnalyzerOption;
-import golanganalyzerextension.guess.GuessedFuncNames.GuessedName;
-import golanganalyzerextension.guess.GuessedFuncNames.GuessedConfidence;
 import golanganalyzerextension.log.Logger;
 import golanganalyzerextension.version.GolangVersion;
 
