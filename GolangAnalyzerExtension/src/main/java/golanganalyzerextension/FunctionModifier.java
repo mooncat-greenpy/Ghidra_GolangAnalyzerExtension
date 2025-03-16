@@ -34,10 +34,11 @@ public class FunctionModifier {
 	private boolean param_option;
 	private boolean comment_option;
 	private boolean disasm_option;
+	private boolean force;
 
 	private boolean ok;
 
-	public FunctionModifier(GolangBinary go_bin, GolangAnalyzerExtensionService service, boolean rename_option, boolean param_option, boolean comment_option, boolean disasm_option) {
+	public FunctionModifier(GolangBinary go_bin, GolangAnalyzerExtensionService service, boolean rename_option, boolean param_option, boolean comment_option, boolean disasm_option, boolean force) {
 		this.go_bin=go_bin;
 		this.service=service;
 
@@ -49,6 +50,7 @@ public class FunctionModifier {
 		this.param_option=param_option;
 		this.comment_option=comment_option;
 		this.disasm_option=disasm_option;
+		this.force=force;
 
 		this.ok=false;
 
@@ -167,12 +169,13 @@ public class FunctionModifier {
 			Logger.append_message(String.format("Failed to init funcs: pcheader_addr=%s, message=%s", pcheader_base, e.getMessage()));
 			return false;
 		}
+		Logger.append_message(String.format("%s func_list_base %s", pcheader_base, func_list_base));
 
 		for(int i=0; i<func_num; i++) {
 			FuncInfo info;
 			try {
 				int functab_field_size=is_go118?4:pointer_size;
-				info=new FuncInfo(go_bin, func_list_base, go_bin.get_address(func_list_base, i*functab_field_size*2));
+				info=new FuncInfo(go_bin, func_list_base, go_bin.get_address(func_list_base, i*functab_field_size*2), force);
 			} catch (BinaryAccessException | InvalidBinaryStructureException e) {
 				Logger.append_message(String.format("Failed to get func info: pcheader_addr=%s, func_list_base=%s, i=%d, message=%s", pcheader_base, func_list_base, i, e.getMessage()));
 				continue;

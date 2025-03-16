@@ -38,7 +38,7 @@ public class FuncInfoTest {
 			GolangBinary go_bin=new GolangBinary(program, "", TaskMonitor.DUMMY);
 			PcHeader pcheader=new PcHeader(go_bin);
 
-			FuncInfo info=new FuncInfo(go_bin, go_bin.get_address(0x600000), go_bin.get_address(0x600010));
+			FuncInfo info=new FuncInfo(go_bin, go_bin.get_address(0x600000), go_bin.get_address(0x600010), false);
 
 			assertEquals(info.get_info_tab().get_func_addr().getOffset(), expected_func_addr);
 			assertEquals(info.get_info_tab().get_info_addr().getOffset(), expected_info_addr);
@@ -137,5 +137,56 @@ public class FuncInfoTest {
 					put("0x601000", "80000000 00200000 08000000 00000000 00300000 00400000 00500000 00000000 00700000");
 				}})
 			);
+	}
+
+	@ParameterizedTest
+	@MethodSource("test_func_info_force_params")
+	public void test_func_info_force(long expected_func_addr, long expected_info_addr, int expected_name_offset, int expected_arg_size, int expected_pcsp_offset, int expected_pcfile_offset, int expected_pcln_offset, int expected_cu_offset, Map<String, String> bytes_map) throws Exception {
+		initialize(bytes_map);
+
+		try {
+			GolangBinary go_bin=new GolangBinary(program, "", TaskMonitor.DUMMY);
+			PcHeader pcheader=new PcHeader(go_bin);
+
+			FuncInfo info=new FuncInfo(go_bin, go_bin.get_address(0x600000), go_bin.get_address(0x600010), true);
+
+			assertEquals(info.get_info_tab().get_func_addr().getOffset(), expected_func_addr);
+			assertEquals(info.get_info_tab().get_info_addr().getOffset(), expected_info_addr);
+			assertEquals(info.get_func_addr().getOffset(), expected_func_addr);
+			assertEquals(info.get_name_offset(), expected_name_offset);
+			assertEquals(info.get_arg_size(), expected_arg_size);
+			assertEquals(info.get_pcsp_offset(), expected_pcsp_offset);
+			assertEquals(info.get_pcfile_offset(), expected_pcfile_offset);
+			assertEquals(info.get_pcln_offset(), expected_pcln_offset);
+			assertEquals(info.get_cu_offset(), expected_cu_offset);
+		} catch(InvalidBinaryStructureException e) {
+			System.out.println(e);
+			assertEquals(true, false);
+		}
+	}
+
+	static Stream<Arguments> test_func_info_force_params() throws Throwable {
+		return Stream.of(
+				Arguments.of((long) 0x401080, (long) 0x601000, 0x2000, 8, 0x3000, 0x4000, 0x5000, 0x7000, new HashMap<String, String>(){{
+					// 1, 4, GO_VERSION.GO_12
+					put("0x500000", "fbffffff 00 00 01 04 00000000");
+					put("0x50000c", "00104000 00200000");
+					put("0x502000", "00104000");
+
+					put("0x600000", "00000000 00000000");
+					put("0x600010", "80104000 00101000 c0104000 00201000");
+					put("0x601000", "80104000 00200000 08000000 00000000 00300000 00400000 00500000 00000000 00700000");
+				}}),
+				Arguments.of((long) 0x401080, (long) 0x601000, 0x2000, 8, 0x3000, 0x4000, 0x5000, 0x7000, new HashMap<String, String>(){{
+					// 1, 4, GO_VERSION.GO_12
+					put("0x500000", "fbffffff 00 00 01 04 00000000");
+					put("0x50000c", "00104000 00200000");
+					put("0x502000", "00104000");
+
+					put("0x600000", "00000000 00000000");
+					put("0x600010", "80104000 00101000 c0104000 00201000");
+					put("0x601000", "ffffffff 00200000 08000000 00000000 00300000 00400000 00500000 00000000 00700000");
+				}})
+		);
 	}
 }

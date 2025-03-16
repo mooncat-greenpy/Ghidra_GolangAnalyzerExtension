@@ -32,6 +32,7 @@ public class FuncInfo {
 		}
 	}
 
+	private boolean force;
 	private FuncInfoTab info_tab;
 	private Address func_addr;
 	private int name_offset;
@@ -43,13 +44,14 @@ public class FuncInfo {
 
 	public static FuncInfo create_by_funcinfotab(GolangBinary go_bin, Address func_list_base, Address tab_addr) {
 		try {
-			return new FuncInfo(go_bin, func_list_base, tab_addr);
+			return new FuncInfo(go_bin, func_list_base, tab_addr, false);
 		} catch(InvalidBinaryStructureException e) {
 		}
 		return null;
 	}
 
-	public FuncInfo(GolangBinary go_bin, Address func_list_base, Address addr) throws InvalidBinaryStructureException {
+	public FuncInfo(GolangBinary go_bin, Address func_list_base, Address addr, boolean force) throws InvalidBinaryStructureException {
+		this.force = force;
 		info_tab = parse_func_info_tab(go_bin, func_list_base, addr);
 		parse_func_info(go_bin, func_list_base, info_tab);
 		return;
@@ -162,7 +164,7 @@ public class FuncInfo {
 		if (func_entry_value==0) {
 			throw new InvalidBinaryStructureException("Invalid FuncInfo.func_addr");
 		}
-		if (info_tab.get_func_addr().getOffset()!=func_entry_value) {
+		if (info_tab.get_func_addr().getOffset()!=func_entry_value && !force) {
 			throw new InvalidBinaryStructureException(String.format("FuncInfo.func_addr mismatch: %x != %x", info_tab.get_func_addr().getOffset(), func_entry_value));
 		}
 
