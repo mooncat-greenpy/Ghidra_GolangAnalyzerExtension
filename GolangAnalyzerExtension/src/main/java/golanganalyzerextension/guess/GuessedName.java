@@ -7,7 +7,7 @@ public class GuessedName {
 	private String name;
 	private GuessedConfidence confidence;
 
-	GuessedName(Address addr, String name, GuessedConfidence confidence) {
+	public GuessedName(Address addr, String name, GuessedConfidence confidence) {
 		this.addr = addr;
 		this.name = name;
 		this.confidence = confidence;
@@ -23,5 +23,21 @@ public class GuessedName {
 
 	public GuessedConfidence get_confidence() {
 		return confidence;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+
+		if (obj == null || this.getClass() != obj.getClass()) {
+			return false;
+		}
+
+		GuessedName gn_obj = (GuessedName) obj;
+		return this.get_addr().equals(gn_obj.get_addr()) &&
+				this.get_name().equals(gn_obj.get_name()) &&
+				this.get_confidence().equals(gn_obj.get_confidence());
 	}
 }

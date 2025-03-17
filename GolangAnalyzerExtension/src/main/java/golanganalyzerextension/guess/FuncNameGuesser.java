@@ -332,10 +332,10 @@ public class FuncNameGuesser {
 		return calling_func_list;
 	}
 
-	private void analyze_calling_func(Address addr, String name, Map<Address, List<String>> func_name_map) {
-		List<Address> calling_func_list = get_calling_func_list(addr);
+	private void analyze_calling_func(GuessedName src_guessed_name, Map<Address, List<GuessedName>> func_name_map) {
+		List<Address> calling_func_list = get_calling_func_list(src_guessed_name.get_addr());
 
-		List<String> calling_name_list = calling_func_name_res.get_calling_func_name_list(name, calling_func_list.size());
+		List<String> calling_name_list = calling_func_name_res.get_calling_func_name_list(src_guessed_name.get_name(), calling_func_list.size());
 		if (calling_name_list == null) {
 			return;
 		}
@@ -343,42 +343,52 @@ public class FuncNameGuesser {
 		for (int i = 0; i < calling_func_list.size() && i < calling_name_list.size(); i++) {
 			String calling_name = calling_name_list.get(i);
 			Address calling_addr = calling_func_list.get(i);
+			GuessedName guessed_name = new GuessedName(calling_addr, calling_name, src_guessed_name.get_confidence());
 			if (!func_name_map.containsKey(calling_addr)) {
-				func_name_map.put(calling_addr, new LinkedList<>() {{add(calling_name);}});
+				func_name_map.put(calling_addr, new LinkedList<>() {{add(guessed_name);}});
 			} else {
-				func_name_map.get(calling_addr).add(calling_name);
+				func_name_map.get(calling_addr).add(guessed_name);
 			}
-			if (Collections.frequency(func_name_map.get(calling_addr), calling_name) >= 2) {
+			if (func_name_map.get(calling_addr).stream().filter(v -> v.get_name().equals(calling_name)).count() >= 2) {
 				continue;
 			}
 
-			analyze_calling_func(calling_addr, calling_name, func_name_map);
+			analyze_calling_func(guessed_name, func_name_map);
 		}
 	}
 
 	private void guess_calling_func() {
-		Map<Address, List<String>> func_name_map = new HashMap<>();
+		Map<Address, List<GuessedName>> func_name_map = new HashMap<>();
 		for (Address addr : new HashSet<>(guessed_names_holder.keys())) {
-			analyze_calling_func(addr, guessed_names_holder.get_name(addr), func_name_map);
+			analyze_calling_func(new GuessedName(addr, guessed_names_holder.get_name(addr), guessed_names_holder.get_confidence(addr)), func_name_map);
 		}
 
-		for (Map.Entry<Address, List<String>> entry : func_name_map.entrySet()) {
-			Map<String, Integer> freq_map = new HashMap<>();
-			for (String str : entry.getValue()) {
-				freq_map.put(str, freq_map.getOrDefault(str, 0) + 1);
+		for (Map.Entry<Address, List<GuessedName>> entry : func_name_map.entrySet()) {
+			Map<String, List<GuessedName>> freq_map = new HashMap<>();
+			for (GuessedName name : entry.getValue()) {
+				List<GuessedName> tmp = freq_map.getOrDefault(name.get_name(), new LinkedList<>());
+				tmp.add(name);
+				freq_map.put(name.get_name(), tmp);
 			}
 			int count = 0;
 			String freq_name = null;
-			for (Map.Entry<String, Integer> freq_entry : freq_map.entrySet()) {
-				if (freq_entry.getValue() >= count) {
+			for (Map.Entry<String, List<GuessedName>> freq_entry : freq_map.entrySet()) {
+				if (freq_entry.getValue().size() >= count) {
 					freq_name = freq_entry.getKey();
-					count = freq_entry.getValue();
+					count = freq_entry.getValue().size();
 				}
 			}
 			if (freq_name == null) {
 				continue;
 			}
-			guessed_names_holder.put(entry.getKey(), freq_name, GuessedConfidence.MEDIUM);
+
+			GuessedConfidence confidence = GuessedConfidence.VERY_LOW;
+			for (GuessedName guessed_name : freq_map.get(freq_name)) {
+				if (guessed_name.get_confidence().ordinal() > confidence.ordinal()) {
+					confidence = guessed_name.get_confidence();
+				}
+			}
+			guessed_names_holder.put(entry.getKey(), freq_name, confidence);
 		}
 
 		FunctionIterator itr = program.getListing().getFunctions(true);

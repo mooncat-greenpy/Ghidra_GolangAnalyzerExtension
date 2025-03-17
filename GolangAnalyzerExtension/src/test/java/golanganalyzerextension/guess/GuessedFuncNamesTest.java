@@ -133,4 +133,66 @@ public class GuessedFuncNamesTest extends AbstractGhidraHeadlessIntegrationTest 
 				)
 		);
 	}
+
+	@ParameterizedTest
+	@MethodSource("test_guessed_name_eq_params")
+	public void test_guessed_name_eq(long addr_value_1, String name_1, GuessedConfidence confidence_1, long addr_value_2, String name_2, GuessedConfidence confidence_2, boolean expected) throws Exception {
+		initialize(new HashMap<>());
+		GuessedFuncNames guessed_names_holder = new GuessedFuncNames();
+		Address addr_1 = program.getAddressFactory().getDefaultAddressSpace().getAddress(addr_value_1);
+		Address addr_2 = program.getAddressFactory().getDefaultAddressSpace().getAddress(addr_value_2);
+		GuessedName guessed_name_1 = new GuessedName(addr_1, name_1, confidence_1);
+		GuessedName guessed_name_2 = new GuessedName(addr_2, name_2, confidence_2);
+		assertEquals(guessed_name_1.equals(guessed_name_2), expected);
+	}
+
+	static Stream<Arguments> test_guessed_name_eq_params() throws Throwable {
+		return Stream.of(
+				Arguments.of(
+						0x401000,
+						"runtime.schedinit",
+						GuessedConfidence.VERY_LOW,
+						0x401000,
+						"runtime.schedinit",
+						GuessedConfidence.VERY_LOW,
+						true
+				),
+				Arguments.of(
+						0x402000,
+						"_rt0_amd64",
+						GuessedConfidence.VERY_HIGH,
+						0x402000,
+						"_rt0_amd64",
+						GuessedConfidence.VERY_HIGH,
+						true
+				),
+				Arguments.of(
+						0x403000,
+						"runtime.rt0_go",
+						GuessedConfidence.LOW,
+						0x403000,
+						"runtime.rt0_go",
+						GuessedConfidence.VERY_LOW,
+						false
+				),
+				Arguments.of(
+						0x404000,
+						"_rt0_amd64_windows",
+						GuessedConfidence.VERY_LOW,
+						0x404000,
+						"_rt0_amd64_windowstest",
+						GuessedConfidence.VERY_LOW,
+						false
+				),
+				Arguments.of(
+						0x405000,
+						"runtime.schedinit",
+						GuessedConfidence.MEDIUM,
+						0x405001,
+						"runtime.schedinit",
+						GuessedConfidence.MEDIUM,
+						false
+				)
+		);
+	}
 }
