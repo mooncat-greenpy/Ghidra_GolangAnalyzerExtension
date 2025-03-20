@@ -1,6 +1,7 @@
 package golanganalyzerextension;
 
 import ghidra.framework.options.Options;
+import golanganalyzerextension.guess.GuessedConfidence;
 
 public class AnalyzerOption {
 	private static final String RENAME_FUNC="Rename functions";
@@ -38,6 +39,9 @@ public class AnalyzerOption {
 	private static final String GUESS_FUNC="Guess function names";
 	private static final String GUESS_FUNC_DESC="Predicting the function name via pattern matching.";
 	private boolean guess_func_option;
+	private static final String GUESS_CONFIDENCE_FUNC="Confidence of the guess";
+	private static final String GUESS_CONFIDENCE_FUNC_DESC="Confidence of function name guess results.";
+	private GuessedConfidence guess_confidence_func_option;
 
 	public AnalyzerOption() {
 		set_default();
@@ -54,6 +58,7 @@ public class AnalyzerOption {
 		pcheader_addr_option="";
 		go_version_option="";
 		guess_func_option=false;
+		guess_confidence_func_option=GuessedConfidence.MEDIUM;
 	}
 
 	public boolean get_rename() {
@@ -96,6 +101,10 @@ public class AnalyzerOption {
 		return guess_func_option;
 	}
 
+	public GuessedConfidence get_guess_confidence_func() {
+		return guess_confidence_func_option;
+	}
+
 	public void register(Options options) {
 		options.registerOption(RENAME_FUNC, rename_option, null, RENAME_FUNC_DESC);
 		options.registerOption(CORRECT_ARG, param_option, null, CORRECT_ARG_DESC);
@@ -107,6 +116,7 @@ public class AnalyzerOption {
 		options.registerOption(PCHEADER_ADDR, pcheader_addr_option, null, PCHEADER_ADDR_DESC);
 		options.registerOption(GOLANG_VERSION, go_version_option, null, GOLANG_VERSION_DESC);
 		options.registerOption(GUESS_FUNC, guess_func_option, null, GUESS_FUNC_DESC);
+		options.registerOption(GUESS_CONFIDENCE_FUNC, guess_confidence_func_option, null, GUESS_CONFIDENCE_FUNC_DESC);
 	}
 
 	public void change(Options options) {
@@ -120,5 +130,6 @@ public class AnalyzerOption {
 		pcheader_addr_option=options.getString(PCHEADER_ADDR, pcheader_addr_option);
 		go_version_option=options.getString(GOLANG_VERSION, go_version_option);
 		guess_func_option=options.getBoolean(GUESS_FUNC, guess_func_option);
+		guess_confidence_func_option=options.getEnum(GUESS_CONFIDENCE_FUNC, guess_confidence_func_option);
 	}
 }

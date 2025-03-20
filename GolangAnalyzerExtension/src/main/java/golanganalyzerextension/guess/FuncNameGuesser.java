@@ -438,6 +438,9 @@ public class FuncNameGuesser {
 	// Guesser -> Modifier
 	public void rename_func_for_guess(GuessedFuncNames func_name_map) {
 		for (GuessedName entry : func_name_map.guessed_names()) {
+			if (entry.get_confidence().ordinal() < analyzer_option.get_guess_confidence_func().ordinal()) {
+				continue;
+			}
 			Function func = get_function(entry.get_addr());
 			if (func == null) {
 				create_function(entry.get_name(), entry.get_addr());
