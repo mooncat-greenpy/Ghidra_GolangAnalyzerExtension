@@ -513,6 +513,9 @@ public class GolangFunction {
 			is_go118=true;
 		}
 		func_addr=info.get_func_addr();
+		if (func_addr==null) {
+			return false;
+		}
 
 		if(disasm_option) {
 			disassemble();

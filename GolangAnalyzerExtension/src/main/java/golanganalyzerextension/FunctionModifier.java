@@ -169,15 +169,18 @@ public class FunctionModifier {
 			Logger.append_message(String.format("Failed to init funcs: pcheader_addr=%s, message=%s", pcheader_base, e.getMessage()));
 			return false;
 		}
-		Logger.append_message(String.format("%s func_list_base %s", pcheader_base, func_list_base));
 
 		for(int i=0; i<func_num; i++) {
 			FuncInfo info;
 			try {
 				int functab_field_size=is_go118?4:pointer_size;
 				info=new FuncInfo(go_bin, func_list_base, go_bin.get_address(func_list_base, i*functab_field_size*2), force);
-			} catch (BinaryAccessException | InvalidBinaryStructureException e) {
+			} catch (BinaryAccessException e) {
 				Logger.append_message(String.format("Failed to get func info: pcheader_addr=%s, func_list_base=%s, i=%d, message=%s", pcheader_base, func_list_base, i, e.getMessage()));
+				continue;
+			}
+			if (info==null) {
+				Logger.append_message(String.format("Failed to get func info: pcheader_addr=%s, func_list_base=%s, i=%d", pcheader_base, func_list_base, i));
 				continue;
 			}
 

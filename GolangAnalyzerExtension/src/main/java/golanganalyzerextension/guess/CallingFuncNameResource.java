@@ -256,7 +256,7 @@ public class CallingFuncNameResource {
 
 	private void parse_line(String line, List<FuncInfo> holder) {
 		String[] line_split = line.split("\\|");
-		if (line_split[1].isEmpty()) {
+		if (line_split.length < 3 || line_split[1].isEmpty()) {
 			return;
 		}
 		List<String> calling_func_list = new LinkedList<>();

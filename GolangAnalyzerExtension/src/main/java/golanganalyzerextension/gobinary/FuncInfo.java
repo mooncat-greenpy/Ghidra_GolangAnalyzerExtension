@@ -30,8 +30,14 @@ public class FuncInfo {
 		public Address get_next_func_addr() {
 			return next_func_addr;
 		}
+
+		@Override
+		public String toString() {
+			return String.format("{func_addr=%s, info_addr=%s, next_func_addr=%s}", get_func_addr(), get_info_addr(), get_next_func_addr());
+		}
 	}
 
+	private GolangBinary go_bin;
 	private boolean force;
 	private FuncInfoTab info_tab;
 	private Address func_addr;
@@ -51,6 +57,7 @@ public class FuncInfo {
 	}
 
 	public FuncInfo(GolangBinary go_bin, Address func_list_base, Address addr, boolean force) throws InvalidBinaryStructureException {
+		this.go_bin = go_bin;
 		this.force = force;
 		info_tab = parse_func_info_tab(go_bin, func_list_base, addr);
 		parse_func_info(go_bin, func_list_base, info_tab);
@@ -110,7 +117,12 @@ public class FuncInfo {
 		return info_tab;
 	}
 	public Address get_func_addr() {
-		return func_addr;
+		if (go_bin.is_valid_address(func_addr)) {
+			return func_addr;
+		} else if (go_bin.is_valid_address(info_tab.get_func_addr())) {
+			return info_tab.get_func_addr();
+		}
+		return null;
 	}
 	public int get_name_offset() {
 		return name_offset;
@@ -137,7 +149,7 @@ public class FuncInfo {
 
 	@Override
 	public String toString() {
-		return String.format("{addr=%s}", get_info_tab().get_info_addr());
+		return String.format("{tab=%s, func_addr=%s, name_offset=%x, arg_size=%d}", get_info_tab(), get_func_addr(), get_name_offset(), get_arg_size());
 	}
 
 	private void parse_func_info(GolangBinary go_bin, Address func_list_base, FuncInfoTab info_tab) throws InvalidBinaryStructureException {
