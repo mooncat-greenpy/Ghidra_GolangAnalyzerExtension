@@ -157,7 +157,9 @@ public class FuncNameGuesser {
 		FunctionIterator itr = program.getListing().getFunctions(true);
 		calling_func_name_res.get_func_name_by_placement(itr, guessed_names_holder);
 
-		calling_func_name_res.collect_func_name_by_placement(guessed_names_holder);
+		for (int i = 0; i < 5; i++) {
+			calling_func_name_res.collect_func_name_by_placement(guessed_names_holder);
+		}
 	}
 
 	private boolean is_go_func_entry_point(Address addr) {
@@ -183,6 +185,9 @@ public class FuncNameGuesser {
 			Function func = itr.next();
 			Address addr = func.getEntryPoint();
 			Instruction inst = program.getListing().getInstructionAt(addr);
+			if (inst == null) {
+				continue;
+			}
 			for (Reference ref : inst.getReferenceIteratorTo()) {
 				if (ref.getFromAddress().toString().equals("Entry Point")) {
 					return addr;

@@ -103,6 +103,7 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 		} catch(Exception e) {
 			Logger.append_message(String.format("Error: %s", e.getMessage()));
 			return false;
+		}
 
 		if (analyzer_option.get_guess_func()) {
 			FuncNameGuesser guesser = new FuncNameGuesser(program, analyzer_option);
