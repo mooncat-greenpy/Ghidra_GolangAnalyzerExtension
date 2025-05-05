@@ -14,6 +14,7 @@ import ghidra.program.model.listing.FunctionIterator;
 import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.listing.Parameter;
 import ghidra.program.model.listing.Program;
+import ghidra.program.model.symbol.FlowType;
 import ghidra.program.model.symbol.Reference;
 import ghidra.program.model.symbol.SourceType;
 import ghidra.util.task.TaskMonitor;
@@ -74,6 +75,8 @@ public class FuncNameGuesser {
 		calling_func_name_res = new CallingFuncNameResource(String.format(CALLING_FUNC_NAME_FILE_FORMAT, get_os(), get_arch(), get_go_version().get_version_str()));
 		calling_func_name_res.guess_func_name_by_file_line(program, program.getListing().getFunctions(true), guessed_names_holder);
 		guess_calling_func();
+
+		guess_main();
 	}
 
 	private void create_function(String name, Address addr) {
@@ -164,6 +167,44 @@ public class FuncNameGuesser {
 
 		for (int i = 0; i < 5; i++) {
 			calling_func_name_res.collect_func_name_by_placement(guessed_names_holder);
+		}
+	}
+
+	private void guess_main() {
+		GuessedName runtime_main = null;
+		GuessedName runtime_unlockOSThread = null;
+		for (GuessedName guessed_name : guessed_names_holder.guessed_names()) {
+			if (guessed_name.get_name().equals("runtime.main")) {
+				runtime_main = guessed_name;
+			} else if (guessed_name.get_name().equals("runtime.unlockOSThread")) {
+				runtime_unlockOSThread = guessed_name;
+			}
+		}
+		if (runtime_main == null || runtime_unlockOSThread == null) {
+			return;
+		}
+
+		boolean after_unlockOSThread = false;
+		for (Instruction inst = program.getListing().getInstructionAt(runtime_main.get_addr());
+				inst != null;
+				inst = program.getListing().getInstructionAt(inst.getAddress().add(inst.getParsedLength()))) {
+			boolean is_call = inst.toString().contains("CALL ");
+			if (!is_call) {
+				continue;
+			}
+			Address[] call_addrs = inst.getFlows();
+			if (after_unlockOSThread == true) {
+				if (inst.getFlowType() == FlowType.COMPUTED_CALL && call_addrs.length == 1) {
+					guessed_names_holder.put(call_addrs[0], "main.main", runtime_main.get_confidence());
+				}
+				return;
+			}
+			for (Address addr : call_addrs) {
+				if (addr.equals(runtime_unlockOSThread.get_addr())) {
+					after_unlockOSThread = true;
+					break;
+				}
+			}
 		}
 	}
 
