@@ -12,13 +12,16 @@ import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionIterator;
 import ghidra.program.model.listing.Instruction;
+import ghidra.program.model.listing.Parameter;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.symbol.Reference;
 import ghidra.program.model.symbol.SourceType;
 import ghidra.util.task.TaskMonitor;
 
 import golanganalyzerextension.AnalyzerOption;
+import golanganalyzerextension.function.GolangFunctionRecord;
 import golanganalyzerextension.log.Logger;
+import golanganalyzerextension.service.GolangAnalyzerExtensionService;
 import golanganalyzerextension.version.GolangVersion;
 
 
@@ -26,14 +29,16 @@ public class FuncNameGuesser {
 	private static String CALLING_FUNC_NAME_FILE_FORMAT = "calling_func_name/%s_%s_%s.txt";
 
 	private Program program;
+	private GolangAnalyzerExtensionService service;
 	private AnalyzerOption analyzer_option;
 
 	private GolangBsim golang_bsim;
 	private CallingFuncNameResource calling_func_name_res;
 	private GuessedFuncNames guessed_names_holder;
 
-	public FuncNameGuesser(Program program, AnalyzerOption analyzer_option) {
+	public FuncNameGuesser(Program program, GolangAnalyzerExtensionService service, AnalyzerOption analyzer_option) {
 		this.program = program;
+		this.service = service;
 		this.analyzer_option = analyzer_option;
 		guessed_names_holder = new GuessedFuncNames();
 		golang_bsim = new GolangBsim(program);
@@ -219,6 +224,7 @@ public class FuncNameGuesser {
 			}
 			try {
 				func.setName(entry.get_name() + "_GAEguess", SourceType.USER_DEFINED);
+				service.add_function(new GolangFunctionRecord(func.getEntryPoint(), entry.get_name() + "_GAEguess", 0, 0, new HashMap<>(), new HashMap<>(), new Parameter[]{}));
 			}catch(Exception e) {
 				Logger.append_message(String.format("Failed to set function name: addr=%s, message=%s", entry.get_addr(), e.getMessage()));
 			}

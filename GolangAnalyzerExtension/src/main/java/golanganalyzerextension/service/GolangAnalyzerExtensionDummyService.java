@@ -52,6 +52,22 @@ public class GolangAnalyzerExtensionDummyService implements GolangAnalyzerExtens
 	}
 
 	@Override
+	public void add_function(GolangFunction func) {
+		add_function(new GolangFunctionRecord(func));
+	}
+
+	@Override
+	public void add_function(GolangFunctionRecord func) {
+		for (int i=0; i<func_list.size(); i++) {
+			if (func_list.get(i).get_func_addr().equals(func.get_func_addr())) {
+				func_list.set(i, func);
+				return;
+			}
+		}
+		func_list.add(func);
+	}
+
+	@Override
 	public List<String> get_filename_list() {
 		return filename_list;
 	}

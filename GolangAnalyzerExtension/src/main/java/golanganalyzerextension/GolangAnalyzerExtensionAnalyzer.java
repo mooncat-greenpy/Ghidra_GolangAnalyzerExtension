@@ -64,6 +64,20 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 	public boolean added(Program program, AddressSetView set, TaskMonitor monitor, MessageLog log)
 			throws CancelledException {
 		Logger.set_logger(log, analyzer_option.get_debugmode());
+
+		GolangAnalyzerExtensionService service=null;
+		for(Object obj : program.getConsumerList()) {
+			if(!(obj instanceof PluginTool)) {
+				continue;
+			}
+			PluginTool plugin_tool=(PluginTool)obj;
+			service=plugin_tool.getService(GolangAnalyzerExtensionService.class);
+			break;
+		}
+		if(service==null) {
+			Logger.append_message(String.format("Failed to get service"));
+			service=new GolangAnalyzerExtensionDummyService();
+		}
 		try {
 			GolangBinary go_bin;
 			String pcheader_addr_str = analyzer_option.get_pcheader_addr_str();
@@ -73,19 +87,6 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 				go_bin=new GolangBinary(program, pcheader_addr_str, analyzer_option.get_go_version(), monitor);
 			}
 
-			GolangAnalyzerExtensionService service=null;
-			for(Object obj : program.getConsumerList()) {
-				if(!(obj instanceof PluginTool)) {
-					continue;
-				}
-				PluginTool plugin_tool=(PluginTool)obj;
-				service=plugin_tool.getService(GolangAnalyzerExtensionService.class);
-				break;
-			}
-			if(service==null) {
-				Logger.append_message(String.format("Failed to get service"));
-				service=new GolangAnalyzerExtensionDummyService();
-			}
 			service.store_binary(go_bin);
 
 			StructureManager struct_manager=new StructureManager(go_bin, program, service, analyzer_option.get_datatype());
@@ -106,7 +107,7 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 		}
 
 		if (analyzer_option.get_guess_func()) {
-			FuncNameGuesser guesser = new FuncNameGuesser(program, analyzer_option);
+			FuncNameGuesser guesser = new FuncNameGuesser(program, service, analyzer_option);
 			guesser.guess();
 			guesser.rename_func_for_guess(guesser.get_funcs());
 		}

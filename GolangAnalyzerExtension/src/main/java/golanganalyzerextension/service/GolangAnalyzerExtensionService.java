@@ -23,6 +23,8 @@ public interface GolangAnalyzerExtensionService {
 
 	public List<GolangFunctionRecord> get_function_list();
 	public void store_function_list(List<GolangFunction> list);
+	public void add_function(GolangFunction func);
+	public void add_function(GolangFunctionRecord func);
 
 	public List<String> get_filename_list();
 	public void store_filename_list(List<String> list);

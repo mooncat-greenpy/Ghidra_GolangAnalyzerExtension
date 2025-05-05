@@ -213,21 +213,39 @@ public class GolangAnalyzerExtensionPlugin extends ProgramPlugin implements Gola
 	@Override
 	public void store_function_list(List<GolangFunction> list) {
 		List<GolangFunctionRecord> tmp_func_list=new ArrayList<>();
+		for(GolangFunction go_func : list) {
+			GolangFunctionRecord record=new GolangFunctionRecord(go_func);
+			tmp_func_list.add(record);
+		}
+		func_list=tmp_func_list;
 
+		save_function_list(func_list);
+	}
+
+	@Override
+	public void add_function(GolangFunction func) {
+		func_list.add(new GolangFunctionRecord(func));
+		save_function_list(func_list);
+	}
+
+	@Override
+	public void add_function(GolangFunctionRecord func) {
+		func_list.add(func);
+		save_function_list(func_list);
+	}
+
+	private void save_function_list(List<GolangFunctionRecord> list) {
 		Table table=create_new_table(GOLANG_FUNCTION_TABLE_NAME, GolangFunctionRecord.SCHEMA_V1);
 		if(table==null) {
 			return;
 		}
-		for(GolangFunction go_func : list) {
-			GolangFunctionRecord record=new GolangFunctionRecord(go_func);
-			tmp_func_list.add(record);
+		for(GolangFunctionRecord record : list) {
 			try {
 				table.putRecord(record.get_record());
 			} catch (IOException | IllegalFieldAccessException e) {
 				Logger.append_message(String.format("Failed to put GolangFunction to table: message=%s", e.getMessage()));;
 			}
 		}
-		func_list=tmp_func_list;
 	}
 
 	private static final int RECORD_FILENAME_INDEX_V0=0;

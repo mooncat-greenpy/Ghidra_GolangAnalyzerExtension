@@ -96,6 +96,17 @@ public class GolangFunctionRecord {
 		params=(Parameter[])go_func.get_params().toArray(new Parameter[go_func.get_params().size()]);
 	}
 
+	public GolangFunctionRecord(Address func_addr, String func_name, long func_size, int arg_size,
+			Map<Integer, FileLine> file_line_map, Map<Integer, Long> frame_map, Parameter[] params) {
+		this.func_addr=func_addr;
+		this.func_name=func_name;
+		this.func_size=func_size;
+		this.arg_size=arg_size;
+		this.file_line_map=file_line_map;
+		this.frame_map=frame_map;
+		this.params=params;
+	}
+
 	@SuppressWarnings("unchecked")
 	public GolangFunctionRecord(GolangBinary go_bin, DBRecord record) throws IllegalArgumentException {
 
