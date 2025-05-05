@@ -131,7 +131,7 @@ public class GolangFunction {
 		}
 	}
 
-	public static GolangFunction create_function_in_function(GolangBinary go_bin, GolangAnalyzerExtensionService service, Function func, boolean disasm_option) throws InvalidBinaryStructureException {
+	public static GolangFunction create_chk_copy_or_set_function(GolangBinary go_bin, GolangAnalyzerExtensionService service, Function func, boolean disasm_option) throws InvalidBinaryStructureException {
 		if(go_bin.is_x86()) {
 			return new GolangFunctionX86(go_bin, service, func, disasm_option);
 		}else if(go_bin.is_arm()) {

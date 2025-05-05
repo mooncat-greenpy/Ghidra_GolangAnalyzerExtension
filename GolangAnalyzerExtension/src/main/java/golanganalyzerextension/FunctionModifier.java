@@ -202,7 +202,7 @@ public class FunctionModifier {
 				continue;
 			}
 			try {
-				GolangFunction gofunc=GolangFunction.create_function_in_function(go_bin, service, func, disasm_option);
+				GolangFunction gofunc=GolangFunction.create_chk_copy_or_set_function(go_bin, service, func, disasm_option);
 				gofunc_list.add(gofunc);
 			} catch (InvalidBinaryStructureException e) {
 				Logger.append_message(String.format("Failed to create hardcode function: %s", e.getMessage()));
