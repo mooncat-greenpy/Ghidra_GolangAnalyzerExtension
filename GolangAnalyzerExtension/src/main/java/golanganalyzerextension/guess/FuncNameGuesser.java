@@ -111,9 +111,17 @@ public class FuncNameGuesser {
 			return;
 		}
 
+		int half = calling_name_list.size() / 2;
 		for (int i = 0; i < calling_func_list.size() && i < calling_name_list.size(); i++) {
-			String calling_name = calling_name_list.get(i);
-			Address calling_addr = calling_func_list.get(i);
+			String calling_name;
+			Address calling_addr;
+			if (i <= half) {
+				calling_name = calling_name_list.get(i);
+				calling_addr = calling_func_list.get(i);
+			} else {
+				calling_name = calling_name_list.get(calling_name_list.size() - (i - half));
+				calling_addr = calling_func_list.get(calling_func_list.size() - (i - half));
+			}
 			GuessedName guessed_name = new GuessedName(calling_addr, calling_name, src_guessed_name.get_confidence());
 			if (!func_name_map.containsKey(calling_addr)) {
 				func_name_map.put(calling_addr, new LinkedList<>() {{add(guessed_name);}});
