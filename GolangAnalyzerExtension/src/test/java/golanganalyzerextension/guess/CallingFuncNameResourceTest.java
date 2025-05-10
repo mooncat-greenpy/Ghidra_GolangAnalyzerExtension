@@ -46,7 +46,7 @@ public class CallingFuncNameResourceTest extends AbstractGhidraHeadlessIntegrati
 	@MethodSource("test_get_func_info_by_addr_params")
 	public void test_get_func_info_by_addr(String file_name, long expected_addr, String expected_name, String expected_file_line, List<String> expected_calling) throws Exception {
 		initialize(new HashMap<>());
-		CallingFuncNameResource calling_func_name_res = new CallingFuncNameResource(file_name);
+		CallingFuncNameResource calling_func_name_res = new CallingFuncNameResource("test", "test", "test");
 		FuncInfo info = calling_func_name_res.get_func_info_by_addr(expected_addr);
 		assertEquals(info.get_addr(), expected_addr);
 		assertEquals(info.get_name(), expected_name);
@@ -88,7 +88,7 @@ public class CallingFuncNameResourceTest extends AbstractGhidraHeadlessIntegrati
 	@MethodSource("test_get_func_info_by_file_line_params")
 	public void test_get_func_info_by_file_line(String file_name, String file_line, String expected) throws Exception {
 		initialize(new HashMap<>());
-		CallingFuncNameResource calling_func_name_res = new CallingFuncNameResource(file_name);
+		CallingFuncNameResource calling_func_name_res = new CallingFuncNameResource("test", "test", "test");
 		FuncInfo info = calling_func_name_res.get_func_info_by_file_line(file_line);
 		String ret;
 		if (info == null) {
@@ -133,7 +133,7 @@ public class CallingFuncNameResourceTest extends AbstractGhidraHeadlessIntegrati
 	@MethodSource("test_guess_func_name_by_file_line_params")
 	public void test_guess_func_name_by_file_line(String file_name, long addr, String file_line, Map<Long, String> data, String expected) throws Exception {
 		initialize(new HashMap<>());
-		CallingFuncNameResource calling_func_name_res = new CallingFuncNameResource(file_name);
+		CallingFuncNameResource calling_func_name_res = new CallingFuncNameResource("test", "test", "test");
 
 		GuessedFuncNames input_map = new GuessedFuncNames();
 		for (Map.Entry<Long, String> entry : data.entrySet()) {
@@ -192,7 +192,7 @@ public class CallingFuncNameResourceTest extends AbstractGhidraHeadlessIntegrati
 	@MethodSource("test_calling_func_name_lists_params")
 	public void test_calling_func_name_lists(String file_name, Map<String, List<List<String>>> expected) throws Exception {
 		initialize(new HashMap<>());
-		CallingFuncNameResource calling_func_name_res = new CallingFuncNameResource(file_name);
+		CallingFuncNameResource calling_func_name_res = new CallingFuncNameResource("test", "test", "test");
 		for (Map.Entry<String, List<List<String>>> entry : expected.entrySet()) {
 			assertEquals(calling_func_name_res.get_calling_func_name_lists(entry.getKey()), entry.getValue());
 		}
@@ -274,7 +274,7 @@ public class CallingFuncNameResourceTest extends AbstractGhidraHeadlessIntegrati
 	@MethodSource("test_calling_func_name_list_params")
 	public void test_calling_func_name_list(String file_name, String func_name, int calling_num, List<String> expected) throws Exception {
 		initialize(new HashMap<>());
-		CallingFuncNameResource calling_func_name_res = new CallingFuncNameResource(file_name);
+		CallingFuncNameResource calling_func_name_res = new CallingFuncNameResource("test", "test", "test");
 		assertEquals(calling_func_name_res.get_calling_func_name_list(func_name, calling_num), expected);
 	}
 
@@ -340,7 +340,7 @@ public class CallingFuncNameResourceTest extends AbstractGhidraHeadlessIntegrati
 	@MethodSource("test_get_func_name_by_placement_params")
 	public void test_get_func_name_by_placement(String file_name, long addr, Map<Long, String> data, String expected) throws Exception {
 		initialize(new HashMap<>());
-		CallingFuncNameResource calling_func_name_res = new CallingFuncNameResource(file_name);
+		CallingFuncNameResource calling_func_name_res = new CallingFuncNameResource("test", "test", "test");
 
 		GuessedFuncNames input_map = new GuessedFuncNames();
 		for (Map.Entry<Long, String> entry : data.entrySet()) {
@@ -389,7 +389,7 @@ public class CallingFuncNameResourceTest extends AbstractGhidraHeadlessIntegrati
 	@MethodSource("test_is_reliable_params")
 	public void test_is_reliable(String file_name, long addr_value, Map<Long, String> data, boolean expected) throws Exception {
 		initialize(new HashMap<>());
-		CallingFuncNameResource calling_func_name_res = new CallingFuncNameResource(file_name);
+		CallingFuncNameResource calling_func_name_res = new CallingFuncNameResource("test", "test", "test");
 
 		Address addr = program.getAddressFactory().getDefaultAddressSpace().getAddress(addr_value);
 		GuessedFuncNames input_map = new GuessedFuncNames();
@@ -460,7 +460,7 @@ public class CallingFuncNameResourceTest extends AbstractGhidraHeadlessIntegrati
 	@MethodSource("test_collect_func_name_by_placement_params")
 	public void test_collect_func_name_by_placement(String file_name, Map<Long, String> data, Map<Long, String> expected) throws Exception {
 		initialize(new HashMap<>());
-		CallingFuncNameResource calling_func_name_res = new CallingFuncNameResource(file_name);
+		CallingFuncNameResource calling_func_name_res = new CallingFuncNameResource("test", "test", "test");
 
 
 		GuessedFuncNames input_map = new GuessedFuncNames();

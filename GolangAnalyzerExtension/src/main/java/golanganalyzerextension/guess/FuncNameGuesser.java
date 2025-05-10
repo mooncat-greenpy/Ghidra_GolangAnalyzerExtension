@@ -27,8 +27,6 @@ import golanganalyzerextension.version.GolangVersion;
 
 
 public class FuncNameGuesser {
-	private static String CALLING_FUNC_NAME_FILE_FORMAT = "calling_func_name/%s_%s_%s.txt";
-
 	private Program program;
 	private GolangAnalyzerExtensionService service;
 	private AnalyzerOption analyzer_option;
@@ -72,7 +70,7 @@ public class FuncNameGuesser {
 		Address entry_point = get_entry_point();
 		guessed_names_holder.put(entry_point, String.format("_rt0_%s_%s", get_arch(), get_os()), GuessedConfidence.VERY_HIGH);
 
-		calling_func_name_res = new CallingFuncNameResource(String.format(CALLING_FUNC_NAME_FILE_FORMAT, get_os(), get_arch(), get_go_version().get_version_str()));
+		calling_func_name_res = new CallingFuncNameResource(get_os(), get_arch(), get_go_version().get_version_str());
 		calling_func_name_res.guess_func_name_by_file_line(program, program.getListing().getFunctions(true), guessed_names_holder);
 		guess_calling_func();
 

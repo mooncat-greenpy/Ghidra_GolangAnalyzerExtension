@@ -45,12 +45,13 @@ class FuncInfo {
 }
 
 public class CallingFuncNameResource {
+	private static String CALLING_FUNC_NAME_FILE_FORMAT = "calling_func_name/%s_%s_%s.txt";
 	private static int CALLING_NUM_THRESHOLD = 3;
 
 	private List<FuncInfo> func_info_list;
 
-	public CallingFuncNameResource(String file_name) {
-		func_info_list = parse_calling_func_file(file_name);
+	public CallingFuncNameResource(String os, String arch, String version) {
+		func_info_list = parse_calling_func_file(String.format(CALLING_FUNC_NAME_FILE_FORMAT, os, arch, version));
 	}
 
 	public FuncInfo get_func_info_by_addr(long addr) {
