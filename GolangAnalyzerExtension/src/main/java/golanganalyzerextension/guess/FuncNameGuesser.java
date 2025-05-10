@@ -151,9 +151,17 @@ public class FuncNameGuesser {
 			}
 			int count = 0;
 			String freq_name = null;
+			GuessedConfidence confidence = GuessedConfidence.VERY_LOW;
 			for (Map.Entry<String, List<GuessedName>> freq_entry : freq_map.entrySet()) {
-				if (freq_entry.getValue().size() >= count) {
+				GuessedConfidence tmp_confidence = GuessedConfidence.VERY_LOW;
+				for (GuessedName guessed_name : freq_map.get(freq_entry.getKey())) {
+					if (guessed_name.get_confidence().ordinal() > tmp_confidence.ordinal()) {
+						tmp_confidence = guessed_name.get_confidence();
+					}
+				}
+				if (freq_entry.getValue().size() >= count && tmp_confidence.ordinal() >= confidence.ordinal()) {
 					freq_name = freq_entry.getKey();
+					confidence = tmp_confidence;
 					count = freq_entry.getValue().size();
 				}
 			}
@@ -161,12 +169,6 @@ public class FuncNameGuesser {
 				continue;
 			}
 
-			GuessedConfidence confidence = GuessedConfidence.VERY_LOW;
-			for (GuessedName guessed_name : freq_map.get(freq_name)) {
-				if (guessed_name.get_confidence().ordinal() > confidence.ordinal()) {
-					confidence = guessed_name.get_confidence();
-				}
-			}
 			guessed_names_holder.put(entry.getKey(), freq_name, confidence);
 		}
 
