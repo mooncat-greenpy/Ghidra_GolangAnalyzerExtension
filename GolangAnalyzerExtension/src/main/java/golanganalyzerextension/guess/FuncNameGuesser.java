@@ -9,11 +9,13 @@ import java.util.Map;
 
 import ghidra.app.cmd.function.CreateFunctionCmd;
 import ghidra.program.model.address.Address;
+import ghidra.program.model.listing.Data;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionIterator;
 import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.listing.Parameter;
 import ghidra.program.model.listing.Program;
+import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.program.model.symbol.FlowType;
 import ghidra.program.model.symbol.Reference;
 import ghidra.program.model.symbol.SourceType;
@@ -204,12 +206,64 @@ public class FuncNameGuesser {
 
 			guessed_names_holder.put(entry.getKey(), freq_name, confidence);
 		}
+		guess_runtime_main();
 
 		FunctionIterator itr = program.getListing().getFunctions(true);
 		calling_func_name_res.get_func_name_by_placement(itr, guessed_names_holder);
 
 		for (int i = 0; i < 5; i++) {
 			calling_func_name_res.collect_func_name_by_placement(guessed_names_holder);
+		}
+	}
+
+	private void guess_runtime_main() {
+		GuessedName runtime_rt0_go = null;
+		GuessedName runtime_newproc = null;
+		for (GuessedName guessed_name : guessed_names_holder.guessed_names()) {
+			if (guessed_name.get_name().equals("runtime.rt0_go")) {
+				runtime_rt0_go = guessed_name;
+			} else if (guessed_name.get_name().equals("runtime.newproc")) {
+				runtime_newproc = guessed_name;
+			}
+		}
+		if (runtime_rt0_go == null || runtime_newproc == null) {
+			return;
+		}
+
+		Instruction newproc_inst = null;
+		for (Instruction inst = program.getListing().getInstructionAt(runtime_rt0_go.get_addr());
+				inst != null && newproc_inst == null;
+				inst = program.getListing().getInstructionAt(inst.getAddress().add(inst.getParsedLength()))) {
+			boolean is_call = inst.toString().contains("CALL ");
+			if (!is_call) {
+				continue;
+			}
+			Address[] call_addrs = inst.getFlows();
+			for (Address addr : call_addrs) {
+				if (addr.equals(runtime_newproc.get_addr())) {
+					newproc_inst = inst;
+					break;
+				}
+			}
+		}
+		if (newproc_inst == null) {
+			return;
+		}
+		for (Instruction inst = newproc_inst.getPrevious(); inst != null; inst = inst.getPrevious()) {
+			if (inst.getFlowType().isCall()) {
+				break;
+			}
+			for (Reference ref : inst.getReferencesFrom()) {
+				if (is_valid_address(ref.getToAddress())) {
+					Data data = program.getListing().getDataAt(ref.getToAddress());
+					if (data != null && data.isPointer()) {
+						Address runtime_main_addr = (Address) data.getValue();
+						if (is_go_func_entry_point(runtime_main_addr)) {
+							guessed_names_holder.put(runtime_main_addr, "runtime.main", runtime_rt0_go.get_confidence());
+						}
+					}
+				}
+			}
 		}
 	}
 
@@ -288,6 +342,20 @@ public class FuncNameGuesser {
 
 	private Function get_function(Address addr) {
 		return program.getFunctionManager().getFunctionAt(addr);
+	}
+
+	private boolean is_valid_address(Address addr) {
+		if(addr==null) {
+			return false;
+		}
+		boolean ret=false;
+		try {
+			program.getMemory().getByte(addr);
+			ret=true;
+		} catch (MemoryAccessException e) {
+			ret=false;
+		}
+		return ret;
 	}
 
 	// TODO: Fix
