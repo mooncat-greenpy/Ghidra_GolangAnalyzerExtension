@@ -6,4 +6,21 @@ public enum GuessedConfidence {
 	MEDIUM,
 	HIGH,
 	VERY_HIGH;
+
+	public GuessedConfidence prev() {
+		switch (this) {
+			case VERY_LOW:
+				return VERY_LOW;
+			case LOW:
+				return VERY_LOW;
+			case MEDIUM:
+				return LOW;
+			case HIGH:
+				return MEDIUM;
+			case VERY_HIGH:
+				return HIGH;
+			default:
+				return this;
+		}
+	}
 }

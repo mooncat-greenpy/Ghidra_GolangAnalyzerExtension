@@ -104,10 +104,13 @@ public class FuncNameGuesser {
 	private void analyze_calling_func(GuessedName src_guessed_name, Map<Address, List<GuessedName>> func_name_map) {
 		List<Address> calling_func_list = get_calling_func_list(src_guessed_name.get_addr());
 
-		List<String> calling_name_list = calling_func_name_res.get_calling_func_name_list(src_guessed_name.get_name(), calling_func_list.size());
-		if (calling_name_list == null) {
+		CallingFuncInfo calling_func_info = calling_func_name_res.get_calling_func_info_list(src_guessed_name.get_name(), calling_func_list.size());
+		if (calling_func_info == null) {
 			return;
 		}
+		List<String> pre_calling_name_list = calling_func_info.get_pre();
+		List<String> post_calling_name_list = calling_func_info.get_post();
+		List<String> calling_name_list = calling_func_info.get_calling();
 
 		int half = calling_name_list.size() / 2;
 		for (int i = 0; i < calling_func_list.size() && i < calling_name_list.size(); i++) {
@@ -120,6 +123,38 @@ public class FuncNameGuesser {
 				calling_name = calling_name_list.get(calling_name_list.size() - (i - half));
 				calling_addr = calling_func_list.get(calling_func_list.size() - (i - half));
 			}
+
+			GuessedName guessed_name = new GuessedName(calling_addr, calling_name, src_guessed_name.get_confidence().prev());
+			if (!func_name_map.containsKey(calling_addr)) {
+				func_name_map.put(calling_addr, new LinkedList<>() {{add(guessed_name);}});
+			} else {
+				func_name_map.get(calling_addr).add(guessed_name);
+			}
+			if (func_name_map.get(calling_addr).stream().filter(v -> v.get_name().equals(calling_name)).count() >= 2) {
+				continue;
+			}
+
+			analyze_calling_func(guessed_name, func_name_map);
+		}
+
+		for (int i = 0; i < calling_func_list.size() && i < pre_calling_name_list.size(); i++) {
+			Address calling_addr = calling_func_list.get(i);
+			String calling_name = pre_calling_name_list.get(i);
+			GuessedName guessed_name = new GuessedName(calling_addr, calling_name, src_guessed_name.get_confidence());
+			if (!func_name_map.containsKey(calling_addr)) {
+				func_name_map.put(calling_addr, new LinkedList<>() {{add(guessed_name);}});
+			} else {
+				func_name_map.get(calling_addr).add(guessed_name);
+			}
+			if (func_name_map.get(calling_addr).stream().filter(v -> v.get_name().equals(calling_name)).count() >= 2) {
+				continue;
+			}
+
+			analyze_calling_func(guessed_name, func_name_map);
+		}
+		for (int i = 0; i < calling_func_list.size() && i < post_calling_name_list.size(); i++) {
+			Address calling_addr = calling_func_list.get(calling_func_list.size() - 1 - i);
+			String calling_name = post_calling_name_list.get(post_calling_name_list.size() - 1 - i);
 			GuessedName guessed_name = new GuessedName(calling_addr, calling_name, src_guessed_name.get_confidence());
 			if (!func_name_map.containsKey(calling_addr)) {
 				func_name_map.put(calling_addr, new LinkedList<>() {{add(guessed_name);}});
