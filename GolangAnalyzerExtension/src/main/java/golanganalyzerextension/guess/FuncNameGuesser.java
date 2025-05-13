@@ -234,8 +234,7 @@ public class FuncNameGuesser {
 		for (Instruction inst = program.getListing().getInstructionAt(runtime_rt0_go.get_addr());
 				inst != null && newproc_inst == null;
 				inst = program.getListing().getInstructionAt(inst.getAddress().add(inst.getParsedLength()))) {
-			boolean is_call = inst.toString().contains("CALL ");
-			if (!is_call) {
+			if (!inst.getFlowType().isCall()) {
 				continue;
 			}
 			Address[] call_addrs = inst.getFlows();
@@ -285,8 +284,7 @@ public class FuncNameGuesser {
 		for (Instruction inst = program.getListing().getInstructionAt(runtime_main.get_addr());
 				inst != null;
 				inst = program.getListing().getInstructionAt(inst.getAddress().add(inst.getParsedLength()))) {
-			boolean is_call = inst.toString().contains("CALL ");
-			if (!is_call) {
+			if (!inst.getFlowType().isCall()) {
 				continue;
 			}
 			Address[] call_addrs = inst.getFlows();
@@ -366,17 +364,18 @@ public class FuncNameGuesser {
 			if (entry.get_confidence().ordinal() < analyzer_option.get_guess_confidence_func().ordinal()) {
 				continue;
 			}
+			String func_name = entry.get_name() + "_GAEguess";
 			Function func = get_function(entry.get_addr());
 			if (func == null) {
-				create_function(entry.get_name(), entry.get_addr());
+				create_function(func_name, entry.get_addr());
 				continue;
 			}
 			if (!func.getName().contains("FUN_") && !func.getName().contains("entry")) {
 				continue;
 			}
 			try {
-				func.setName(entry.get_name() + "_GAEguess", SourceType.USER_DEFINED);
-				service.add_function(new GolangFunctionRecord(func.getEntryPoint(), entry.get_name() + "_GAEguess", 0, 0, new HashMap<>(), new HashMap<>(), new Parameter[]{}));
+				func.setName(func_name, SourceType.USER_DEFINED);
+				service.add_function(new GolangFunctionRecord(func.getEntryPoint(), func_name, 0, 0, new HashMap<>(), new HashMap<>(), new Parameter[]{}));
 			}catch(Exception e) {
 				Logger.append_message(String.format("Failed to set function name: addr=%s, message=%s", entry.get_addr(), e.getMessage()));
 			}
