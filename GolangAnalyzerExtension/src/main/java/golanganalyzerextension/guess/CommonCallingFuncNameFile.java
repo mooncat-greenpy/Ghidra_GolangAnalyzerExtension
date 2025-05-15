@@ -43,7 +43,7 @@ public class CommonCallingFuncNameFile {
 			return;
 		}
 
-		if (!parts[0].equals(version)) {
+		if (!parts[0].contains(version)) {
 			return;
 		}
 
