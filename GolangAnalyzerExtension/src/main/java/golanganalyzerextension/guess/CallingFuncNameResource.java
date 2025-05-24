@@ -91,17 +91,17 @@ public class CallingFuncNameResource {
 		return ret;
 	}
 
-	public List<CallingFuncInfo> get_calling_func_info_list(String name) {
+	public List<CallingFuncInfo> get_calling_func_info_list(GuessedName name) {
 		List<CallingFuncInfo> ret = new LinkedList<>();
 		for (CallingFuncInfo info : calling_func_info_list) {
-			if (info.get_name().equals(name)) {
+			if (info.get_name().equals(name.get_name())) {
 				ret.add(info);
 			}
 		}
 		return ret;
 	}
 
-	public CallingFuncInfo get_calling_func_info_list(String name, int call_count) {
+	public CallingFuncInfo get_calling_func_info_list(GuessedName name, int call_count) {
 		List<CallingFuncInfo> info_list = get_calling_func_info_list(name);
 		if (info_list == null) {
 			return null;

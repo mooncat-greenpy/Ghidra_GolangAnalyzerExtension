@@ -106,7 +106,7 @@ public class FuncNameGuesser {
 	private void analyze_calling_func(GuessedName src_guessed_name, Map<Address, List<GuessedName>> func_name_map) {
 		List<Address> calling_func_list = get_calling_func_list(src_guessed_name.get_addr());
 
-		CallingFuncInfo calling_func_info = calling_func_name_res.get_calling_func_info_list(src_guessed_name.get_name(), calling_func_list.size());
+		CallingFuncInfo calling_func_info = calling_func_name_res.get_calling_func_info_list(src_guessed_name, calling_func_list.size());
 		if (calling_func_info == null) {
 			return;
 		}
@@ -175,12 +175,7 @@ public class FuncNameGuesser {
 		}
 	}
 
-	private void guess_calling_func() {
-		Map<Address, List<GuessedName>> func_name_map = new HashMap<>();
-		for (Address addr : new HashSet<>(guessed_names_holder.keys())) {
-			analyze_calling_func(new GuessedName(addr, guessed_names_holder.get_name(addr), guessed_names_holder.get_confidence(addr)), func_name_map);
-		}
-
+	private void apply_calling_func_analyzed(Map<Address, List<GuessedName>> func_name_map) {
 		for (Map.Entry<Address, List<GuessedName>> entry : func_name_map.entrySet()) {
 			Map<String, List<GuessedName>> freq_map = new HashMap<>();
 			for (GuessedName name : entry.getValue()) {
@@ -211,6 +206,15 @@ public class FuncNameGuesser {
 
 			guessed_names_holder.put(entry.getKey(), freq_name, confidence);
 		}
+	}
+
+	private void guess_calling_func() {
+		Map<Address, List<GuessedName>> func_name_map = new HashMap<>();
+		for (Address addr : new HashSet<>(guessed_names_holder.keys())) {
+			analyze_calling_func(new GuessedName(addr, guessed_names_holder.get_name(addr), guessed_names_holder.get_confidence(addr)), func_name_map);
+		}
+		apply_calling_func_analyzed(func_name_map);
+
 		guess_runtime_main();
 
 		FunctionIterator itr = program.getListing().getFunctions(true);
