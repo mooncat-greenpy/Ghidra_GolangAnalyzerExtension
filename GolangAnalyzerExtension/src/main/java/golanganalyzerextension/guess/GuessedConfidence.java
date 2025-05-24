@@ -23,4 +23,21 @@ public enum GuessedConfidence {
 				return this;
 		}
 	}
+
+	public int priority() {
+		switch (this) {
+			case VERY_LOW:
+				return 0;
+			case LOW:
+				return 1;
+			case MEDIUM:
+				return 2;
+			case HIGH:
+				return 3;
+			case VERY_HIGH:
+				return 4;
+			default:
+				return 0;
+		}
+	}
 }

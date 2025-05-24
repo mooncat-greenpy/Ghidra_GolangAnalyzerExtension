@@ -126,13 +126,17 @@ public class FuncNameGuesser {
 				calling_addr = calling_func_list.get(calling_func_list.size() - (i - half));
 			}
 
-			GuessedName guessed_name = new GuessedName(calling_addr, calling_name, src_guessed_name.get_confidence().prev());
+			GuessedConfidence confidence = src_guessed_name.get_confidence();
+			if (confidence.equals(GuessedConfidence.VERY_HIGH)) {
+				confidence = confidence.prev();
+			}
+			GuessedName guessed_name = new GuessedName(calling_addr, calling_name, confidence);
 			if (!func_name_map.containsKey(calling_addr)) {
 				func_name_map.put(calling_addr, new LinkedList<>() {{add(guessed_name);}});
 			} else {
 				func_name_map.get(calling_addr).add(guessed_name);
 			}
-			if (func_name_map.get(calling_addr).stream().filter(v -> v.get_name().equals(calling_name)).count() >= 2) {
+			if (func_name_map.get(calling_addr).stream().filter(v -> v.get_name().equals(calling_name) && v.get_confidence().equals(guessed_name.get_confidence())).count() >= 2) {
 				continue;
 			}
 
@@ -148,7 +152,7 @@ public class FuncNameGuesser {
 			} else {
 				func_name_map.get(calling_addr).add(guessed_name);
 			}
-			if (func_name_map.get(calling_addr).stream().filter(v -> v.get_name().equals(calling_name)).count() >= 2) {
+			if (func_name_map.get(calling_addr).stream().filter(v -> v.get_name().equals(calling_name) && v.get_confidence().equals(guessed_name.get_confidence())).count() >= 2) {
 				continue;
 			}
 
@@ -163,7 +167,7 @@ public class FuncNameGuesser {
 			} else {
 				func_name_map.get(calling_addr).add(guessed_name);
 			}
-			if (func_name_map.get(calling_addr).stream().filter(v -> v.get_name().equals(calling_name)).count() >= 2) {
+			if (func_name_map.get(calling_addr).stream().filter(v -> v.get_name().equals(calling_name) && v.get_confidence().equals(guessed_name.get_confidence())).count() >= 2) {
 				continue;
 			}
 
@@ -190,11 +194,12 @@ public class FuncNameGuesser {
 			for (Map.Entry<String, List<GuessedName>> freq_entry : freq_map.entrySet()) {
 				GuessedConfidence tmp_confidence = GuessedConfidence.VERY_LOW;
 				for (GuessedName guessed_name : freq_map.get(freq_entry.getKey())) {
-					if (guessed_name.get_confidence().ordinal() > tmp_confidence.ordinal()) {
+					if (guessed_name.get_confidence().priority() > tmp_confidence.priority()) {
 						tmp_confidence = guessed_name.get_confidence();
 					}
 				}
-				if (freq_entry.getValue().size() >= count && tmp_confidence.ordinal() >= confidence.ordinal()) {
+				if (tmp_confidence.priority() > confidence.priority() ||
+						(tmp_confidence.priority() == confidence.priority() && freq_entry.getValue().size() >= count)) {
 					freq_name = freq_entry.getKey();
 					confidence = tmp_confidence;
 					count = freq_entry.getValue().size();
