@@ -195,7 +195,8 @@ public class CallingFuncNameResourceTest extends AbstractGhidraHeadlessIntegrati
 		CallingFuncNameResource calling_func_name_res = new CallingFuncNameResource("test", "test", "test");
 		for (Map.Entry<String, List<List<String>>> entry : expected.entrySet()) {
 			List<List<String>> result = new LinkedList<>();
-			for (CallingFuncInfo info : calling_func_name_res.get_calling_func_info_list(entry.getKey())) {
+			for (CallingFuncInfo info : calling_func_name_res.get_calling_func_info_list(
+				new GuessedName(null, entry.getKey(), GuessedConfidence.VERY_LOW))) {
 				result.add(info.get_calling());
 			}
 			assertEquals(result, entry.getValue());
@@ -279,7 +280,8 @@ public class CallingFuncNameResourceTest extends AbstractGhidraHeadlessIntegrati
 	public void test_calling_func_name_list(String file_name, String func_name, int calling_num, List<String> expected) throws Exception {
 		initialize(new HashMap<>());
 		CallingFuncNameResource calling_func_name_res = new CallingFuncNameResource("test", "test", "test");
-		CallingFuncInfo info = calling_func_name_res.get_calling_func_info_list(func_name, calling_num);
+		CallingFuncInfo info = calling_func_name_res.get_calling_func_info_list(
+				new GuessedName(null, func_name, GuessedConfidence.VERY_LOW), calling_num);
 		List<String> result = null;
 		if (info != null) {
 			result = info.get_calling();
