@@ -110,7 +110,7 @@ public class CallingFuncNameResource {
 		CallingFuncInfo ret = null;
 		for (CallingFuncInfo info : info_list) {
 			List<String> calling = info.get_calling();
-			if (Math.abs(calling.size() - call_count) > CALLING_NUM_THRESHOLD) {
+			if (Math.abs(calling.size() - call_count) > CALLING_NUM_THRESHOLD + name.get_confidence().priority()) {
 				continue;
 			}
 			if (ret == null) {

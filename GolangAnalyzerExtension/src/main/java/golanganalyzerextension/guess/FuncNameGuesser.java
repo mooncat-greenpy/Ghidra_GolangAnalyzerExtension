@@ -236,6 +236,7 @@ public class FuncNameGuesser {
 			}
 		}
 		if (runtime_rt0_go == null || runtime_newproc == null) {
+			Logger.append_message(String.format("Failed to guess runtime.main: rt0_go=%s newproc=%s", runtime_rt0_go, runtime_newproc));
 			return;
 		}
 
@@ -255,6 +256,7 @@ public class FuncNameGuesser {
 			}
 		}
 		if (newproc_inst == null) {
+			Logger.append_message(String.format("Failed to get newproc in rt0_go: rt0_go=%s newproc=%s", runtime_rt0_go, runtime_newproc));
 			return;
 		}
 		for (Instruction inst = newproc_inst.getPrevious(); inst != null; inst = inst.getPrevious()) {
@@ -268,6 +270,10 @@ public class FuncNameGuesser {
 						Address runtime_main_addr = (Address) data.getValue();
 						if (is_go_func_entry_point(runtime_main_addr)) {
 							guessed_names_holder.put(runtime_main_addr, "runtime.main", runtime_rt0_go.get_confidence());
+							Map<Address, List<GuessedName>> func_name_map = new HashMap<>();
+							analyze_calling_func(new GuessedName(runtime_main_addr, guessed_names_holder.get_name(runtime_main_addr), guessed_names_holder.get_confidence(runtime_main_addr)), func_name_map);
+							apply_calling_func_analyzed(func_name_map);
+							return;
 						}
 					}
 				}
