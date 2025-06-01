@@ -26,6 +26,11 @@ public class GuessedName {
 	}
 
 	@Override
+	public String toString() {
+		return String.format(String.format("{addr=%s, name=%s, confidence=%s}", addr, name, confidence));
+	}
+
+	@Override
 	public boolean equals(Object obj) {
 		if (this == obj) {
 			return true;

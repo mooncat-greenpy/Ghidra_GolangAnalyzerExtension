@@ -72,6 +72,7 @@ public class FuncNameGuesser {
 		Address entry_point = get_entry_point();
 		guessed_names_holder.put(entry_point, String.format("_rt0_%s_%s", get_arch(), get_os()), GuessedConfidence.VERY_HIGH);
 
+		Logger.append_message(String.format("Guessed information: go_version=%s", get_go_version().get_version_str()));
 		calling_func_name_res = new CallingFuncNameResource(get_os(), get_arch(), get_go_version().get_version_str());
 		calling_func_name_res.guess_func_name_by_file_line(program, program.getListing().getFunctions(true), guessed_names_holder);
 		guess_calling_func();
