@@ -252,7 +252,7 @@ public class GolangBsim {
 		while (sim_note_itr.hasNext()) {
 			SimilarityNote sim_note = sim_note_itr.next();
 			FunctionDescription func_desc = sim_note.getFunctionDescription();
-			String func_name = func_desc.getFunctionName();
+			String func_name = func_desc.getFunctionName().replace("�", "_");
 			if (func_name.contains("::")) {
 				func_name = func_name.split("::")[1];
 			}
