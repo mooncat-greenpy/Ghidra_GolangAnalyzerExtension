@@ -108,7 +108,7 @@ public class GolangBsim {
 			URL url = temp_path.toFile().toURI().toURL();
 
 			query_service.initializeDatabase(url.toString());
-			FunctionDatabase.Error error = query_service.getLastError();// FunctionDatabase.BSimError
+			FunctionDatabase.BSimError error = query_service.getLastError();// FunctionDatabase.Error (ghidra 11.2.1)
 			if (error != null && error.category == ErrorCategory.Nodatabase) {
 				Logger.append_message("Failed to find database: url=" + url.toString());
 				return null;
