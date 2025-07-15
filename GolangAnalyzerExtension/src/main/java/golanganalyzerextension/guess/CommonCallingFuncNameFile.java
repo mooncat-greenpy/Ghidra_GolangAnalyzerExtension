@@ -3,6 +3,7 @@ package golanganalyzerextension.guess;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -80,12 +81,17 @@ public class CommonCallingFuncNameFile {
 
 	private Map<String, Map<String, List<String>>> parse_calling_func_file(String file_name, String version) {
 		Map<String, Map<String, List<String>>> ret = new HashMap<>();
-		InputStream input_stream = ResourceManager.getResourceAsStream(file_name);
-		try (InputStreamReader input_reader = new InputStreamReader(input_stream);
-			BufferedReader reader = new BufferedReader(input_reader)) {
-			String line;
-			while ((line = reader.readLine()) != null) {
-				parse_line(line, version, ret);
+		URL url = ResourceManager.getResource(file_name);
+		if (url == null) {
+			return ret;
+		}
+		try (InputStream in = url.openStream()) {
+			try (InputStreamReader input_reader = new InputStreamReader(in);
+				BufferedReader reader = new BufferedReader(input_reader)) {
+				String line;
+				while ((line = reader.readLine()) != null) {
+					parse_line(line, version, ret);
+				}
 			}
 		} catch (Exception e) {
 		}

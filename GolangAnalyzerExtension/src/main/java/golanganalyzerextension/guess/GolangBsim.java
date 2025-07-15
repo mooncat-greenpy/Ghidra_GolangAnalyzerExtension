@@ -227,18 +227,22 @@ public class GolangBsim {
 
 	private Path create_resource_temp_file(String name) {
 		try {
-			Path temp_path = Files.createTempFile("tempfile", ".mv.db");
-			temp_path.toFile().deleteOnExit();
-
-			InputStream in_stream = ResourceManager.getResourceAsStream(PATTERN_FILE);
-			try (OutputStream out_stream = new FileOutputStream(temp_path.toFile())) {
-				byte[] buffer = new byte[1024];
-				int length;
-				while ((length = in_stream.read(buffer)) > 0) {
-					out_stream.write(buffer, 0, length);
-				}
+			URL url = ResourceManager.getResource(name);
+			if (url == null) {
+				return null;
 			}
-			return temp_path;
+			try (InputStream in = url.openStream()) {
+				Path temp_path = Files.createTempFile("tempfile", ".mv.db");
+				temp_path.toFile().deleteOnExit();
+				try (OutputStream out_stream = new FileOutputStream(temp_path.toFile())) {
+					byte[] buffer = new byte[1024];
+					int length;
+					while ((length = in.read(buffer)) > 0) {
+						out_stream.write(buffer, 0, length);
+					}
+				}
+				return temp_path;
+			}
 		} catch (Exception e) {
 			return null;
 		}
