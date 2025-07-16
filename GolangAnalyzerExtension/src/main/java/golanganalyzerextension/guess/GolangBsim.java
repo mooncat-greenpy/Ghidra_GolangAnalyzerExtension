@@ -121,7 +121,7 @@ public class GolangBsim {
 		return query_service;
 	}
 
-	private void guess_function_names(List<SimilarityResult> sim_result_list, GuessedFuncNames guessed_names_holder) {
+	private boolean guess_function_names(List<SimilarityResult> sim_result_list, GuessedFuncNames guessed_names_holder) {
 		try {
 			for (SimilarityResult sim_rsult : sim_result_list) {
 				Map.Entry<Address, String> match_func = judge_func(sim_rsult);
@@ -134,14 +134,15 @@ public class GolangBsim {
 			remove_match_mistakes(guessed_names_holder);
 
 			if (guessed_names_holder.size() > IS_GOLANG_FUNC_NUM_THRESHOLD) {
-				return;
+				return true;
 			}
 		} catch(Exception e) {
 			Logger.append_message(String.format("Failed to guess function names: message=%s", e.getMessage()));
 		}
+		return false;
 	}
 
-	private void guess_golang_version(List<BSimMatchResult> bsim_result_list) {
+	private boolean guess_golang_version(List<BSimMatchResult> bsim_result_list) {
 		TreeSet<ExecutableResult> execrows = ExecutableResult.generateFromMatchRows(bsim_result_list);
 		ExecutableResult[] results = new ExecutableResult[execrows.size()];
 		results = execrows.toArray(results);
@@ -164,14 +165,15 @@ public class GolangBsim {
 
 		String[] exec_split = exec.split("_");
 		if (exec_split.length < 3) {
-			return;
+			return false;
 		}
 		os = exec_split[exec_split.length - 3];
 		arch = exec_split[exec_split.length - 2];
 		go_version = new GolangVersion(exec_split[exec_split.length - 1]);
+		return true;
 	}
 
-	public void guess(GuessedFuncNames guessed_names_holder) {
+	public boolean guess(GuessedFuncNames guessed_names_holder) {
 		SimilarFunctionQueryService query_service = init_query_service();
 
 		HashSet<FunctionSymbol> funcs_to_query = get_functions_to_query(program);
@@ -186,11 +188,16 @@ public class GolangBsim {
 		try {
 			sim_result_list = execute_query(query_service, query_info);
 		} catch (Exception e) {
-			return;
+			return false;
 		}
 		List<BSimMatchResult> bsim_result_list = BSimMatchResult.generate(sim_result_list, program);
-		guess_golang_version(bsim_result_list);
-		guess_function_names(sim_result_list, guessed_names_holder);
+		if (!guess_golang_version(bsim_result_list)) {
+			return false;
+		}
+		if (!guess_function_names(sim_result_list, guessed_names_holder)) {
+			return false;
+		}
+		return true;
 	}
 
 	private void init_database() {

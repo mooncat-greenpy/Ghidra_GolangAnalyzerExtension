@@ -67,7 +67,9 @@ public class FuncNameGuesser {
 	public void guess() {
 		guessed_names_holder = new GuessedFuncNames();
 
-		golang_bsim.guess(guessed_names_holder);
+		if (!golang_bsim.guess(guessed_names_holder)) {
+			return;
+		}
 
 		Address entry_point = get_entry_point();
 		guessed_names_holder.put(entry_point, String.format("_rt0_%s_%s", get_arch(), get_os()), GuessedConfidence.VERY_HIGH);
