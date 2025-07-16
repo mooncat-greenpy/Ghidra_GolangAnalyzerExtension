@@ -285,10 +285,12 @@ public class GolangBsim {
 			String value = func_name_map.get_name(addr);
 			freq_map.put(value, freq_map.getOrDefault(value, 0) + 1);
 		}
-		for (GuessedName guessed_name : func_name_map.guessed_names()) {
+		Iterator<GuessedName> itr = func_name_map.guessed_names().iterator();
+		while (itr.hasNext()) {
+			GuessedName guessed_name = itr.next();
 			String value = guessed_name.get_name();
 			if (freq_map.get(value) > 1) {
-				func_name_map.remove(guessed_name.get_addr());
+				itr.remove();
 			}
 		}
 	}
