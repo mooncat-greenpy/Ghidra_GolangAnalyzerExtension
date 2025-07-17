@@ -43,7 +43,7 @@ import golanganalyzerextension.version.GolangVersion;
 public class GolangBsim {
 
 	private static String PATTERN_FILE = "golang.mv.db";
-	private static int IS_GOLANG_FUNC_NUM_THRESHOLD = 200;
+	private static int IS_GOLANG_FUNC_NUM_THRESHOLD = 100;
 
 	private static final double SIMILARITY_BOUND = 0.8;
 	private static final int MAX_NUM_FUNCTIONS = 10000;
