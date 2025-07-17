@@ -31,7 +31,7 @@ public class GuessedFuncNames {
 		return gussed.get_confidence();
 	}
 
-	public Set<Address> keys() {
+	public Set<Address> addrs() {
 		return funcs.keySet();
 	}
 

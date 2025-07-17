@@ -288,7 +288,7 @@ public class GolangBsim {
 
 	private void remove_match_mistakes(GuessedFuncNames func_name_map) {
 		Map<String, Integer> freq_map = new HashMap<>();
-		for (Address addr : func_name_map.keys()) {
+		for (Address addr : func_name_map.addrs()) {
 			String value = func_name_map.get_name(addr);
 			freq_map.put(value, freq_map.getOrDefault(value, 0) + 1);
 		}

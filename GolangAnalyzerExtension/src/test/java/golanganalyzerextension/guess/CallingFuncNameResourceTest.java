@@ -484,7 +484,7 @@ public class CallingFuncNameResourceTest extends AbstractGhidraHeadlessIntegrati
 		}
 		calling_func_name_res.collect_func_name_by_placement(input_map);
 		assertEquals(input_map.size(), expected_map.size());
-		for (Address addr : input_map.keys()) {
+		for (Address addr : input_map.addrs()) {
 			assertEquals(input_map.get_name(addr), expected_map.get_name(addr));
 		}
 	}

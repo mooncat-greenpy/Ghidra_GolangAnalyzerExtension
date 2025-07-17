@@ -41,8 +41,6 @@ public class FuncNameGuesser {
 		this.program = program;
 		this.service = service;
 		this.analyzer_option = analyzer_option;
-		guessed_names_holder = new GuessedFuncNames();
-		golang_bsim = new GolangBsim(program);
 	}
 
 	public GolangVersion get_go_version() {
@@ -67,6 +65,7 @@ public class FuncNameGuesser {
 	public void guess() {
 		guessed_names_holder = new GuessedFuncNames();
 
+		golang_bsim = new GolangBsim(program);
 		if (!golang_bsim.guess(guessed_names_holder)) {
 			return;
 		}
@@ -75,11 +74,10 @@ public class FuncNameGuesser {
 		guessed_names_holder.put(entry_point, String.format("_rt0_%s_%s", get_arch(), get_os()), GuessedConfidence.VERY_HIGH);
 
 		Logger.append_message(String.format("Guessed information: go_version=%s", get_go_version().get_version_str()));
+
 		calling_func_name_res = new CallingFuncNameResource(get_os(), get_arch(), get_go_version().get_version_str());
 		calling_func_name_res.guess_func_name_by_file_line(program, program.getListing().getFunctions(true), guessed_names_holder);
 		guess_calling_func();
-
-		guess_main();
 	}
 
 	private void create_function(String name, Address addr) {
@@ -213,7 +211,7 @@ public class FuncNameGuesser {
 
 	private void guess_calling_func() {
 		Map<Address, List<GuessedName>> func_name_map = new HashMap<>();
-		for (Address addr : new HashSet<>(guessed_names_holder.keys())) {
+		for (Address addr : new HashSet<>(guessed_names_holder.addrs())) {
 			analyze_calling_func(new GuessedName(addr, guessed_names_holder.get_name(addr), guessed_names_holder.get_confidence(addr)), func_name_map);
 		}
 		apply_calling_func_analyzed(func_name_map);
@@ -226,6 +224,8 @@ public class FuncNameGuesser {
 		for (int i = 0; i < 5; i++) {
 			calling_func_name_res.collect_func_name_by_placement(guessed_names_holder);
 		}
+
+		guess_main();
 	}
 
 	private void guess_runtime_main() {
