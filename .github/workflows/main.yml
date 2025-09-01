@@ -29,8 +29,6 @@ jobs:
           - "11.3.2"
           - "11.3.1"
           - "11.3"
-          - "11.2.1"
-          - "11.2"
     steps:
     - name: Checkout
       uses: actions/checkout@v5
