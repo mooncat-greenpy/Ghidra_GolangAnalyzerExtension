@@ -55,12 +55,12 @@ jobs:
 
     - name: Build with Gradle Wrapper
       run: gradle buildExtension
-      working-directory: ./R4Ghidra
+      working-directory: ./GolangAnalyzerExtension
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: GolangAnalyzerExtension_Ghidra_${{ matrix.ghidra }}
+        name: Ghidra_GolangAnalyzerExtension_${{ matrix.ghidra }}
         path: GolangAnalyzerExtension/dist/*.zip
 
   release:
@@ -76,7 +76,6 @@ jobs:
       if: startsWith(github.ref, 'refs/tags/')
       with:
         files: |
-          R4Ghidra_Ghidra_*/*.zip
-          R4Ghidra-javadoc/*.zip
+          Ghidra_GolangAnalyzerExtension__*/*.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
