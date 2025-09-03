@@ -18,6 +18,11 @@ on:
         description: 'Callmap dataset tag to use (e.g. "go1.25.3", defaults to "latest")'
         required: true
         default: 'latest'
+      create_release:
+        description: 'Create release after build'
+        required: true
+        default: false
+        type: boolean
 
 jobs:
   build:
@@ -116,3 +121,75 @@ jobs:
           Ghidra_GolangAnalyzerExtension_*/*
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  create-release:
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true' }}
+    permissions:
+      contents: write
+      
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v5
+      
+    - name: Get latest Go version from callmaps repository
+      id: get_latest_version
+      run: |
+        LATEST_TAG=$(curl -s "https://api.github.com/repos/askme765cs/golang-callmaps/releases" | grep -o '"tag_name": "[^"]*' | grep -o '[^"]*$' | head -2 | tail -1)
+        echo "latest_go_version=${LATEST_TAG}" >> $GITHUB_OUTPUT
+        echo "Latest Go version: ${LATEST_TAG}"
+
+    - name: Generate release notes
+      run: |
+        cat > RELEASE_NOTES.md << 'EOF'
+        # Ghidra Golang Analyzer Extension - Latest Release
+        
+        ## Supported Go Version
+        This release includes callmap data for Go versions up to **${{ steps.get_latest_version.outputs.latest_go_version }}**
+        
+        ## What's Included
+        - Latest callmap data from golang-callmaps repository
+        - Enhanced function call detection for Go binaries
+        - Support for multiple Ghidra versions (11.4.x, 11.3.x, etc.)
+        
+        ## Installation
+        1. Download the appropriate zip file for your Ghidra version
+        2. Extract to your Ghidra extensions directory
+        3. Restart Ghidra
+        
+        ## Files in This Release
+        EOF
+        
+        # List all files
+        for file in */*.zip; do
+          if [ -f "$file" ]; then
+            echo "- $(basename "$file")" >> RELEASE_NOTES.md
+          fi
+        done
+        
+        echo "" >> RELEASE_NOTES.md
+        echo "---" >> RELEASE_NOTES.md
+        echo "*Built with Go callmap data version: ${{ steps.get_latest_version.outputs.latest_go_version }}*" >> RELEASE_NOTES.md
+        echo "*Generated on: $(date -u)*" >> RELEASE_NOTES.md
+
+    - name: Create Latest Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: latest
+        name: Ghidra Golang Analyzer Extension - Latest Release
+        body_path: RELEASE_NOTES.md
+        files: |
+          */*.zip
+        draft: false
+        prerelease: false
+        make_latest: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Release Summary
+      run: |
+        echo "✅ Release created successfully!"
+        echo "📦 Tag: latest"
+        echo "🐹 Supported Go version: ${{ steps.get_latest_version.outputs.latest_go_version }}"
+        echo "🔗 Release URL: https://github.com/${{ github.repository }}/releases/latest"
