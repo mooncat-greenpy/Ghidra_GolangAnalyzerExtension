@@ -1,6 +1,6 @@
 # GolangAnalyzerExtension
 The GolangAnalyzerExtension facilitates the analysis of Golang binaries using Ghidra.
-It supports go1.6 through go1.23.
+It supports multiple Go versions with automated callmap data updates.
 
 ## Features
 This Ghidra plugin provides the following functionality for analyzing Golang binaries:
@@ -11,12 +11,22 @@ This Ghidra plugin provides the following functionality for analyzing Golang bin
 - Documentation of source file names and line numbers in comments
 - Integration of custom data types into the Data Type Manager
 - Capability to search for strings within the binary
+- **Automated callmap data updates** to support latest Go versions
 
-Refer to the images below for a visual demonstration.
+## Callmap Data System
 
-<img src="img/demo.png">
+### External Callmap Repository
+The Go function call mapping data is stored in a separate repository:  
+**https://github.com/askme765cs/golang-callmaps**
 
-<img src="img/demo.gif">
+This repository contains:
+- Automated callmap generation for various Go versions
+- Versioned releases tagged with Go version numbers (e.g., `go1.24.6`)
+- A `latest` tag that always points to the most recent Go version
+- Comprehensive function call data for improved binary analysis
+
+### Supported Go Versions
+The extension dynamically supports Go versions based on the available callmap data. Check the [latest release](https://github.com/askme765cs/golang-callmaps/releases/latest) for currently supported Go versions.
 
 ## Usage
 1. Download the latest release
