@@ -13,6 +13,11 @@ on:
   pull_request:
     branches: [ "master" ]
   workflow_dispatch:
+    inputs:
+      callmap_tag:
+        description: 'Callmap dataset tag to use (e.g. "go1.25.3", defaults to "latest")'
+        required: true
+        default: 'latest'
 
 jobs:
   build:
@@ -51,6 +56,32 @@ jobs:
       with:
         gradle-version: '8.5'
 
+    - name: Download and extract callmap data
+      run: |
+        RELEASE_TAG=${{ github.event.inputs.callmap_tag || 'latest' }}
+        DOWNLOAD_URL="https://github.com/askme765cs/golang-callmaps/releases/download/${RELEASE_TAG}/callmaps-bundle.zip"
+        
+        RESOURCE_DIR="${{ github.workspace }}/GolangAnalyzerExtension/src/main/resources/calling_func_name"
+        
+        # Clean calling_func_name directory
+        echo "Cleaning calling_func_name directory..."
+        rm -rf $RESOURCE_DIR
+        mkdir -p $RESOURCE_DIR
+        
+        echo "Downloading data from ${RELEASE_TAG} Release..."
+        curl -L -o callmaps.zip $DOWNLOAD_URL
+        
+        echo "Extracting callmap data..."
+        unzip callmaps.zip -d temp_unzip
+        
+        echo "Copying txt files to calling_func_name directory..."
+        cp temp_unzip/maps/*.txt $RESOURCE_DIR/
+        
+        echo "Cleaning up temporary files..."
+        rm -rf temp_unzip callmaps.zip
+        
+        echo "Successfully loaded dataset version ${RELEASE_TAG}"
+
     - name: Build with Gradle Wrapper
       run: gradle buildExtension
       working-directory: ./GolangAnalyzerExtension
@@ -58,7 +89,7 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: Ghidra_GolangAnalyzerExtension_${{ matrix.ghidra }}
+        name: Ghidra_GolangAnalyzerExtension_${{ matrix.ghidra }}_${{ github.event.inputs.callmap_tag || 'latest' }}
         path: GolangAnalyzerExtension/dist/*.zip
 
   release:
