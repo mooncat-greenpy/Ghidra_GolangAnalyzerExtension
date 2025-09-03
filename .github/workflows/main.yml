@@ -56,6 +56,13 @@ jobs:
       with:
         gradle-version: '8.5'
 
+    - name: Get latest Go version from callmaps repository
+      id: get_latest_version
+      run: |
+        LATEST_TAG=$(curl -s "https://api.github.com/repos/askme765cs/golang-callmaps/releases" | grep -o '"tag_name": "[^"]*' | grep -o '[^"]*$' | head -2 | tail -1)
+        echo "latest_go_version=${LATEST_TAG}" >> $GITHUB_OUTPUT
+        echo "Latest Go version in callmaps repository: ${LATEST_TAG}"
+
     - name: Download and extract callmap data
       run: |
         RELEASE_TAG=${{ github.event.inputs.callmap_tag || 'latest' }}
@@ -81,6 +88,7 @@ jobs:
         rm -rf temp_unzip callmaps.zip
         
         echo "Successfully loaded dataset version ${RELEASE_TAG}"
+        echo "Latest supported Go version: ${{ steps.get_latest_version.outputs.latest_go_version }}"
 
     - name: Build with Gradle Wrapper
       run: gradle buildExtension
