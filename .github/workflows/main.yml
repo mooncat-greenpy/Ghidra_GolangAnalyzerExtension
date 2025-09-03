@@ -8,10 +8,6 @@
 name: Build Extension
 
 on:
-  push:
-    branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
   workflow_dispatch:
     inputs:
       callmap_tag:
