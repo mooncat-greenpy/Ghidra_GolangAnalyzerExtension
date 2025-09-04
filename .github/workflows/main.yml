@@ -1,0 +1,191 @@
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+# This workflow will build a Java project with Gradle and cache/restore any dependencies to improve the workflow execution time
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-gradle
+
+name: Build Extension
+
+on:
+  workflow_dispatch:
+    inputs:
+      callmap_tag:
+        description: 'Callmap dataset tag to use (e.g. "go1.25.3", defaults to "latest")'
+        required: true
+        default: 'latest'
+      create_release:
+        description: 'Create release after build'
+        required: true
+        default: false
+        type: boolean
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    strategy:
+      max-parallel: 3
+      matrix:
+        ghidra:
+          - "11.4.2"
+          - "11.4.1"
+          - "11.4"
+          - "11.3.2"
+          - "11.3.1"
+          - "11.3"
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v5
+
+    - name: Setup JDK
+      uses: actions/setup-java@v5
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+
+    - name: Setup Ghidra
+      uses: antoniovazquezblanco/setup-ghidra@v2.0.12
+      with:
+        version: ${{ matrix.ghidra }}
+
+    # Configure Gradle for optimal use in GitHub Actions, including caching of downloaded dependencies.
+    # See: https://github.com/gradle/actions/blob/main/setup-gradle/README.md
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@017a9effdb900e5b5b2fddfb590a105619dca3c3 # v4.4.2
+      with:
+        gradle-version: '8.5'
+
+    - name: Get latest Go version from callmaps repository
+      id: get_latest_version
+      run: |
+        LATEST_TAG=$(curl -s "https://api.github.com/repos/askme765cs/golang-callmaps/releases" | grep -o '"tag_name": "[^"]*' | grep -o '[^"]*$' | head -2 | tail -1)
+        echo "latest_go_version=${LATEST_TAG}" >> $GITHUB_OUTPUT
+        echo "Latest Go version in callmaps repository: ${LATEST_TAG}"
+
+    - name: Download and extract callmap data
+      run: |
+        RELEASE_TAG=${{ github.event.inputs.callmap_tag || 'latest' }}
+        DOWNLOAD_URL="https://github.com/askme765cs/golang-callmaps/releases/download/${RELEASE_TAG}/callmaps-bundle.zip"
+        
+        RESOURCE_DIR="${{ github.workspace }}/GolangAnalyzerExtension/src/main/resources/calling_func_name"
+        
+        # Clean calling_func_name directory
+        echo "Cleaning calling_func_name directory..."
+        rm -rf $RESOURCE_DIR
+        mkdir -p $RESOURCE_DIR
+        
+        echo "Downloading data from ${RELEASE_TAG} Release..."
+        curl -L -o callmaps.zip $DOWNLOAD_URL
+        
+        echo "Extracting callmap data..."
+        unzip callmaps.zip -d temp_unzip
+        
+        echo "Copying txt files to calling_func_name directory..."
+        cp temp_unzip/maps/*.txt $RESOURCE_DIR/
+        
+        echo "Cleaning up temporary files..."
+        rm -rf temp_unzip callmaps.zip
+        
+        echo "Successfully loaded dataset version ${RELEASE_TAG}"
+        echo "Latest supported Go version: ${{ steps.get_latest_version.outputs.latest_go_version }}"
+
+    - name: Build with Gradle Wrapper
+      run: gradle buildExtension
+      working-directory: ./GolangAnalyzerExtension
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: Ghidra_GolangAnalyzerExtension_${{ matrix.ghidra }}_${{ github.event.inputs.callmap_tag || 'latest' }}
+        path: GolangAnalyzerExtension/dist/*.zip
+
+  release:
+    runs-on: "ubuntu-latest"
+    needs: [build]
+
+    steps:
+    - name: Download binaries
+      uses: actions/download-artifact@v5
+
+    - name: Release 
+      uses: softprops/action-gh-release@v2
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: |
+          Ghidra_GolangAnalyzerExtension_*/*
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  create-release:
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true' }}
+    permissions:
+      contents: write
+      
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v5
+      
+    - name: Get latest Go version from callmaps repository
+      id: get_latest_version
+      run: |
+        LATEST_TAG=$(curl -s "https://api.github.com/repos/askme765cs/golang-callmaps/releases" | grep -o '"tag_name": "[^"]*' | grep -o '[^"]*$' | head -2 | tail -1)
+        echo "latest_go_version=${LATEST_TAG}" >> $GITHUB_OUTPUT
+        echo "Latest Go version: ${LATEST_TAG}"
+
+    - name: Generate release notes
+      run: |
+        cat > RELEASE_NOTES.md << 'EOF'
+        # Ghidra Golang Analyzer Extension - Latest Release
+        
+        ## Supported Go Version
+        This release includes callmap data for Go versions up to **${{ steps.get_latest_version.outputs.latest_go_version }}**
+        
+        ## What's Included
+        - Latest callmap data from golang-callmaps repository
+        - Enhanced function call detection for Go binaries
+        - Support for multiple Ghidra versions (11.4.x, 11.3.x, etc.)
+        
+        ## Installation
+        1. Download the appropriate zip file for your Ghidra version
+        2. Extract to your Ghidra extensions directory
+        3. Restart Ghidra
+        
+        ## Files in This Release
+        EOF
+        
+        # List all files
+        for file in */*.zip; do
+          if [ -f "$file" ]; then
+            echo "- $(basename "$file")" >> RELEASE_NOTES.md
+          fi
+        done
+        
+        echo "" >> RELEASE_NOTES.md
+        echo "---" >> RELEASE_NOTES.md
+        echo "*Built with Go callmap data version: ${{ steps.get_latest_version.outputs.latest_go_version }}*" >> RELEASE_NOTES.md
+        echo "*Generated on: $(date -u)*" >> RELEASE_NOTES.md
+
+    - name: Create Latest Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: latest
+        name: Ghidra Golang Analyzer Extension - Latest Release
+        body_path: RELEASE_NOTES.md
+        files: |
+          */*.zip
+        draft: false
+        prerelease: false
+        make_latest: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Release Summary
+      run: |
+        echo "✅ Release created successfully!"
+        echo "📦 Tag: latest"
+        echo "🐹 Supported Go version: ${{ steps.get_latest_version.outputs.latest_go_version }}"
+        echo "🔗 Release URL: https://github.com/${{ github.repository }}/releases/latest"
