@@ -157,7 +157,7 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 		JLabel filename_num_panel=new JLabel(String.format("Number of filenames: %d", filename_list_size));
 		filename_num_panel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
 		panel.add(filename_num_panel);
-		JLabel datatype_num_panel=new JLabel(String.format("Number of datatyeps: %d", datatype_map_size));
+		JLabel datatype_num_panel=new JLabel(String.format("Number of datatypes: %d", datatype_map_size));
 		datatype_num_panel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
 		panel.add(datatype_num_panel);
 		JLabel string_num_panel=new JLabel(String.format("Number of strings: %d", string_map_size));
