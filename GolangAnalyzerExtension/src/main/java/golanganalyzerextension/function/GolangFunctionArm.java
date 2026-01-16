@@ -263,7 +263,7 @@ public class GolangFunctionArm extends GolangFunction {
 		} catch (InvalidInputException e) {
 		}
 
-		func_name=String.format("runtime.duffcopy_%#x_%s", size, get_func().getName());
+		func_name=String.format("runtime.duffcopy_%#x", size);
 
 		return true;
 	}
@@ -371,7 +371,7 @@ public class GolangFunctionArm extends GolangFunction {
 		} catch (InvalidInputException e) {
 		}
 
-		func_name=String.format("runtime.duffzero_%#x_%#x_%s", start, size, get_func().getName());
+		func_name=String.format("runtime.duffzero_%#x_%#x", start, size);
 
 		return true;
 	}
