@@ -2,6 +2,7 @@
 
 rm -rf dump
 mkdir -p dump/calling_func_name
+cp golang.mv.db dump/
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 REPO_ROOT=$(cd "$SCRIPT_DIR/.." && pwd)
@@ -31,6 +32,7 @@ while IFS= read -r -d '' target; do
   name=$(basename "$target")
   printf '%s\n' "$name"
   "$GHIDRA_INSTALL_DIR/support/analyzeHeadless" "$PROJECT_LOCATION" "$PROJECT_NAME" -import "$target" -scriptPath "$(pwd)" -postScript dump_calling_func.py
+  "$GHIDRA_INSTALL_DIR/support/analyzeHeadless" "$PROJECT_LOCATION" "$PROJECT_NAME" -noanalysis -process "$name" -scriptPath "$(pwd)" -postScript AddGolangProgramToH2BSimDatabaseScript.java
 done < <(find "$TARGETS_DIR" -mindepth 1 -maxdepth 1 -print0)
 
 python3 make_common_calling_func.py
