@@ -71,12 +71,15 @@ public class ModuleData {
 	}
 
 	private boolean parse() {
+		boolean is_go126=false;
 		boolean is_go120=false;
 		boolean is_go118=false;
 		boolean is_go116=false;
 		boolean is_go18=false;
 		boolean is_go17=false;
-		if(go_bin.ge_go_version(GolangVersion.GO_1_20_LOWEST)) {
+		if(go_bin.ge_go_version(GolangVersion.GO_1_26_LOWEST)) {
+			is_go126=true;
+		} else if(go_bin.ge_go_version(GolangVersion.GO_1_20_LOWEST)) {
 			is_go120=true;
 		} else if(go_bin.ge_go_version(GolangVersion.GO_1_18_LOWEST)) {
 			is_go118=true;
@@ -90,6 +93,13 @@ public class ModuleData {
 
 		// runtime/symtab.go
 		boolean parsed=false;
+		if(!parsed || is_go126) {
+			try {
+				parsed=parse_go126(base_addr);
+			} catch (BinaryAccessException e) {
+				Logger.append_message(String.format("Failed to parse moduledata: addr=%s, ver=go1.26", base_addr));
+			}
+		}
 		if(!parsed || is_go120) {
 			try {
 				parsed=parse_go120(base_addr);
@@ -170,6 +180,33 @@ public class ModuleData {
 		} catch(InvalidBinaryStructureException e) {
 			return false;
 		}
+		return true;
+	}
+
+	private boolean parse_go126(Address base_addr) throws BinaryAccessException {
+		int pointer_size=go_bin.get_pointer_size();
+
+		long tmp_type_addr_value=go_bin.get_address_value(base_addr, 37*pointer_size, pointer_size);
+		Address tmp_type_addr=go_bin.get_address(tmp_type_addr_value);
+		long tmp_typelink_addr_value=go_bin.get_address_value(base_addr, 45*pointer_size, pointer_size);
+		Address tmp_typelink_addr=go_bin.get_address(tmp_typelink_addr_value);
+		long tmp_typelink_len=go_bin.get_address_value(base_addr, 46*pointer_size, pointer_size);
+		Address tmp_text_addr=go_bin.get_address(go_bin.get_address_value(base_addr, 22*pointer_size, pointer_size));
+
+		if(!check_type(tmp_type_addr) || !check_typelink(tmp_typelink_addr)) {
+			return false;
+		}
+
+		if(!is_golang_type(tmp_type_addr, go_bin.get_address_value(tmp_typelink_addr, 0, 4), false)) {
+			return false;
+		}
+
+		type_addr=tmp_type_addr;
+		typelink_addr=tmp_typelink_addr;
+		typelink_len=tmp_typelink_len;
+		text_addr=tmp_text_addr;
+		go_version=new GolangVersion(GolangVersion.GO_1_26_LOWEST);
+
 		return true;
 	}
 

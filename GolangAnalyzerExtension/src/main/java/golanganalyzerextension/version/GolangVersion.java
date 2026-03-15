@@ -24,6 +24,11 @@ public class GolangVersion {
 	public static final String GO_1_20_LOWEST="go1.20beta1";
 	public static final String GO_1_21_LOWEST="go1.21beta1";
 	public static final String GO_1_22_LOWEST="go1.22beta1";
+	public static final String GO_1_23_LOWEST="go1.23beta1";
+	public static final String GO_1_24_LOWEST="go1.24beta1";
+	public static final String GO_1_25_LOWEST="go1.25beta1";
+	public static final String GO_1_26_LOWEST="go1.26beta1";
+	public static final String GO_1_27_LOWEST="go1.27beta1";
 
 	private static final String GO_VERSION_PATTERN="go\\d+(\\.\\d+(\\.\\d+)?)?(beta\\d+|rc\\d+)?";
 	// major minor patch

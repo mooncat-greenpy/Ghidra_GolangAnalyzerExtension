@@ -67,11 +67,15 @@ public class FuncInfo {
 	private FuncInfoTab parse_func_info_tab(GolangBinary go_bin, Address func_list_base, Address tab_addr) throws InvalidBinaryStructureException {
 		boolean is_go116=false;
 		boolean is_go118=false;
+		boolean is_go126=false;
 		if(go_bin.ge_go_version(GolangVersion.GO_1_16_LOWEST)) {
 			is_go116=true;
 		}
 		if(go_bin.ge_go_version(GolangVersion.GO_1_18_LOWEST)) {
 			is_go118=true;
+		}
+		if(go_bin.ge_go_version(GolangVersion.GO_1_26_LOWEST)) {
+			is_go126=true;
 		}
 
 		int pointer_size=go_bin.get_pointer_size();
@@ -106,7 +110,7 @@ public class FuncInfo {
 		} catch (BinaryAccessException e) {
 			throw new InvalidBinaryStructureException(String.format("Invalid FuncInfo tab: message=%s", e.getMessage()));
 		}
-		if(func_addr_value==0 || info_offset==0) {
+		if((func_addr_value==0 && !is_go126) || info_offset==0) {
 			throw new InvalidBinaryStructureException("Invalid FuncInfo tab entry");
 		}
 
@@ -154,20 +158,32 @@ public class FuncInfo {
 
 	private void parse_func_info(GolangBinary go_bin, Address func_list_base, FuncInfoTab info_tab) throws InvalidBinaryStructureException {
 		boolean is_go118=false;
+		boolean is_go126=false;
 		if(go_bin.ge_go_version(GolangVersion.GO_1_18_LOWEST)) {
 			is_go118=true;
+		}
+		if(go_bin.ge_go_version(GolangVersion.GO_1_26_LOWEST)) {
+			is_go126=true;
 		}
 
 		int pointer_size=go_bin.get_pointer_size();
 		Address pcheader_base=go_bin.get_pcheader_base();
 
 		long func_entry_value;
+		long text=0;
 		try {
 			int functab_field_size=is_go118?4:pointer_size;
 
 			func_entry_value=go_bin.get_address_value(info_tab.get_info_addr(), functab_field_size);
 			if(is_go118) {
-				long text=go_bin.get_address_value(pcheader_base, 8+pointer_size*2, pointer_size);
+				text=go_bin.get_address_value(pcheader_base, 8+pointer_size*2, pointer_size);
+				if (text==0) {
+					ModuleData module_data=go_bin.get_module_data().orElse(null);
+					if (module_data==null) {
+						throw new InvalidBinaryStructureException("Invalid text addr");
+					}
+					text=module_data.get_text_addr().getOffset();
+				}
 				func_entry_value+=text;
 			}
 		} catch (BinaryAccessException e) {
@@ -176,7 +192,7 @@ public class FuncInfo {
 		if (func_entry_value==0) {
 			throw new InvalidBinaryStructureException("Invalid FuncInfo.func_addr");
 		}
-		if (info_tab.get_func_addr().getOffset()!=func_entry_value && !force) {
+		if (info_tab.get_func_addr().getOffset()+(is_go126?text:0)!=func_entry_value && !force) {
 			throw new InvalidBinaryStructureException(String.format("FuncInfo.func_addr mismatch: %x != %x", info_tab.get_func_addr().getOffset(), func_entry_value));
 		}
 
