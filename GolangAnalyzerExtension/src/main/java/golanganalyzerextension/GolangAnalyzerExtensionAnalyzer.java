@@ -24,7 +24,7 @@ import golanganalyzerextension.string.StringExtractor;
 
 public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 
-	public static final String VERSION="1.2.5-beta1";
+	public static final String VERSION="1.3.0";
 	AnalyzerOption analyzer_option;
 
 	public GolangAnalyzerExtensionAnalyzer() {

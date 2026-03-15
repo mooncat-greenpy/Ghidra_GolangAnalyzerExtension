@@ -1,6 +1,6 @@
 # GolangAnalyzerExtension
 The GolangAnalyzerExtension facilitates the analysis of Golang binaries using Ghidra.
-It supports go1.6 through go1.25.
+It supports go1.6 through go1.26.
 
 ## Features
 This Ghidra plugin provides the following features for analyzing Golang binaries:
