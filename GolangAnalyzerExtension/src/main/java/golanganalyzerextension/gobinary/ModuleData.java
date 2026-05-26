@@ -93,7 +93,8 @@ public class ModuleData {
 
 		// runtime/symtab.go
 		boolean parsed=false;
-		if(!parsed || is_go126) {
+		// The PcHeader class cannot distinguish between Go 1.20 and Go 1.26.
+		if(!parsed || is_go126 || is_go120) {
 			try {
 				parsed=parse_go126(base_addr);
 			} catch (BinaryAccessException e) {
@@ -102,7 +103,7 @@ public class ModuleData {
 		}
 		if(!parsed || is_go120) {
 			try {
-				parsed=parse_go120(base_addr);
+				parsed|=parse_go120(base_addr);
 			} catch (BinaryAccessException e) {
 				Logger.append_message(String.format("Failed to parse moduledata: addr=%s, ver=go1.20", base_addr));
 			}
