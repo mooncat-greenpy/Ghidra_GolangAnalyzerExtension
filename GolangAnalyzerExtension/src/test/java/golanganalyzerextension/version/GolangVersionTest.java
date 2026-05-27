@@ -45,9 +45,26 @@ public class GolangVersionTest extends AbstractGhidraHeadlessIntegrationTest {
 				Arguments.of(true, "go1.1.1beta1"),
 				Arguments.of(true, "go1.16"),
 				Arguments.of(true, "go1.16.7"),
+				Arguments.of(true, "go1.26.3-X:nodwarf5"),
 				Arguments.of(false, ""),
 				Arguments.of(false, "go1.16.rc1"),
 				Arguments.of(false, "go1.16.7.8")
+			);
+	}
+
+	@ParameterizedTest
+	@MethodSource("test_get_version_str_params")
+	public void test_get_version_str(String expected, String str) throws Exception {
+		initialize(new HashMap<>());
+
+		GolangVersion go_version=new GolangVersion(str);
+		assertEquals(go_version.get_version_str(), expected);
+	}
+
+	static Stream<Arguments> test_get_version_str_params() throws Throwable {
+		return Stream.of(
+				Arguments.of("go1.16.7", "go1.16.7"),
+				Arguments.of("go1.26.3", "go1.26.3-X:nodwarf5")
 			);
 	}
 

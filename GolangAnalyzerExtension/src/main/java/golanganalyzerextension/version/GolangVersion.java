@@ -1,5 +1,8 @@
 package golanganalyzerextension.version;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import golanganalyzerextension.exceptions.InvalidGolangVersionFormatException;
 
 public class GolangVersion {
@@ -31,6 +34,7 @@ public class GolangVersion {
 	public static final String GO_1_27_LOWEST="go1.27beta1";
 
 	private static final String GO_VERSION_PATTERN="go\\d+(\\.\\d+(\\.\\d+)?)?(beta\\d+|rc\\d+)?";
+	private static final Pattern GO_VERSION_PREFIX_PATTERN=Pattern.compile("^("+GO_VERSION_PATTERN+")(?:$|-.*)");
 	// major minor patch
 	private static final int PART_NUM=3;
 	// normal rc beta
@@ -43,10 +47,10 @@ public class GolangVersion {
 	private int[][] version_data;
 
 	public GolangVersion(String go_version) throws InvalidGolangVersionFormatException {
-		if(!is_go_version(go_version)) {
+		version_str=extract_go_version(go_version);
+		if(version_str==null) {
 			throw new InvalidGolangVersionFormatException(String.format("Invalid Go version: str=%s", go_version));
 		}
-		version_str=go_version;
 		version_data=new int[PART_NUM][VALUE_NUM];
 		parse_version_str();
 	}
@@ -56,7 +60,18 @@ public class GolangVersion {
 	}
 
 	public static boolean is_go_version(String str) {
-		return str.matches(GO_VERSION_PATTERN);
+		return extract_go_version(str)!=null;
+	}
+
+	private static String extract_go_version(String str) {
+		if(str==null) {
+			return null;
+		}
+		Matcher m=GO_VERSION_PREFIX_PATTERN.matcher(str);
+		if(m.matches()) {
+			return m.group(1);
+		}
+		return null;
 	}
 
 	public String get_version_str() {
