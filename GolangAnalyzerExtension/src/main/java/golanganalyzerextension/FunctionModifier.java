@@ -1,6 +1,7 @@
 package golanganalyzerextension;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -8,7 +9,10 @@ import ghidra.program.model.address.Address;
 import ghidra.program.model.data.VoidDataType;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Function.FunctionUpdateType;
+import ghidra.program.model.listing.Instruction;
+import ghidra.program.model.listing.InstructionIterator;
 import ghidra.program.model.listing.Parameter;
+import ghidra.program.model.scalar.Scalar;
 import ghidra.program.model.symbol.SourceType;
 import golanganalyzerextension.exceptions.InvalidBinaryStructureException;
 import golanganalyzerextension.function.FileLine;
@@ -261,12 +265,72 @@ public class FunctionModifier {
 		Address addr=gofunc.get_func_addr();
 		Map<Integer, FileLine> comment_map=gofunc.get_file_line_comment_map();
 
+		Map<Integer, Address> wasm_pc_to_addr=null;
+		if (go_bin.is_wasm()) {
+			wasm_pc_to_addr=build_wasm_pc_marker_map(gofunc);
+		}
+
 		for(Integer key: comment_map.keySet()) {
 			try {
-				go_bin.set_comment(go_bin.get_address(addr, key), ghidra.program.model.listing.CodeUnit.PRE_COMMENT, comment_map.get(key).toString());
+				Address comment_addr;
+				if (wasm_pc_to_addr != null) {
+					comment_addr = wasm_pc_to_addr.get(key);
+					if (comment_addr == null) {
+						// No PC marker for this pseudo-PC in the WASM body; skip rather than
+						// place the annotation at a misleading byte offset.
+						continue;
+					}
+				} else {
+					comment_addr = go_bin.get_address(addr, key);
+				}
+				go_bin.set_comment(comment_addr, ghidra.program.model.listing.CodeUnit.PRE_COMMENT, comment_map.get(key).toString());
 			} catch (BinaryAccessException e) {
 				Logger.append_message(String.format("Failed to add file line comment: addr=%s, name=%s, message=%s", gofunc.get_func_addr(), gofunc.get_func_name(), e.getMessage()));
 			}
 		}
+	}
+
+	// Go's WASM emits an `i64.const (funcEntry<<16)|pseudoPC; i64.store local_8` pair
+	// at the start of each Go-level instruction to update the runtime PC global. By
+	// scanning the function body for these constants we recover a mapping from each
+	// pcln pseudo-PC value to its actual byte address within the WASM body. Without
+	// this, treating the pcln key as a byte offset crams every source-line annotation
+	// into the dispatch-chain bytes at the start of the function.
+	private Map<Integer, Address> build_wasm_pc_marker_map(GolangFunction gofunc) {
+		Map<Integer, Address> map = new HashMap<>();
+		Function func = gofunc.get_func();
+		if (func == null) {
+			return map;
+		}
+		int func_entry = -1;
+		InstructionIterator iter = func.getProgram().getListing().getInstructions(func.getBody(), true);
+		while (iter.hasNext()) {
+			Instruction inst = iter.next();
+			if (!inst.getMnemonicString().equals("i64.const")) {
+				continue;
+			}
+			Object[] objs = inst.getOpObjects(0);
+			for (Object o : objs) {
+				if (!(o instanceof Scalar)) {
+					continue;
+				}
+				long val = ((Scalar) o).getUnsignedValue();
+				int upper = (int) (val >>> 16);
+				int lower = (int) (val & 0xFFFF);
+				// PC markers have a funcEntry upper word that's well above any plausible
+				// numeric constant a function would push (Go's first user funcEntry is
+				// 0x1000 in our binaries). Anchor on the first such i64.const we see.
+				if (upper < 0x100) {
+					continue;
+				}
+				if (func_entry == -1) {
+					func_entry = upper;
+				}
+				if (upper == func_entry) {
+					map.putIfAbsent(lower, inst.getAddress());
+				}
+			}
+		}
+		return map;
 	}
 }
