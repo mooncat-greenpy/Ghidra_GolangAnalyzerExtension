@@ -597,6 +597,30 @@ public class GolangBinary {
 		return program.getLanguage().getProcessor().toString().equals("RISCV");
 	}
 
+	public boolean is_wasm() {
+		return program.getLanguage().getProcessor().toString().equals("WebAssembly");
+	}
+
+	private WasmLayout wasm_layout;
+	private WasmLayout get_wasm_layout() {
+		if (wasm_layout == null) {
+			wasm_layout = new WasmLayout(this);
+		}
+		return wasm_layout;
+	}
+
+	public Address get_wasm_func_addr(int func_idx) throws BinaryAccessException {
+		return get_wasm_layout().get_func_addr(func_idx);
+	}
+
+	public long get_wasm_func_size(int func_idx) {
+		return get_wasm_layout().get_func_size(func_idx);
+	}
+
+	public int get_wasm_num_imports() {
+		return get_wasm_layout().get_num_imports();
+	}
+
 	public void disassemble(Address addr, long size) throws BinaryAccessException {
 		Address addr_end=get_address(addr, size);
 
