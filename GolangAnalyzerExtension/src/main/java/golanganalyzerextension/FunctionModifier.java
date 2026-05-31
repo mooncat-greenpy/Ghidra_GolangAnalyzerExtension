@@ -1,9 +1,11 @@
 package golanganalyzerextension;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.VoidDataType;
@@ -265,25 +267,43 @@ public class FunctionModifier {
 		Address addr=gofunc.get_func_addr();
 		Map<Integer, FileLine> comment_map=gofunc.get_file_line_comment_map();
 
-		Map<Integer, Address> wasm_pc_to_addr=null;
 		if (go_bin.is_wasm()) {
-			wasm_pc_to_addr=build_wasm_pc_marker_map(gofunc);
+			add_file_line_comment_wasm(gofunc, comment_map);
+			return;
 		}
 
 		for(Integer key: comment_map.keySet()) {
 			try {
-				Address comment_addr;
-				if (wasm_pc_to_addr != null) {
-					comment_addr = wasm_pc_to_addr.get(key);
-					if (comment_addr == null) {
-						// No PC marker for this pseudo-PC in the WASM body; skip rather than
-						// place the annotation at a misleading byte offset.
-						continue;
-					}
-				} else {
-					comment_addr = go_bin.get_address(addr, key);
+				go_bin.set_comment(go_bin.get_address(addr, key), ghidra.program.model.listing.CodeUnit.PRE_COMMENT, comment_map.get(key).toString());
+			} catch (BinaryAccessException e) {
+				Logger.append_message(String.format("Failed to add file line comment: addr=%s, name=%s, message=%s", gofunc.get_func_addr(), gofunc.get_func_name(), e.getMessage()));
+			}
+		}
+	}
+
+	private void add_file_line_comment_wasm(GolangFunction gofunc, Map<Integer, FileLine> comment_map) {
+		TreeMap<Integer, Address> markers = new TreeMap<>(build_wasm_pc_marker_map(gofunc));
+		if (markers.isEmpty()) {
+			return;
+		}
+		List<Integer> keys = new ArrayList<>(comment_map.keySet());
+		Collections.sort(keys);
+		for (int i = 0; i < keys.size(); i++) {
+			int key = keys.get(i);
+			int next_key = (i + 1 < keys.size()) ? keys.get(i + 1) : Integer.MAX_VALUE;
+			Address target = markers.get(key);
+			if (target == null) {
+				// Go didn't emit a runtime-PC marker at this pseudo-PC. Fall back to the
+				// closest marker that still belongs to this pcln entry's range
+				// [key, next_key) so we don't bleed the annotation into the next line range.
+				Map.Entry<Integer, Address> ceiling = markers.ceilingEntry(key);
+				if (ceiling == null || ceiling.getKey() >= next_key) {
+					continue;
 				}
-				go_bin.set_comment(comment_addr, ghidra.program.model.listing.CodeUnit.PRE_COMMENT, comment_map.get(key).toString());
+				target = ceiling.getValue();
+			}
+			try {
+				go_bin.set_comment(target, ghidra.program.model.listing.CodeUnit.PRE_COMMENT, comment_map.get(key).toString());
 			} catch (BinaryAccessException e) {
 				Logger.append_message(String.format("Failed to add file line comment: addr=%s, name=%s, message=%s", gofunc.get_func_addr(), gofunc.get_func_name(), e.getMessage()));
 			}
