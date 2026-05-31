@@ -64,6 +64,17 @@ public class FuncInfo {
 		return;
 	}
 
+	// Go WASM funtab encoding: each entry is a 32-bit "runtime funcEntry" value that
+	// increments by 1 between consecutive user functions, starting at some constant for
+	// the first entry. The mapping to wasm-module funcID is:
+	//     wasm_func_idx = (current_entry - first_entry) + num_imports
+	private static int wasm_entry_to_func_idx(GolangBinary go_bin, Address func_list_base, long current_entry, int field_size) throws BinaryAccessException {
+		long base_entry = go_bin.get_address_value(func_list_base, field_size);
+		// For Go ≥1.18, pcheader.textStart on WASM is 0, so we don't add it here either.
+		long delta = current_entry - base_entry;
+		return (int) (delta + go_bin.get_wasm_num_imports());
+	}
+
 	private FuncInfoTab parse_func_info_tab(GolangBinary go_bin, Address func_list_base, Address tab_addr) throws InvalidBinaryStructureException {
 		boolean is_go116=false;
 		boolean is_go118=false;
@@ -80,6 +91,7 @@ public class FuncInfo {
 
 		int pointer_size=go_bin.get_pointer_size();
 		Address pcheader_base=go_bin.get_pcheader_base();
+		boolean is_wasm=go_bin.is_wasm();
 
 		long func_addr_value;
 		Address func_addr;
@@ -93,7 +105,12 @@ public class FuncInfo {
 			if(is_go118) {
 				func_addr_value+=go_bin.get_address_value(pcheader_base, 8+pointer_size*2, pointer_size);
 			}
-			func_addr = go_bin.get_address(func_addr_value);
+			if(is_wasm) {
+				int func_idx=wasm_entry_to_func_idx(go_bin, func_list_base, func_addr_value, functab_field_size);
+				func_addr = go_bin.get_wasm_func_addr(func_idx);
+			} else {
+				func_addr = go_bin.get_address(func_addr_value);
+			}
 
 			info_offset=go_bin.get_address_value(tab_addr, functab_field_size, functab_field_size);
 			if(is_go116) {
@@ -106,7 +123,15 @@ public class FuncInfo {
 			if(is_go118) {
 				func_end_value+=go_bin.get_address_value(pcheader_base, 8+pointer_size*2, pointer_size);
 			}
-			func_end_addr=go_bin.get_address(func_end_value);
+			if(is_wasm) {
+				// In WASM the "end PC" is the next func's runtime entry; we want a real byte
+				// size, so synthesize func_end = func_addr + actual code body size.
+				int func_idx=wasm_entry_to_func_idx(go_bin, func_list_base, func_addr_value, functab_field_size);
+				long size=go_bin.get_wasm_func_size(func_idx);
+				func_end_addr=go_bin.get_address(func_addr, size);
+			} else {
+				func_end_addr=go_bin.get_address(func_end_value);
+			}
 		} catch (BinaryAccessException e) {
 			throw new InvalidBinaryStructureException(String.format("Invalid FuncInfo tab: message=%s", e.getMessage()));
 		}
@@ -148,6 +173,8 @@ public class FuncInfo {
 	}
 
 	public long get_func_size() {
+		// In WASM, both addresses already point into the WasmLoader's CODE_BASE space
+		// (set up by parse_func_info_tab), so this subtraction yields the actual body size.
 		return get_info_tab().get_next_func_addr().getOffset()-get_info_tab().get_func_addr().getOffset();
 	}
 
@@ -168,6 +195,7 @@ public class FuncInfo {
 
 		int pointer_size=go_bin.get_pointer_size();
 		Address pcheader_base=go_bin.get_pcheader_base();
+		boolean is_wasm=go_bin.is_wasm();
 
 		long func_entry_value;
 		long text=0;
@@ -192,12 +220,17 @@ public class FuncInfo {
 		if (func_entry_value==0) {
 			throw new InvalidBinaryStructureException("Invalid FuncInfo.func_addr");
 		}
-		if (info_tab.get_func_addr().getOffset()+(is_go126?text:0)!=func_entry_value && !force) {
+		if (!is_wasm && info_tab.get_func_addr().getOffset()+(is_go126?text:0)!=func_entry_value && !force) {
 			throw new InvalidBinaryStructureException(String.format("FuncInfo.func_addr mismatch: %x != %x", info_tab.get_func_addr().getOffset(), func_entry_value));
 		}
 
 		try {
-			func_addr=go_bin.get_address(func_entry_value);
+			if (is_wasm) {
+				int func_idx=wasm_entry_to_func_idx(go_bin, func_list_base, func_entry_value, is_go118?4:pointer_size);
+				func_addr=go_bin.get_wasm_func_addr(func_idx);
+			} else {
+				func_addr=go_bin.get_address(func_entry_value);
+			}
 			name_offset=(int)go_bin.get_address_value(info_tab.get_info_addr(), is_go118?4:pointer_size, 4);
 			arg_size=(int)go_bin.get_address_value(info_tab.get_info_addr(), (is_go118?4:pointer_size)+4, 4);
 			pcsp_offset=(int)go_bin.get_address_value(info_tab.get_info_addr(), (is_go118?4:pointer_size)+3*4, 4);

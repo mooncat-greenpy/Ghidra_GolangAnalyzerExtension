@@ -195,6 +195,12 @@ public class FunctionModifier {
 	}
 
 	private boolean init_hardcode_functions(){
+		// On WASM the WasmLoader has already created a function for every entry in the
+		// module (often >1000). The memcpy/memset disassembly heuristics here aren't
+		// meaningful for WASM and just produce noisy logs, so skip the pass.
+		if (go_bin.is_wasm()) {
+			return true;
+		}
 		for(Function func : go_bin.get_functions()) {
 			Address entry_addr=func.getEntryPoint();
 			GolangFunction find=gofunc_list.stream().filter(v -> v.get_func_addr().equals(entry_addr)).findFirst().orElse(null);
