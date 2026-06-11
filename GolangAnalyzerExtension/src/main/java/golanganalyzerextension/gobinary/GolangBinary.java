@@ -598,7 +598,7 @@ public class GolangBinary {
 	}
 
 	public boolean is_wasm() {
-		return program.getLanguage().getProcessor().toString().equals("WebAssembly");
+		return get_wasm_layout().is_parse_successful();
 	}
 
 	private WasmLayout wasm_layout;
