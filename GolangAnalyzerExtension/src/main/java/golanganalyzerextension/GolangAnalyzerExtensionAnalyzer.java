@@ -101,7 +101,7 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 			}
 
 			if(go_bin.is_wasm()) {
-				WasmReferenceLinker wasm_linker=new WasmReferenceLinker(program, go_bin);
+				WasmReferenceLinker wasm_linker=new WasmReferenceLinker(program, go_bin, service);
 				wasm_linker.link();
 			}
 		} catch(InvalidBinaryStructureException e) {

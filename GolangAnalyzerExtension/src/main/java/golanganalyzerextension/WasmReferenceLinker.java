@@ -1,5 +1,8 @@
 package golanganalyzerextension;
 
+import java.util.List;
+import java.util.Map;
+
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressSpace;
 import ghidra.program.model.listing.Data;
@@ -17,7 +20,10 @@ import ghidra.program.model.symbol.ReferenceManager;
 import ghidra.program.model.symbol.SourceType;
 import ghidra.program.model.symbol.Symbol;
 import ghidra.program.model.symbol.SymbolTable;
+import golanganalyzerextension.datatype.GolangDatatypeRecord;
+import golanganalyzerextension.function.GolangFunctionRecord;
 import golanganalyzerextension.gobinary.GolangBinary;
+import golanganalyzerextension.service.GolangAnalyzerExtensionService;
 
 // Walks WASM function bodies and attaches DATA references from i32.const/i64.const
 // instructions to their linear-memory targets when those targets have a defined data
@@ -25,16 +31,18 @@ import golanganalyzerextension.gobinary.GolangBinary;
 // constants like `0x36878`; with it the decompiler prints the symbol name instead.
 public class WasmReferenceLinker {
 
-	private static final long CODE_BASE = 0x80000000L;
+	// Depends on https://github.com/nneonneo/ghidra-wasm-plugin
 	private static final long MEMORY_LOW = 0x1000L;
 	private static final long MEMORY_HIGH = 0x7f000000L;
 
 	private final Program program;
 	private final GolangBinary go_bin;
+	private final GolangAnalyzerExtensionService service;
 
-	public WasmReferenceLinker(Program program, GolangBinary go_bin) {
+	public WasmReferenceLinker(Program program, GolangBinary go_bin, GolangAnalyzerExtensionService service) {
 		this.program = program;
 		this.go_bin = go_bin;
+		this.service = service;
 	}
 
 	public void link() {
@@ -50,13 +58,13 @@ public class WasmReferenceLinker {
 			return;
 		}
 
-		FunctionIterator funcs = program.getFunctionManager().getFunctions(true);
-		while (funcs.hasNext()) {
-			Function func = funcs.next();
-			Address entry = func.getEntryPoint();
-			if (entry.getOffset() < CODE_BASE) {
+		List<GolangFunctionRecord> gofuncs = service.get_function_list();
+		for (GolangFunctionRecord gofunc : gofuncs) {
+			Function func=go_bin.get_function(gofunc.get_func_addr()).orElse(null);
+			if (func == null) {
 				continue;
 			}
+			Address entry = func.getEntryPoint();
 			Instruction inst = listing.getInstructionAt(entry);
 			while (inst != null && func.getBody().contains(inst.getAddress())) {
 				try_link(inst, ram, listing, sym_tab, ref_mgr, eq_tab);
@@ -70,6 +78,7 @@ public class WasmReferenceLinker {
 		if (!mnem.equals("i64.const") && !mnem.equals("i32.const")) {
 			return;
 		}
+		Map<Long, GolangDatatypeRecord> datatype_map = service.get_datatype_map();
 		int num_ops = inst.getNumOperands();
 		for (int op = 0; op < num_ops; op++) {
 			Object[] objs = inst.getOpObjects(op);
@@ -78,7 +87,7 @@ public class WasmReferenceLinker {
 					continue;
 				}
 				long val = ((Scalar) o).getUnsignedValue();
-				if (val < MEMORY_LOW || val >= MEMORY_HIGH) {
+				if ((val < MEMORY_LOW || val >= MEMORY_HIGH) && !datatype_map.containsKey(val)) {
 					continue;
 				}
 				Address target;
@@ -102,16 +111,20 @@ public class WasmReferenceLinker {
 
 	private String pick_label(Address target, Listing listing, SymbolTable sym_tab) {
 		Symbol s = sym_tab.getPrimarySymbol(target);
-		if (s != null) {
-			SourceType src = s.getSource();
-			if (src == SourceType.USER_DEFINED || src == SourceType.IMPORTED) {
-				return s.getName();
-			}
+		if (s == null) {
+			return null;
 		}
-		Data defined = listing.getDefinedDataAt(target);
-		if (defined != null && s != null) {
+
+		SourceType src = s.getSource();
+		if (src == SourceType.USER_DEFINED || src == SourceType.IMPORTED) {
 			return s.getName();
 		}
+
+		Data defined = listing.getDefinedDataAt(target);
+		if (defined != null) {
+			return s.getName();
+		}
+
 		return null;
 	}
 
