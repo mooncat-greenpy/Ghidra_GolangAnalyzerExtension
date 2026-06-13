@@ -99,6 +99,11 @@ public class GolangAnalyzerExtensionAnalyzer extends AbstractAnalyzer {
 				StringExtractor str_extractor=new StringExtractor(go_bin, service);
 				str_extractor.modify();
 			}
+
+			if(go_bin.is_wasm()) {
+				WasmReferenceLinker wasm_linker=new WasmReferenceLinker(program, go_bin, service);
+				wasm_linker.link();
+			}
 		} catch(InvalidBinaryStructureException e) {
 			Logger.append_message(e.getMessage());
 		} catch(Exception e) {
