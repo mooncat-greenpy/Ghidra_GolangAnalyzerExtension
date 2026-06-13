@@ -2,7 +2,6 @@ package golanganalyzerextension.gobinary;
 
 import ghidra.program.model.address.Address;
 import golanganalyzerextension.gobinary.exceptions.BinaryAccessException;
-import golanganalyzerextension.log.Logger;
 
 public class WasmLayout {
 
@@ -26,7 +25,6 @@ public class WasmLayout {
 
 	private final GolangBinary go_bin;
 	private CodeSection code_section;
-	private int num_imports;
 	private boolean ok;
 
 	private static class CodeSection {
@@ -69,10 +67,6 @@ public class WasmLayout {
 		return ok;
 	}
 
-	public int get_num_imports() {
-		return num_imports;
-	}
-
 	public Address get_func_addr(int func_idx) throws BinaryAccessException {
 		CodeFunction func = get_code_func(func_idx);
 		if (func == null) {
@@ -90,7 +84,7 @@ public class WasmLayout {
 		if (code_section == null) {
 			return null;
 		}
-		return code_section.get_func(func_idx - num_imports);
+		return code_section.get_func(func_idx);
 	}
 
 	// https://webassembly.github.io/spec/core/binary/modules.html
@@ -98,9 +92,8 @@ public class WasmLayout {
 		Address module_base = find_module_base();
 
 		long cursor = 8;
-		num_imports = 0;
 
-		while (code_section == null || num_imports == 0) {
+		while (code_section == null) {
 			long section_id = go_bin.get_address_value(module_base, cursor, 1);
 			cursor += 1;
 
@@ -110,9 +103,7 @@ public class WasmLayout {
 			long section_start = cursor;
 			long section_end = section_start + section_size;
 
-			if (section_id == SECTION_ID_IMPORT) {
-				num_imports = parse_imports(module_base, section_start);
-			} else if (section_id == SECTION_ID_CODE) {
+			if (section_id == SECTION_ID_CODE) {
 				code_section = parse_code(module_base, section_start);
 			}
 
@@ -141,63 +132,6 @@ public class WasmLayout {
 			cursor += body_size;
 		}
 		return new CodeSection(functions);
-	}
-
-	private int parse_imports(Address module_base, long start) throws BinaryAccessException {
-		long cursor = start;
-		long[] cnt_pair = read_uleb128(module_base, cursor);
-		int count = (int) cnt_pair[0];
-		cursor += cnt_pair[1];
-		int func_imports = 0;
-		for (int i = 0; i < count; i++) {
-			long[] mod_len = read_uleb128(module_base, cursor);
-			cursor += mod_len[1] + mod_len[0];
-			long[] nm_len = read_uleb128(module_base, cursor);
-			cursor += nm_len[1] + nm_len[0];
-			long kind = go_bin.get_address_value(module_base, cursor, 1);
-			cursor += 1;
-			// https://webassembly.github.io/spec/core/binary/types.html#binary-externtype
-			if (kind == EXTERN_TYPE_TYPEIDX) {
-				long[] type_pair = read_uleb128(module_base, cursor);
-				cursor += type_pair[1];
-				func_imports++;
-			} else if (kind == EXTERN_TYPE_TABLETYPE) {
-				cursor += 1;
-				long[] el = read_uleb128(module_base, cursor);
-				cursor += el[1];
-				long limit_flags = go_bin.get_address_value(module_base, cursor, 1);
-				cursor += 1;
-				long[] init = read_uleb128(module_base, cursor);
-				cursor += init[1];
-				// https://webassembly.github.io/spec/core/binary/types.html#limits
-				if ((limit_flags & 1) != 0) {
-					long[] max = read_uleb128(module_base, cursor);
-					cursor += max[1];
-				}
-			} else if (kind == EXTERN_TYPE_MEMTYPE) {
-				long limit_flags = go_bin.get_address_value(module_base, cursor, 1);
-				cursor += 1;
-				long[] init = read_uleb128(module_base, cursor);
-				cursor += init[1];
-				// https://webassembly.github.io/spec/core/binary/types.html#limits
-				if ((limit_flags & 1) != 0) {
-					long[] max = read_uleb128(module_base, cursor);
-					cursor += max[1];
-				}
-			} else if (kind == EXTERN_TYPE_GLOBALTYPE) {
-				// https://webassembly.github.io/spec/core/binary/types.html#global-types
-				// No support: valtype -> reftype
-				cursor += 1;
-				cursor += 1;
-			} else if (kind == EXTERN_TYPE_TAGTYPE) {
-				cursor += 1;
-				long[] x = read_uleb128(module_base, cursor);
-				cursor += x[1];
-			} else {
-				throw new BinaryAccessException(String.format("Unknown WASM import kind: %d", kind));
-			}
-		}
-		return func_imports;
 	}
 
 	private long[] read_uleb128(Address base, long offset) throws BinaryAccessException {

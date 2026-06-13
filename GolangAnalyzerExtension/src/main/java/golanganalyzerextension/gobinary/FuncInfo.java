@@ -64,20 +64,15 @@ public class FuncInfo {
 		return;
 	}
 
-	// Go WASM funtab encoding: each entry is a 32-bit "runtime funcEntry" value that
-	// increments by 1 between consecutive user functions, starting at some constant for
-	// the first entry. The mapping to wasm-module funcID is:
-	//     wasm_func_idx = (current_entry - first_entry) + num_imports
 	private static int wasm_entry_to_func_idx(GolangBinary go_bin, Address func_list_base, long current_entry, int field_size) throws BinaryAccessException {
 		long base_entry = go_bin.get_address_value(func_list_base, field_size);
-		// For Go ≥1.18, pcheader.textStart on WASM is 0, so we don't add it here either.
 		long delta = current_entry - base_entry;
 		// Support only up to 65536 functions
 		if ((delta & 0xffff) == 0) {
 			// go1.24 - go1.11
 			delta >>= 16;
 		}
-		return (int) (delta + go_bin.get_wasm_num_imports());
+		return (int) delta;
 	}
 
 	private FuncInfoTab parse_func_info_tab(GolangBinary go_bin, Address func_list_base, Address tab_addr) throws InvalidBinaryStructureException {

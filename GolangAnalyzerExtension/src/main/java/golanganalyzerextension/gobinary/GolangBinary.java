@@ -617,10 +617,6 @@ public class GolangBinary {
 		return get_wasm_layout().get_func_size(func_idx);
 	}
 
-	public int get_wasm_num_imports() {
-		return get_wasm_layout().get_num_imports();
-	}
-
 	public void disassemble(Address addr, long size) throws BinaryAccessException {
 		Address addr_end=get_address(addr, size);
 
