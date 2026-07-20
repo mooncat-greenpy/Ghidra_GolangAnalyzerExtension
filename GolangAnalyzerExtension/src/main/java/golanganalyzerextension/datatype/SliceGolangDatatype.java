@@ -49,5 +49,7 @@ public class SliceGolangDatatype extends GolangDatatype {
 		if(!is_go16 && check_tflag(tflag, Tflag.Uncommon)) {
 			uncommon_base_addr=go_bin.get_address(ext_base_addr, pointer_size);
 		}
+
+		parsed_size+=pointer_size;
 	}
 }

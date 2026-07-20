@@ -55,8 +55,11 @@ public class FuncGolangDatatype extends GolangDatatype {
 		}
 
 		if(check_tflag(tflag, Tflag.Uncommon)) {
+			// TODO: check
 			uncommon_base_addr=go_bin.get_address(ext_base_addr, 2*2);
 		}
+
+		parsed_size+=pointer_size+in_len*pointer_size+out_len*pointer_size;
 	}
 
 	private void parse_datatype_go16() throws BinaryAccessException {
@@ -81,5 +84,8 @@ public class FuncGolangDatatype extends GolangDatatype {
 			}
 			out_type_key_list.add(out_type_key);
 		}
+
+		// No Implement
+		// parsed_size+=;
 	}
 }

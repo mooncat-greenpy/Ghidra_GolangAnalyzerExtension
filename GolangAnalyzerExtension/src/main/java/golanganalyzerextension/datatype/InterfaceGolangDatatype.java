@@ -77,6 +77,8 @@ public class InterfaceGolangDatatype extends GolangDatatype {
 		if(check_tflag(tflag, Tflag.Uncommon)) {
 			uncommon_base_addr=go_bin.get_address(ext_base_addr, pointer_size*4);
 		}
+
+		parsed_size+=pointer_size*4;
 	}
 
 	private void parse_datatype_go16() throws BinaryAccessException {
@@ -102,5 +104,8 @@ public class InterfaceGolangDatatype extends GolangDatatype {
 			method_name_list.add(method_name);
 			method_type_key_list.add(method_type_addr_value);
 		}
+
+		// No Implement
+		// parsed_size+=;
 	}
 }

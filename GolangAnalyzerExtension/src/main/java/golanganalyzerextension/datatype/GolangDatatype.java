@@ -32,6 +32,8 @@ public class GolangDatatype {
 	Address ext_base_addr;
 	List<Long> dependence_type_key_list;
 
+	long parsed_size;
+
 	long size;
 	long ptrdata;
 	int hash;
@@ -157,6 +159,10 @@ public class GolangDatatype {
 		go_datatype.parse();
 
 		return go_datatype;
+	}
+
+	public long get_parsed_size() {
+		return parsed_size;
 	}
 
 	public long get_type_offset() {
@@ -296,6 +302,8 @@ public class GolangDatatype {
 			if(ptr_to_this_off!=0) {
 				ptr_to_this_off-=type_base_addr.getOffset();
 			}
+
+			parsed_size = pointer_size*7+4+1*4;;
 		}else {
 			int name_off=(int)go_bin.get_address_value(type_base_addr, offset+pointer_size*4+4+1*4, 4);
 			if(name_off==0 || !go_bin.is_valid_address(go_bin.get_address(type_base_addr, name_off))) {
@@ -303,6 +311,8 @@ public class GolangDatatype {
 			}
 			name=get_type_string(go_bin.get_address(type_base_addr, name_off), tflag);
 			ptr_to_this_off=go_bin.get_address_value(type_base_addr, offset+pointer_size*4+4*2+1*4, 4);
+
+			parsed_size = pointer_size*4+4*3+1*4;
 		}
 		if(name.length()==0) {
 			name=String.format("not_found_%x", key);
@@ -340,6 +350,7 @@ public class GolangDatatype {
 			return;
 		}
 		uncommon_type=new UncommonType(go_bin, uncommon_base_addr, type_base_addr, is_go16);
+		parsed_size+=16+uncommon_type.get_method_list().size()*16;
 	}
 
 	public void make_datatype(DatatypeHolder datatype_searcher) {

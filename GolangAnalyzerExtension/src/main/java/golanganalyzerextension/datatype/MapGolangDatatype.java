@@ -8,6 +8,7 @@ import ghidra.program.model.data.VoidDataType;
 import golanganalyzerextension.DatatypeHolder;
 import golanganalyzerextension.gobinary.GolangBinary;
 import golanganalyzerextension.gobinary.exceptions.BinaryAccessException;
+import golanganalyzerextension.version.GolangVersion;
 
 
 public class MapGolangDatatype extends GolangDatatype {
@@ -66,6 +67,13 @@ public class MapGolangDatatype extends GolangDatatype {
 
 		if(!is_go16 && check_tflag(tflag, Tflag.Uncommon)) {
 			uncommon_base_addr=go_bin.get_address(ext_base_addr, pointer_size*4+1*2+2+4);
+		}
+
+		// if (go_version.ge_go_version(GolangVersion.GO_1_24_LOWEST)) {
+		if (go_bin.ge_go_version(GolangVersion.GO_1_27_LOWEST)) {
+			parsed_size+=pointer_size*10+4;
+		} else {
+			parsed_size+=pointer_size*4+1*2+2+4;
 		}
     }
 }

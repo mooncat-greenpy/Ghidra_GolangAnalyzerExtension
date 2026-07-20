@@ -95,12 +95,17 @@ public class StructureManager {
 		if (module_data==null) {
 			return false;
 		}
-		Address type_addr=module_data.get_type_addr();
-		Address typelink_addr=module_data.get_typelink_addr();
-		long typelink_len=module_data.get_typelink_len();
 		boolean is_go16=module_data.get_is_go16();
 
 		datatype_holder=new DatatypeHolder(go_bin, is_go16);
+
+		if(module_data.get_is_go127()) {
+			return init_go127_golang_datatype(module_data);
+		}
+
+		Address type_addr=module_data.get_type_addr();
+		Address typelink_addr=module_data.get_typelink_addr();
+		long typelink_len=module_data.get_typelink_len();
 
 		try {
 			for(long i=0;i<typelink_len;i++)
@@ -121,6 +126,50 @@ public class StructureManager {
 		} catch (BinaryAccessException e) {
 			Logger.append_message(String.format("Failed to get datatypes: addr=%s, message=%s", module_data.get_base_addr(), e.getMessage()));
 			return false;
+		}
+
+		if(datatype_holder.get_datatype_map().size()==0)
+		{
+			return false;
+		}
+		return true;
+	}
+
+	private boolean init_go127_golang_datatype(ModuleData module_data) {
+		int pointer_size=go_bin.get_pointer_size();
+		Address type_addr=module_data.get_type_addr();
+		long typedesc_len=module_data.get_typedesc_len();
+		long offset=pointer_size;
+
+		while(offset<typedesc_len) {
+			try {
+				long type_desc_addr=type_addr.getOffset()+offset;
+				type_desc_addr=(type_desc_addr+pointer_size-1)&~((long)pointer_size-1);
+				offset=type_desc_addr-type_addr.getOffset();
+
+				if(offset>=typedesc_len) {
+					break;
+				}
+
+				analyze_type(type_addr, offset, false);
+
+				GolangDatatype go_datatype=datatype_holder.get_go_datatype_by_key(offset);
+				if(go_datatype==null) {
+					Logger.append_message(String.format("Failed to get Go 1.27 datatype: addr=%s, offset=%x", type_addr, offset));
+					return false;
+				}
+
+				long parsed_size=go_datatype.get_parsed_size();
+				if(parsed_size<=0 || parsed_size>typedesc_len-offset) {
+					Logger.append_message(String.format("Invalid Go 1.27 parsed datatype size: addr=%s, offset=%x, size=%x", type_addr, offset, parsed_size));
+					return false;
+				}
+
+				offset+=parsed_size;
+			} catch(Exception | Error e) {
+				Logger.append_message(String.format("Failed to analyze Go 1.27 datatype: addr=%s, offset=%x, message=%s", type_addr, offset, e.getMessage()));
+				return false;
+			}
 		}
 
 		if(datatype_holder.get_datatype_map().size()==0)

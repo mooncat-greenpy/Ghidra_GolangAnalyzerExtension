@@ -87,8 +87,11 @@ public class StructGolangDatatype extends GolangDatatype {
 		}
 
 		if(check_tflag(tflag, Tflag.Uncommon)) {
+			// TODO: check
 			uncommon_base_addr=go_bin.get_address(ext_base_addr, pointer_size*4);
 		}
+
+		parsed_size+=pointer_size*4+pointer_size*3*fields_len;
 	}
 
 	private void parse_datatype_go16() throws BinaryAccessException {
@@ -112,5 +115,8 @@ public class StructGolangDatatype extends GolangDatatype {
 			dependence_type_key_list.add(field_type_key);
 			field_list.add(new StructField(go_bin, field_name, field_type_key, (int)offset_embed));
 		}
+
+		// No Implement
+		// parsed_size+=;
 	}
 }

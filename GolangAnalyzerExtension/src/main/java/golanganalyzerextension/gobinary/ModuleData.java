@@ -15,6 +15,8 @@ public class ModuleData {
 	private Address type_addr;
 	private Address typelink_addr;
 	private long typelink_len;
+	// go1.27 ~
+	private long typedesc_len;
 	private Address text_addr;
 	private GolangVersion go_version;
 
@@ -71,13 +73,16 @@ public class ModuleData {
 	}
 
 	private boolean parse() {
+		boolean is_go127=false;
 		boolean is_go126=false;
 		boolean is_go120=false;
 		boolean is_go118=false;
 		boolean is_go116=false;
 		boolean is_go18=false;
 		boolean is_go17=false;
-		if(go_bin.ge_go_version(GolangVersion.GO_1_26_LOWEST)) {
+		if(go_bin.ge_go_version(GolangVersion.GO_1_27_LOWEST)) {
+			is_go127=true;
+		} else if(go_bin.ge_go_version(GolangVersion.GO_1_26_LOWEST)) {
 			is_go126=true;
 		} else if(go_bin.ge_go_version(GolangVersion.GO_1_20_LOWEST)) {
 			is_go120=true;
@@ -94,9 +99,16 @@ public class ModuleData {
 		// runtime/symtab.go
 		boolean parsed=false;
 		// The PcHeader class cannot distinguish between Go 1.20 and Go 1.26.
+		if(!parsed || is_go127) {
+			try {
+				parsed|=parse_go127(base_addr);
+			} catch (BinaryAccessException e) {
+				Logger.append_message(String.format("Failed to parse moduledata: addr=%s, ver=go1.27", base_addr));
+			}
+		}
 		if(!parsed || is_go126 || is_go120) {
 			try {
-				parsed=parse_go126(base_addr);
+				parsed|=parse_go126(base_addr);
 			} catch (BinaryAccessException e) {
 				Logger.append_message(String.format("Failed to parse moduledata: addr=%s, ver=go1.26", base_addr));
 			}
@@ -163,12 +175,20 @@ public class ModuleData {
 		return typelink_len;
 	}
 
+	public long get_typedesc_len() {
+		return typedesc_len;
+	}
+
 	public Address get_text_addr() {
 		return text_addr;
 	}
 
 	public GolangVersion get_go_version() {
 		return go_version;
+	}
+
+	public boolean get_is_go127() {
+		return go_version.ge(GolangVersion.GO_1_27_LOWEST);
 	}
 
 	public boolean get_is_go16() {
@@ -181,6 +201,37 @@ public class ModuleData {
 		} catch(InvalidBinaryStructureException e) {
 			return false;
 		}
+		return true;
+	}
+
+	private boolean parse_go127(Address base_addr) throws BinaryAccessException {
+		int pointer_size=go_bin.get_pointer_size();
+
+		long tmp_type_addr_value=go_bin.get_address_value(base_addr, 37*pointer_size, pointer_size);
+		Address tmp_type_addr=go_bin.get_address(tmp_type_addr_value);
+		long tmp_typedesc_len=go_bin.get_address_value(base_addr, 38*pointer_size, pointer_size);
+		Address tmp_text_addr=go_bin.get_address(go_bin.get_address_value(base_addr, 22*pointer_size, pointer_size));
+
+		if(!check_type(tmp_type_addr) || !check_text(tmp_text_addr) || tmp_typedesc_len<=0x30) {
+			return false;
+		}
+
+		long tmp_type_offset=pointer_size;
+		long tmp_type_desc_addr=tmp_type_addr.getOffset()+tmp_type_offset;
+		tmp_type_desc_addr=(tmp_type_desc_addr+pointer_size-1)&~((long)pointer_size-1);
+		tmp_type_offset=tmp_type_desc_addr-tmp_type_addr.getOffset();
+
+		if(tmp_type_offset>=tmp_typedesc_len || !is_golang_type(tmp_type_addr, tmp_type_offset, false)) {
+			return false;
+		}
+
+		type_addr=tmp_type_addr;
+		typelink_addr=null;
+		typelink_len=0;
+		typedesc_len=tmp_typedesc_len;
+		text_addr=tmp_text_addr;
+		go_version=new GolangVersion(GolangVersion.GO_1_27_LOWEST);
+
 		return true;
 	}
 
