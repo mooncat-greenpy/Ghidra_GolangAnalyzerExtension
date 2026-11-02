@@ -16,7 +16,6 @@ java.lang.Object;
 java.lang.Number;
 java.lang.Integer;
 java.lang.Long;
-java.lang.String;
 
 [Ljava.lang.Object;
 [Ljava.util.Map$Entry;
