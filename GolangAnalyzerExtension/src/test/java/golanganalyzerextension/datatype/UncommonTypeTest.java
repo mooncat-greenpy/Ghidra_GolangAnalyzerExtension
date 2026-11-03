@@ -148,26 +148,54 @@ public class UncommonTypeTest extends AbstractGhidraHeadlessIntegrationTest {
 
 	@Test
 	public void test_serialize() throws Exception {
-		initialize(new HashMap<String, String>(){{
-			put("0x004a94b0", "00000000 90725300 cc944a00 00000000 00000000");
-			put("0x00537290", "3a314900 07000000");
-			put("0x0049313a", "7265666c656374");
+		initialize(new HashMap<String, String>() {{
+			put("0x004a94b0", "3a110000 0200 0000 1c000000");
+			put("0x004a94cc", "20050000ffffffffffffffffffffffff 5e150000409d0000c0cb0600c0cb0600");
+			put("0x00492520", "00000464617461");
+			put("0x0049355e", "000007706b6750617468");
+			put("0x0049313a", "0000077265666c656374");
 
 			put("0x00600000", "fbffffff 00 00 01 04 00000000");
 			put("0x0060000c", "00104000 00200000");
 			put("0x00602000", "00104000");
 		}});
-		GolangBinary go_bin=new GolangBinary(program, "", TaskMonitor.DUMMY);
 
-		UncommonType uncommon_type=new UncommonType(go_bin, go_bin.get_address(0x004a94b0), go_bin.get_address(0x00492000), true);
+		GolangBinary go_bin = new GolangBinary(program, "", TaskMonitor.DUMMY);
+
+		UncommonType uncommon_type = new UncommonType(
+				go_bin,
+				go_bin.get_address(0x004a94b0),
+				go_bin.get_address(0x00492000),
+				false);
+
 		ByteArrayOutputStream byte_out = new ByteArrayOutputStream();
 		ObjectOutputStream out = new ObjectOutputStream(byte_out);
 		out.writeObject(uncommon_type);
-		byte[] bytes=byte_out.toByteArray();
-		ByteArrayInputStream byte_in = new ByteArrayInputStream(bytes);
-		ObjectInputStream in = new ObjectInputStream(byte_in);
-		UncommonType uncommon_type2=(UncommonType)in.readObject();
 
-		assertEquals(uncommon_type.get_pkg_path(), uncommon_type2.get_pkg_path());
+		ByteArrayInputStream byte_in = new ByteArrayInputStream(byte_out.toByteArray());
+		ObjectInputStream in = new ObjectInputStream(byte_in);
+		UncommonType restored = (UncommonType) in.readObject();
+
+		assertEquals(uncommon_type.get_pkg_path(), restored.get_pkg_path());
+
+		List<UncommonMethod> original_methods = uncommon_type.get_method_list();
+		List<UncommonMethod> restored_methods = restored.get_method_list();
+
+		assertEquals(original_methods.size(), restored_methods.size());
+		assertEquals(2, restored_methods.size());
+
+		for (int i = 0; i < original_methods.size(); i++) {
+			UncommonMethod original = original_methods.get(i);
+			UncommonMethod restored_method = restored_methods.get(i);
+
+			assertEquals(original.get_name(), restored_method.get_name());
+			assertEquals(original.get_type_offset(), restored_method.get_type_offset());
+			assertEquals(
+					original.get_interface_method_addr(),
+					restored_method.get_interface_method_addr());
+			assertEquals(
+					original.get_normal_method_addr(),
+					restored_method.get_normal_method_addr());
+		}
 	}
 }

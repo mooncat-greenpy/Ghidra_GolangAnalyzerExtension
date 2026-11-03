@@ -1,0 +1,21 @@
+# Ghidra serialization input-filter allowlist for extension database records.
+#
+# These classes occur in object graphs persisted by GolangDatatypeRecord and
+# GolangFunctionRecord. Keep this list explicit; this file contributes to
+# Ghidra's process-wide deserialization policy.
+
+golanganalyzerextension.datatype.UncommonType;
+golanganalyzerextension.datatype.UncommonType$UncommonMethod;
+golanganalyzerextension.function.FileLine;
+
+java.util.ArrayList;
+java.util.HashMap;
+java.util.Map$Entry;
+
+java.lang.Object;
+java.lang.Number;
+java.lang.Integer;
+java.lang.Long;
+
+[Ljava.lang.Object;
+[Ljava.util.Map$Entry;

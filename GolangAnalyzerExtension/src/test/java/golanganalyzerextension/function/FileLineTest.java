@@ -16,6 +16,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import ghidra.program.database.ProgramBuilder;
+import ghidra.program.model.listing.Parameter;
 import ghidra.program.model.listing.Program;
 import ghidra.test.AbstractGhidraHeadlessIntegrationTest;
 import ghidra.util.task.TaskMonitor;
@@ -131,5 +132,59 @@ public class FileLineTest extends AbstractGhidraHeadlessIntegrationTest {
 		FileLine file_line2=(FileLine)in.readObject();
 
 		assertEquals(file_line.toString(), file_line2.toString());
+	}
+
+	@Test
+	public void test_function_record_serialization() throws Exception {
+		initialize(new HashMap<String, String>());
+		GolangBinary go_bin = new GolangBinary(program, "", TaskMonitor.DUMMY);
+
+		FileLine file_line = new FileLine(
+				go_bin.get_address(0x401000),
+				0x10,
+				0x20,
+				"runtime/runtime.go",
+				123,
+				"go1.20");
+
+		Map<Integer, FileLine> file_line_map = new HashMap<>();
+		file_line_map.put(0x10, file_line);
+
+		Map<Integer, Long> frame_map = new HashMap<>();
+		frame_map.put(0x20, 0x401020L);
+
+		GolangFunctionRecord original = new GolangFunctionRecord(
+				go_bin.get_address(0x401000),
+				"runtime.testFunction",
+				0x100,
+				0,
+				file_line_map,
+				frame_map,
+				new Parameter[0]);
+
+		GolangFunctionRecord restored =
+				new GolangFunctionRecord(go_bin, original.get_record());
+
+		assertEquals(original.get_func_addr(), restored.get_func_addr());
+		assertEquals(original.get_func_name(), restored.get_func_name());
+		assertEquals(original.get_func_size(), restored.get_func_size());
+		assertEquals(original.get_arg_size(), restored.get_arg_size());
+
+		assertEquals(1, restored.get_file_line_comment_map().size());
+		assertEquals(1, restored.get_frame_map().size());
+
+		FileLine restored_file_line =
+				restored.get_file_line_comment_map().get(0x10);
+
+		assertEquals(file_line.get_func_addr(), restored_file_line.get_func_addr());
+		assertEquals(file_line.get_offset(), restored_file_line.get_offset());
+		assertEquals(file_line.get_size(), restored_file_line.get_size());
+		assertEquals(file_line.get_file_name(), restored_file_line.get_file_name());
+		assertEquals(file_line.get_line_num(), restored_file_line.get_line_num());
+		assertEquals(file_line.toString(), restored_file_line.toString());
+
+		assertEquals(
+				Long.valueOf(0x401020L),
+				restored.get_frame_map().get(0x20));
 	}
 }
