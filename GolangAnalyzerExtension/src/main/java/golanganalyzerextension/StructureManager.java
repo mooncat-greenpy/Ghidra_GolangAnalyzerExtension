@@ -61,7 +61,7 @@ public class StructureManager {
 					go_bin.add_datatype(go_datatype.get_category_path(), go_datatype.get_struct_datatype());
 				}
 
-				go_bin.set_comment(go_datatype.get_addr(), ghidra.program.model.listing.CodeUnit.PLATE_COMMENT, make_datatype_comment(go_datatype, datatype_holder));
+				go_bin.set_comment(go_datatype.get_addr(), ghidra.program.model.listing.CommentType.PLATE, make_datatype_comment(go_datatype, datatype_holder));
 			}catch(Exception e) {
 				Logger.append_message(String.format("Failed to add datatype to manager: message=%s", e.getMessage()));
 			}

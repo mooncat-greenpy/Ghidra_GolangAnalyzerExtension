@@ -257,7 +257,7 @@ public class FunctionModifier {
 		comment+=String.format("Start: %s\n", gofunc.get_func_addr());
 		try {
 			comment+=String.format("End: %s", go_bin.get_address(gofunc.get_func_addr(), gofunc.get_func_size()));
-			go_bin.set_comment(gofunc.get_func_addr(), ghidra.program.model.listing.CodeUnit.PLATE_COMMENT, comment);
+			go_bin.set_comment(gofunc.get_func_addr(), ghidra.program.model.listing.CommentType.PLATE, comment);
 		} catch (BinaryAccessException e) {
 			Logger.append_message(String.format("Failed to add func comment: addr=%s, name=%s, message=%s", gofunc.get_func_addr(), gofunc.get_func_name(), e.getMessage()));
 		}
@@ -274,7 +274,7 @@ public class FunctionModifier {
 
 		for(Integer key: comment_map.keySet()) {
 			try {
-				go_bin.set_comment(go_bin.get_address(addr, key), ghidra.program.model.listing.CodeUnit.PRE_COMMENT, comment_map.get(key).toString());
+				go_bin.set_comment(go_bin.get_address(addr, key), ghidra.program.model.listing.CommentType.PRE, comment_map.get(key).toString());
 			} catch (BinaryAccessException e) {
 				Logger.append_message(String.format("Failed to add file line comment: addr=%s, name=%s, message=%s", gofunc.get_func_addr(), gofunc.get_func_name(), e.getMessage()));
 			}
@@ -303,7 +303,7 @@ public class FunctionModifier {
 				target = ceiling.getValue();
 			}
 			try {
-				go_bin.set_comment(target, ghidra.program.model.listing.CodeUnit.PRE_COMMENT, comment_map.get(key).toString());
+				go_bin.set_comment(target, ghidra.program.model.listing.CommentType.PRE, comment_map.get(key).toString());
 			} catch (BinaryAccessException e) {
 				Logger.append_message(String.format("Failed to add file line comment: addr=%s, name=%s, message=%s", gofunc.get_func_addr(), gofunc.get_func_name(), e.getMessage()));
 			}

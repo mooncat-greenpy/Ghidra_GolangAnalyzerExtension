@@ -143,7 +143,7 @@ public class CallingFuncNameResourceTest extends AbstractGhidraHeadlessIntegrati
 		FunctionIterator itr = program.getListing().getFunctions(true);
 		int tid = program.startTransaction("Test database");
 		while (itr.hasNext()) {
-			program.getListing().setComment(itr.next().getEntryPoint(), ghidra.program.model.listing.CodeUnit.PRE_COMMENT, file_line);
+			program.getListing().setComment(itr.next().getEntryPoint(), ghidra.program.model.listing.CommentType.PRE, file_line);
 		}
 		program.endTransaction(tid, true);
 

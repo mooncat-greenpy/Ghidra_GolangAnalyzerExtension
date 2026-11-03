@@ -42,6 +42,7 @@ import ghidra.program.model.data.UnsignedInteger7DataType;
 import ghidra.program.model.data.UnsignedLongLongDataType;
 import ghidra.program.model.data.UnsignedShortDataType;
 import ghidra.program.model.lang.Register;
+import ghidra.program.model.listing.CommentType;
 import ghidra.program.model.listing.ContextChangeException;
 import ghidra.program.model.listing.Data;
 import ghidra.program.model.listing.Function;
@@ -678,11 +679,11 @@ public class GolangBinary {
 		}
 	}
 
-	public void set_comment(Address addr, int type, String comment) throws BinaryAccessException {
+	public void set_comment(Address addr, CommentType type, String comment) throws BinaryAccessException {
 		try {
 			program.getListing().setComment(addr, type, comment);
 		} catch (IllegalArgumentException e) {
-			throw new BinaryAccessException(String.format("Set comment: addr=%s, type=%x, comment=%s", addr, type, comment));
+			throw new BinaryAccessException(String.format("Set comment: addr=%s, type=%s, comment=%s", addr, type, comment));
 		}
 	}
 

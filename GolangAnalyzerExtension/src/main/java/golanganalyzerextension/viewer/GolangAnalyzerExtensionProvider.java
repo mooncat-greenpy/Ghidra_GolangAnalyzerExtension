@@ -217,7 +217,7 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 		function_table.setName("DataTable");
 		function_table.setPreferredScrollableViewportSize(new Dimension(350, 150));
 		GoToService go_to_service = tool.getService(GoToService.class);
-		function_table.installNavigation(go_to_service, go_to_service.getDefaultNavigatable());
+		function_table.installNavigation(tool, go_to_service.getDefaultNavigatable());
 		function_filter_panel = new GhidraTableFilterPanel<>(function_table, function_model);
 
 		filename_model = new FilenameTableModel(tool, current_program, null, gae_plugin);
@@ -231,7 +231,7 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 		filename_table.setActionsEnabled(true);
 		filename_table.setName("Filename");
 		filename_table.setPreferredScrollableViewportSize(new Dimension(350, 150));
-		filename_table.installNavigation(go_to_service, go_to_service.getDefaultNavigatable());
+		filename_table.installNavigation(tool, go_to_service.getDefaultNavigatable());
 		filename_filter_panel = new GhidraTableFilterPanel<>(filename_table, filename_model);
 
 		datatype_model = new DatatypeTableModel(tool, current_program, null, gae_plugin);
@@ -245,7 +245,7 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 		datatype_table.setActionsEnabled(true);
 		datatype_table.setName("DataTable");
 		datatype_table.setPreferredScrollableViewportSize(new Dimension(350, 150));
-		datatype_table.installNavigation(go_to_service, go_to_service.getDefaultNavigatable());
+		datatype_table.installNavigation(tool, go_to_service.getDefaultNavigatable());
 		datatype_filter_panel = new GhidraTableFilterPanel<>(datatype_table, datatype_model);
 
 		string_model = new StringTableModel(tool, current_program, null, gae_plugin);
@@ -259,7 +259,7 @@ public class GolangAnalyzerExtensionProvider extends ComponentProviderAdapter im
 		string_table.setActionsEnabled(true);
 		string_table.setName("String");
 		string_table.setPreferredScrollableViewportSize(new Dimension(350, 150));
-		string_table.installNavigation(go_to_service, go_to_service.getDefaultNavigatable());
+		string_table.installNavigation(tool, go_to_service.getDefaultNavigatable());
 		string_filter_panel = new GhidraTableFilterPanel<>(string_table, string_model);
 
 		function_toggle_show_info_panel_button = new JButton(COLLAPSE_ICON);

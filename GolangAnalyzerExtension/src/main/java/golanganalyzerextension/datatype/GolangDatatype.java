@@ -220,10 +220,10 @@ public class GolangDatatype {
 		try {
 			go_bin.create_label(addr, String.format("datatype.%s.%s", get_kind().name(), get_name()));
 			go_bin.create_data(addr, datatype_searcher.get_datatype_by_name("runtime._type"));
-			go_bin.set_comment(go_bin.get_address(addr, go_bin.get_pointer_size()*2+4+1*3), ghidra.program.model.listing.CodeUnit.EOL_COMMENT, get_kind().name());
-			go_bin.set_comment(go_bin.get_address(addr, go_bin.get_pointer_size()*4+4+1*4), ghidra.program.model.listing.CodeUnit.EOL_COMMENT, get_name());
+			go_bin.set_comment(go_bin.get_address(addr, go_bin.get_pointer_size()*2+4+1*3), ghidra.program.model.listing.CommentType.EOL, get_kind().name());
+			go_bin.set_comment(go_bin.get_address(addr, go_bin.get_pointer_size()*4+4+1*4), ghidra.program.model.listing.CommentType.EOL, get_name());
 			if(ptr_to_this_off!=0) {
-				go_bin.set_comment(go_bin.get_address(addr, go_bin.get_pointer_size()*4+4*2+1*4), ghidra.program.model.listing.CodeUnit.EOL_COMMENT,
+				go_bin.set_comment(go_bin.get_address(addr, go_bin.get_pointer_size()*4+4*2+1*4), ghidra.program.model.listing.CommentType.EOL,
 						String.format("%x", type_base_addr.getOffset()+ptr_to_this_off));
 			}
 		} catch (BinaryAccessException e) {

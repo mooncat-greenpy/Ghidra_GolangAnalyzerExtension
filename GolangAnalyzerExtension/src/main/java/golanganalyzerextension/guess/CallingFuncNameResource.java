@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 import ghidra.program.model.address.Address;
+import ghidra.program.model.listing.CommentType;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionIterator;
 import ghidra.program.model.listing.Program;
@@ -130,7 +131,8 @@ public class CallingFuncNameResource {
 		while (itr.hasNext()) {
 			Function func = itr.next();
 			Address addr = func.getEntryPoint();
-			String comment = program.getListing().getComment(ghidra.program.model.listing.CodeUnit.PRE_COMMENT, addr);
+
+			String comment = program.getListing().getComment(CommentType.PRE, addr);
 			if (comment == null) {
 				continue;
 			}
